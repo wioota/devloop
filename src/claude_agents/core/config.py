@@ -170,6 +170,17 @@ class Config:
                         "autoGenerateScope": true,
                         "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
                     }
+                },
+                "performance-profiler": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "complexityThreshold": 10,
+                        "minLinesThreshold": 50,
+                        "enabledTools": ["radon"],
+                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*", "__init__.py"],
+                        "maxIssues": 50
+                    }
                 }
             },
             "global": {

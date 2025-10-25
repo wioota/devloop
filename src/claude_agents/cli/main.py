@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
+from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
 from claude_agents.collectors import FileSystemCollector
 from claude_agents.core import AgentManager, Config, ConfigWrapper, EventBus
 
@@ -153,6 +153,14 @@ async def watch_async(path: Path, config_path: Path | None):
             event_bus=event_bus
         )
         agent_manager.register(commit_assistant)
+
+    if config.is_agent_enabled("performance-profiler"):
+        perf_config = config.get_agent_config("performance-profiler") or {}
+        performance_profiler = PerformanceProfilerAgent(
+            config=perf_config.get("config", {}),
+            event_bus=event_bus
+        )
+        agent_manager.register(performance_profiler)
 
     # Start everything
     await fs_collector.start()
