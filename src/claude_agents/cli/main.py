@@ -3,6 +3,7 @@ import asyncio
 import logging
 import signal
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -31,40 +32,40 @@ def setup_logging(verbose: bool = False):
     )
 
 
-@app.command()
-def watch(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Path to watch for changes"
-    ),
-    config_path: Path = typer.Option(
-        None,
-        "--config",
-        help="Path to configuration file"
-    ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        help="Verbose logging"
-    )
-):
-    """
-    Watch a directory for file changes and run agents.
+# @app.command()
+# def watch(
+#     path: Path = typer.Argument(
+#         Path.cwd(),
+#         help="Path to watch for changes"
+#     ),
+#     config_path: Optional[Path] = typer.Option(
+#         None,
+#         "--config",
+#         help="Path to configuration file"
+#     ),
+#     verbose: bool = typer.Option(
+#         False,
+#         "--verbose",
+#         help="Verbose logging"
+#     )
+# ):
+#     """
+#     Watch a directory for file changes and run agents.
 
-    Agents will automatically lint, format, and test your code as you work.
+#     Agents will automatically lint, format, and test your code as you work.
 
-    Press Ctrl+C to stop.
-    """
-    setup_logging(verbose)
+#     Press Ctrl+C to stop.
+#     """
+#     setup_logging(verbose)
 
-    console.print(f"[bold green]Claude Agents v2[/bold green]")
-    console.print(f"Watching: [cyan]{path.absolute()}[/cyan]\n")
+#     console.print(f"[bold green]Claude Agents v2[/bold green]")
+#     console.print(f"Watching: [cyan]{path.absolute()}[/cyan]\n")
 
-    # Run the async main loop
-    try:
-        asyncio.run(watch_async(path, config_path))
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Shutting down...[/yellow]")
+#     # Run the async main loop
+#     try:
+#         asyncio.run(watch_async(path, config_path))
+#     except KeyboardInterrupt:
+#         console.print("\n[yellow]Shutting down...[/yellow]")
 
 
 async def watch_async(path: Path, config_path: Path | None):
@@ -189,56 +190,47 @@ async def watch_async(path: Path, config_path: Path | None):
     await fs_collector.stop()
 
 
+# @app.command()
+# def init(
+#     path: Path = typer.Argument(
+#         Path.cwd(),
+#         help="Project directory"
+#     ),
+#     create_config: bool = typer.Option(
+#         True,
+#         help="Create default configuration file"
+#     )
+# ):
+#     """Initialize claude-agents in a project."""
+#     claude_dir = path / ".claude"
+#
+#     if claude_dir.exists():
+#         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
+#     else:
+#         claude_dir.mkdir(exist_ok=True)
+#         console.print(f"[green]✓[/green] Created: {claude_dir}")
+#
+#     # Create default configuration
+#     if create_config:
+#         config_file = claude_dir / "agents.json"
+#         if config_file.exists():
+#             console.print(f"[yellow]Configuration already exists: {config_file}[/yellow]")
+#         else:
+#             config = Config.default_config()
+#             config.save(config_file)
+#             console.print(f"[green]✓[/green] Created: {config_file}")
+#
+#     console.print(f"\n[green]✓[/green] Initialized!")
+#     console.print(f"\nNext steps:")
+#     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
+#     console.print(f"  2. Run: [cyan]claude-agents watch {path}[/cyan]")
+
+
 @app.command()
-def init(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Project directory"
-    ),
-    create_config: bool = typer.Option(
-        True,
-        help="Create default configuration file"
-    )
-):
-    """Initialize claude-agents in a project."""
-    claude_dir = path / ".claude"
-
-    if claude_dir.exists():
-        console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
-    else:
-        claude_dir.mkdir(exist_ok=True)
-        console.print(f"[green]✓[/green] Created: {claude_dir}")
-
-    # Create default configuration
-    if create_config:
-        config_file = claude_dir / "agents.json"
-        if config_file.exists():
-            console.print(f"[yellow]Configuration already exists: {config_file}[/yellow]")
-        else:
-            config = Config.default_config()
-            config.save(config_file)
-            console.print(f"[green]✓[/green] Created: {config_file}")
-
-    console.print(f"\n[green]✓[/green] Initialized!")
-    console.print(f"\nNext steps:")
-    console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
-    console.print(f"  2. Run: [cyan]claude-agents watch {path}[/cyan]")
-
-
-@app.command()
-def status(
-    config_path: Path = typer.Option(
-        None,
-        "--config",
-        help="Path to configuration file"
-    )
-):
+def status():
     """Show configuration and agent status."""
     # Load configuration
-    if config_path:
-        config_manager = Config(str(config_path))
-    else:
-        config_manager = Config()
+    config_manager = Config()
     config_dict = config_manager.load()
     config = ConfigWrapper(config_dict)
 
@@ -248,7 +240,7 @@ def status(
     table.add_column("Enabled", style="green")
     table.add_column("Triggers", style="yellow")
 
-    for agent_name, agent_config in config.get("agents", {}).items():
+    for agent_name, agent_config in config.agents().items():
         enabled = "✓" if agent_config.get("enabled") else "✗"
         triggers = ", ".join(agent_config.get("triggers", []))
         table.add_row(agent_name, enabled, triggers)
@@ -256,103 +248,103 @@ def status(
     console.print(table)
 
 
-@app.command()
-def config_cmd(
-    action: str = typer.Argument(..., help="Action: show, edit, reset"),
-    config_path: Path = typer.Option(
-        None,
-        "--config",
-        help="Path to configuration file"
-    )
-):
-    """Manage configuration."""
-    if action == "show":
-        if config_path:
-            config_manager = Config(str(config_path))
-        else:
-            config_manager = Config()
-        config = config_manager.load()
+# @app.command()
+# def config_cmd(
+#     action: str = typer.Argument(..., help="Action: show, edit, reset"),
+#     config_path: Optional[Path] = typer.Option(
+#         None,
+#         "--config",
+#         help="Path to configuration file"
+#     )
+# ):
+#     """Manage configuration."""
+#     if action == "show":
+#         if config_path:
+#             config_manager = Config(str(config_path))
+#         else:
+#             config_manager = Config()
+#         config = config_manager.load()
+#
+#         import json
+#         console.print(json.dumps(config, indent=2))
+#
+#     elif action == "reset":
+#         config_manager = Config()
+#         default_config = config_manager._get_default_config()
+#         save_path = config_path or (Path.cwd() / ".claude" / "agents.json")
+#         save_path.parent.mkdir(parents=True, exist_ok=True)
+#         import json
+#         with open(save_path, 'w') as f:
+#             json.dump(default_config, f, indent=2)
+#         console.print(f"[green]✓[/green] Reset configuration: {save_path}")
+#
+#     elif action == "edit":
+#         console.print("[yellow]Open your .claude/agents.json in an editor[/yellow]")
+#
+#     else:
+#         console.print(f"[red]Unknown action: {action}[/red]")
 
-        import json
-        console.print(json.dumps(config, indent=2))
 
-    elif action == "reset":
-        config_manager = Config()
-        default_config = config_manager._get_default_config()
-        save_path = config_path or (Path.cwd() / ".claude" / "agents.json")
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        import json
-        with open(save_path, 'w') as f:
-            json.dump(default_config, f, indent=2)
-        console.print(f"[green]✓[/green] Reset configuration: {save_path}")
-
-    elif action == "edit":
-        console.print("[yellow]Open your .claude/agents.json in an editor[/yellow]")
-
-    else:
-        console.print(f"[red]Unknown action: {action}[/red]")
-
-
-@app.command()
-def amp_setup(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Project directory to setup Amp integration"
-    )
-):
-    """Setup Amp integration files in a project."""
-    import shutil
-
-    claude_dir = path / ".claude"
-    if not claude_dir.exists():
-        console.print(f"[red]❌ .claude directory not found. Run 'claude-agents init' first.[/red]")
-        return
-
-    # Get the claude-agents installation directory
-    import claude_agents
-    # Try multiple possible locations for the integration files
-    possible_paths = [
-        Path(claude_agents.__file__).parent.parent / ".claude",  # Installed package
-        Path(claude_agents.__file__).parent.parent.parent / ".claude",  # Development
-    ]
-
-    install_dir = None
-    for path in possible_paths:
-        if path.exists():
-            install_dir = path
-            break
-
-    if not install_dir or not install_dir.exists():
-        console.print(f"[red]❌ Claude agents integration files not found.[/red]")
-        return
-
-    # Copy integration files
-    integration_files = ["AGENTS.md", "CLAUDE.md"]
-    copied = []
-
-    for filename in integration_files:
-        src = install_dir / filename
-        dst = claude_dir / filename
-
-        if src.exists():
-            if src == dst:
-                # File already exists in the right place
-                copied.append(filename)
-                console.print(f"[blue]ℹ️[/blue]  Already present: {filename}")
-            else:
-                shutil.copy2(src, dst)
-                copied.append(filename)
-                console.print(f"[green]✓[/green] Copied: {filename}")
-        else:
-            console.print(f"[yellow]⚠️[/yellow]  Not found: {filename}")
-
-    if copied:
-        console.print(f"\n[green]✓[/green] Amp integration setup complete!")
-        console.print(f"\nCoding agents will now automatically follow the coding rules from:")
-        for filename in copied:
-            console.print(f"  • [cyan]{claude_dir / filename}[/cyan]")
-    else:
-        console.print(f"[red]❌ No integration files copied.[/red]")
+# @app.command()
+# def amp_setup(
+#     path: Path = typer.Argument(
+#         Path.cwd(),
+#         help="Project directory to setup Amp integration"
+#     )
+# ):
+#     """Setup Amp integration files in a project."""
+#     import shutil
+#
+#     claude_dir = path / ".claude"
+#     if not claude_dir.exists():
+#         console.print(f"[red]❌ .claude directory not found. Run 'claude-agents init' first.[/red]")
+#         return
+#
+#     # Get the claude-agents installation directory
+#     import claude_agents
+#     # Try multiple possible locations for the integration files
+#     possible_paths = [
+#         Path(claude_agents.__file__).parent.parent / ".claude",  # Installed package
+#         Path(claude_agents.__file__).parent.parent.parent / ".claude",  # Development
+#     ]
+#
+#     install_dir = None
+#     for path in possible_paths:
+#         if path.exists():
+#             install_dir = path
+#             break
+#
+#     if not install_dir or not install_dir.exists():
+#         console.print(f"[red]❌ Claude agents integration files not found.[/red]")
+#         return
+#
+#     # Copy integration files
+#     integration_files = ["AGENTS.md", "CLAUDE.md"]
+#     copied = []
+#
+#     for filename in integration_files:
+#         src = install_dir / filename
+#         dst = claude_dir / filename
+#
+#         if src.exists():
+#             if src == dst:
+#                 # File already exists in the right place
+#                 copied.append(filename)
+#                 console.print(f"[blue]ℹ️[/blue]  Already present: {filename}")
+#             else:
+#                 shutil.copy2(src, dst)
+#                copied.append(filename)
+#                console.print(f"[green]✓[/green] Copied: {filename}")
+#        else:
+#            console.print(f"[yellow]⚠️[/yellow]  Not found: {filename}")
+#
+#    if copied:
+#        console.print(f"\n[green]✓[/green] Amp integration setup complete!")
+#        console.print(f"\nCoding agents will now automatically follow the coding rules from:")
+#        for filename in copied:
+#            console.print(f"  • [cyan]{claude_dir / filename}[/cyan]")
+#    else:
+#        console.print(f"[red]❌ No integration files copied.[/red]")
 
 
 @app.command()

@@ -46,21 +46,17 @@ class Config:
 
     def load(self) -> Dict[str, Any]:
         """Load configuration from file."""
-        if self._config is not None:
-            return self._config
-
+        # Always reload for development - remove caching for now
         if not self.config_path.exists():
             # Return default config
-            self._config = self._get_default_config()
+            return self._get_default_config()
         else:
             try:
                 with open(self.config_path, 'r') as f:
-                    self._config = json.load(f)
+                    return json.load(f)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Warning: Could not load config from {self.config_path}: {e}")
-                self._config = self._get_default_config()
-
-        return self._config
+                return self._get_default_config()
 
     def get_global_config(self) -> GlobalConfig:
         """Get global configuration."""
@@ -141,9 +137,62 @@ class Config:
                     "enabled": True,
                     "triggers": ["file:modified", "file:created"],
                     "config": {
+                    "enabledTools": ["mypy"],
+                    "strictMode": False,
+                    "showErrorCodes": True,
+                    "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
+                    "maxIssues": 50
+                    }
+                },
+                "security-scanner": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "enabledTools": ["bandit"],
+                        "severityThreshold": "medium",
+                        "confidenceThreshold": "medium",
+                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
+                        "maxIssues": 50
+                    }
+                },
+                "git-commit-assistant": {
+                    "enabled": True,
+                    "triggers": ["git:pre-commit", "git:commit"],
+                    "config": {
+                    "conventionalCommits": True,
+                    "maxMessageLength": 72,
+                    "includeBreakingChanges": True,
+                    "analyzeFileChanges": True,
+                    "autoGenerateScope": True,
+                    "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
+                    }
+                },
+                "performance-profiler": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "complexityThreshold": 10,
+                        "minLinesThreshold": 50,
+                        "enabledTools": ["radon"],
+                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*", "__init__.py"],
+                        "maxIssues": 50
+                    }
+                },
+                "agent-health-monitor": {
+                    "enabled": True,
+                    "triggers": ["agent:*:completed"],
+                    "config": {
+                        "monitorAllAgents": True,
+                        "autoFixOnFailure": True
+                    }
+                },
+                "type-checker": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
                         "enabledTools": ["mypy"],
-                        "strictMode": false,
-                        "showErrorCodes": true,
+                        "strictMode": False,
+                        "showErrorCodes": True,
                         "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
                         "maxIssues": 50
                     }
@@ -163,12 +212,12 @@ class Config:
                     "enabled": True,
                     "triggers": ["git:pre-commit", "git:commit"],
                     "config": {
-                        "conventionalCommits": true,
-                        "maxMessageLength": 72,
-                        "includeBreakingChanges": true,
-                        "analyzeFileChanges": true,
-                        "autoGenerateScope": true,
-                        "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
+                    "conventionalCommits": True,
+                    "maxMessageLength": 72,
+                    "includeBreakingChanges": True,
+                    "analyzeFileChanges": True,
+                    "autoGenerateScope": True,
+                    "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
                     }
                 },
                 "performance-profiler": {

@@ -50,7 +50,7 @@ class AutoFix:
         """Apply a single fix if it's safe to do so."""
         finding_id = self._get_finding_id(finding)
         if finding_id in self._fix_history:
-            return False  # Already applied
+                return False  # Already applied
 
         # Check if fix is safe based on safety level
         if not self._is_safe_for_config(agent_type, finding, global_config.autonomous_fixes.safety_level):
@@ -133,10 +133,19 @@ class AutoFix:
     async def _execute_fix(self, agent_type: str, finding: Dict) -> bool:
         """Execute the actual fix."""
         try:
+            success = finding.get("success", False)
+
             if agent_type == "formatter":
                 return await self._execute_formatter_fix(finding)
             elif agent_type == "linter":
-                return await self._execute_linter_fix(finding)
+                if success:
+                    return await self._execute_linter_fix(finding)
+                else:
+                    return await self._execute_linter_error_fix(finding)
+            elif agent_type == "type-checker" and not success:
+                return await self._execute_type_checker_error_fix(finding)
+            elif agent_type == "test-runner" and not success:
+                return await self._execute_test_runner_error_fix(finding)
             else:
                 return False
         except Exception as e:
@@ -210,6 +219,47 @@ class AutoFix:
     async def _fix_whitespace(self, file_path: str, data: Dict) -> bool:
         """Fix whitespace issues."""
         # Could use autopep8 or similar
+        return False
+
+    async def _execute_linter_error_fix(self, finding: Dict) -> bool:
+        """Execute a fix based on linter error messages."""
+        error = finding.get("error", "").lower()
+        data = finding.get("data", {})
+
+        if not data:
+            return False
+
+        file_path = data.get("file")
+        if not file_path:
+            return False
+
+        # Handle specific error types
+        if "syntax" in error or "invalid syntax" in error:
+            # For syntax errors, we can't auto-fix them safely
+            return False
+        elif "import" in error or "nameerror" in error:
+            # Import issues - could try basic fixes
+            return False  # For now, be safe
+        elif "indentation" in error:
+            # Indentation issues - could try to fix
+            return False  # For now, be safe
+
+        return False
+
+    async def _execute_type_checker_error_fix(self, finding: Dict) -> bool:
+        """Execute a fix based on type checker error messages."""
+        # Type checker errors are usually complex and not auto-fixable
+        return False
+
+    async def _execute_test_runner_error_fix(self, finding: Dict) -> bool:
+        """Execute a fix based on test runner error messages."""
+        error = finding.get("error", "").lower()
+
+        if "syntax" in error or "import" in error:
+            # These indicate code issues that might be fixable
+            # But for safety, we don't auto-fix based on test errors
+            return False
+
         return False
 
     def _get_finding_id(self, finding: Dict) -> str:
