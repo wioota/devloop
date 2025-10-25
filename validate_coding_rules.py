@@ -188,12 +188,11 @@ class CodingRulesValidator:
                         )
 
     def print_report(self) -> None:
-        """Print validation report."""
+        """Print validation report for the current file."""
         if not self.violations:
-            print("✅ All coding rules validated successfully!")
             return
 
-        print(f"❌ Found {len(self.violations)} coding rule violations:")
+        print(f"❌ {self.file_path}: Found {len(self.violations)} coding rule violations:")
         print()
 
         for violation in self.violations:

@@ -1,11 +1,13 @@
 """Agent manager for centralized control."""
+
 import asyncio
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from claude_agents.core.agent import Agent
-from claude_agents.core.event import EventBus
+from claude_agents.core.context_store import context_store
+from claude_agents.core.event import Event, EventBus
 
 
 class AgentManager:
@@ -24,9 +26,14 @@ class AgentManager:
 
     async def start_all(self) -> None:
         """Start all registered agents."""
+        # Subscribe to agent completion events for consolidated results
+        await self.event_bus.subscribe("agent:*:completed", self._on_agent_completed)
+
         tasks = [agent.start() for agent in self.agents.values() if agent.enabled]
         await asyncio.gather(*tasks)
-        self.logger.info(f"Started {len([a for a in self.agents.values() if a.enabled])} agents")
+        self.logger.info(
+            f"Started {len([a for a in self.agents.values() if a.enabled])} agents"
+        )
 
     async def stop_all(self) -> None:
         """Stop all agents."""
@@ -65,9 +72,7 @@ class AgentManager:
         return False
 
     async def pause_agents(
-        self,
-        agents: Optional[List[str]] = None,
-        reason: str = ""
+        self, agents: Optional[List[str]] = None, reason: str = ""
     ) -> None:
         """Pause specific agents (or all)."""
         target_agents = agents or list(self.agents.keys())
@@ -79,10 +84,7 @@ class AgentManager:
 
         self.logger.info(f"Paused agents: {target_agents} (reason: {reason})")
 
-    async def resume_agents(
-        self,
-        agents: Optional[List[str]] = None
-    ) -> None:
+    async def resume_agents(self, agents: Optional[List[str]] = None) -> None:
         """Resume paused agents."""
         target_agents = agents or list(self._paused_agents)
 
@@ -100,7 +102,7 @@ class AgentManager:
                 "running": agent._running,
                 "enabled": agent.enabled,
                 "paused": name in self._paused_agents,
-                "triggers": agent.triggers
+                "triggers": agent.triggers,
             }
             for name, agent in self.agents.items()
         }
@@ -112,3 +114,11 @@ class AgentManager:
     def list_agents(self) -> List[str]:
         """List all registered agent names."""
         return list(self.agents.keys())
+
+    async def _on_agent_completed(self, event: Event) -> None:
+        """Handle agent completion events and update consolidated results."""
+        try:
+            # Update consolidated results for Claude Code integration
+            context_store.write_consolidated_results()
+        except Exception as e:
+            self.logger.error(f"Failed to write consolidated results: {e}")

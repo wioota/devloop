@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
+from ..core.context_store import context_store
 from ..core.event import Event
 
 
@@ -89,7 +90,7 @@ class GitCommitAssistantAgent(Agent):
             # Generate commit suggestions
             suggestions = self._generate_commit_suggestions(change_analysis)
 
-            return AgentResult(
+            agent_result = AgentResult(
                 agent_name=self.name,
                 success=True,
                 message=f"Generated {len(suggestions)} commit message suggestions",
@@ -100,6 +101,11 @@ class GitCommitAssistantAgent(Agent):
                     "top_suggestion": suggestions[0].to_dict() if suggestions else None
                 }
             )
+
+            # Write to context store for Claude Code integration
+            context_store.write_finding(agent_result)
+
+            return agent_result
 
         except Exception as e:
             return AgentResult(

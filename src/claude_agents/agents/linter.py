@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
+from claude_agents.core.context_store import context_store
 from claude_agents.core.event import Event
 
 
@@ -111,7 +112,7 @@ class LinterAgent(Agent):
             message = f"No issues in {path.name}"
             success = True
 
-        return AgentResult(
+        agent_result = AgentResult(
             agent_name=self.name,
             success=success,
             duration=0,
@@ -123,6 +124,11 @@ class LinterAgent(Agent):
                 "issue_count": result.issue_count
             }
         )
+
+        # Write to context store for Claude Code integration
+        context_store.write_finding(agent_result)
+
+        return agent_result
 
     def _should_lint(self, path: Path) -> bool:
         """Check if file should be linted based on patterns."""

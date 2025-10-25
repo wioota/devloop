@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
+from ..core.context_store import context_store
 from ..core.event import Event
 
 
@@ -18,7 +19,7 @@ class PerformanceConfig:
     """Configuration for performance profiling."""
 
     complexity_threshold: int = 10  # McCabe complexity threshold
-    min_lines_threshold: int = 50   # Minimum lines to analyze
+    min_lines_threshold: int = 50  # Minimum lines to analyze
     enabled_tools: List[str] = None  # ["radon", "flake8-complexity"]
     exclude_patterns: List[str] = None
     max_issues: int = 50
@@ -33,7 +34,9 @@ class PerformanceConfig:
 class PerformanceResult:
     """Performance analysis result."""
 
-    def __init__(self, tool: str, metrics: List[Dict[str, Any]], errors: List[str] = None):
+    def __init__(
+        self, tool: str, metrics: List[Dict[str, Any]], errors: List[str] = None
+    ):
         self.tool = tool
         self.metrics = metrics
         self.errors = errors or []
@@ -46,12 +49,16 @@ class PerformanceResult:
             "metrics": self.metrics,
             "errors": self.errors,
             "complexity_summary": self._get_complexity_summary(),
-            "high_complexity_functions": self._get_high_complexity_functions()
+            "high_complexity_functions": self._get_high_complexity_functions(),
         }
 
     def _get_complexity_summary(self) -> Dict[str, Any]:
         if not self.metrics:
-            return {"average_complexity": 0, "max_complexity": 0, "high_complexity_count": 0}
+            return {
+                "average_complexity": 0,
+                "max_complexity": 0,
+                "high_complexity_count": 0,
+            }
 
         complexities = [m.get("complexity", 0) for m in self.metrics]
         high_complexity = [c for c in complexities if c >= 10]
@@ -60,7 +67,7 @@ class PerformanceResult:
             "average_complexity": round(sum(complexities) / len(complexities), 1),
             "max_complexity": max(complexities),
             "high_complexity_count": len(high_complexity),
-            "total_functions": len(self.metrics)
+            "total_functions": len(self.metrics),
         }
 
     def _get_high_complexity_functions(self) -> List[Dict[str, Any]]:
@@ -72,7 +79,9 @@ class PerformanceProfilerAgent(Agent):
     """Agent for analyzing code performance and complexity."""
 
     def __init__(self, config: Dict[str, Any], event_bus):
-        super().__init__("performance-profiler", ["file:modified", "file:created"], event_bus)
+        super().__init__(
+            "performance-profiler", ["file:modified", "file:created"], event_bus
+        )
         self.config = PerformanceConfig(**config)
 
     async def handle(self, event: Event) -> AgentResult:
@@ -83,7 +92,8 @@ class PerformanceProfilerAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message="No file path in event"
+                duration=0.0,
+                message="No file path in event",
             )
 
         path = Path(file_path)
@@ -91,7 +101,8 @@ class PerformanceProfilerAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message=f"File does not exist: {file_path}"
+                duration=0.0,
+                message=f"File does not exist: {file_path}",
             )
 
         # Only analyze Python files
@@ -99,7 +110,8 @@ class PerformanceProfilerAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=True,
-                message=f"Skipped non-Python file: {file_path}"
+                duration=0.0,
+                message=f"Skipped non-Python file: {file_path}",
             )
 
         # Check if file is large enough to analyze
@@ -107,7 +119,8 @@ class PerformanceProfilerAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=True,
-                message=f"File too small to analyze: {file_path}"
+                duration=0.0,
+                message=f"File too small to analyze: {file_path}",
             )
 
         # Check if file matches exclude patterns
@@ -115,7 +128,8 @@ class PerformanceProfilerAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=True,
-                message=f"Excluded file: {file_path}"
+                duration=0.0,
+                message=f"Excluded file: {file_path}",
             )
 
         # Run performance analysis
@@ -124,7 +138,7 @@ class PerformanceProfilerAgent(Agent):
         summary = results._get_complexity_summary()
         high_complexity = results._get_high_complexity_functions()
 
-        return AgentResult(
+        agent_result = AgentResult(
             agent_name=self.name,
             success=True,
             duration=0.0,  # Would be calculated in real implementation
@@ -136,14 +150,19 @@ class PerformanceProfilerAgent(Agent):
                 "metrics": results.metrics,
                 "complexity_summary": summary,
                 "high_complexity_functions": high_complexity,
-                "errors": results.errors
-            }
+                "errors": results.errors,
+            },
         )
+
+        # Write to context store for Claude Code integration
+        context_store.write_finding(agent_result)
+
+        return agent_result
 
     def _should_analyze_file(self, file_path: Path) -> bool:
         """Check if file is large enough to analyze."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
                 return len(lines) >= self.config.min_lines_threshold
         except Exception:
@@ -179,32 +198,37 @@ class PerformanceProfilerAgent(Agent):
         if results:
             return results[0]  # Return first successful result
 
-        return PerformanceResult("none", [], ["No performance analysis tools available"])
+        return PerformanceResult(
+            "none", [], ["No performance analysis tools available"]
+        )
 
     async def _run_radon(self, file_path: Path) -> Optional[PerformanceResult]:
         """Run Radon complexity analysis."""
         try:
             # Check if radon is available
             result = subprocess.run(
-                [sys.executable, "-c", "import radon"],
-                capture_output=True,
-                text=True
+                [sys.executable, "-c", "import radon"], capture_output=True, text=True
             )
             if result.returncode != 0:
-                return PerformanceResult("radon", [], ["Radon not installed - run: pip install radon"])
+                return PerformanceResult(
+                    "radon", [], ["Radon not installed - run: pip install radon"]
+                )
 
             # Run radon cc (complexity) command
             cmd = [
-                sys.executable, "-m", "radon", "cc",
+                sys.executable,
+                "-m",
+                "radon",
+                "cc",
                 "-j",  # JSON output
-                str(file_path)
+                str(file_path),
             ]
 
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=file_path.parent
+                cwd=file_path.parent,
             )
 
             stdout, stderr = await process.communicate()
@@ -218,20 +242,26 @@ class PerformanceProfilerAgent(Agent):
                     # Parse radon output
                     for file_name, file_data in data.items():
                         for function_data in file_data:
-                            metrics.append({
-                                "name": function_data.get("name", ""),
-                                "type": function_data.get("type", ""),
-                                "complexity": function_data.get("complexity", 0),
-                                "line_number": function_data.get("lineno", 0),
-                                "end_line": function_data.get("endline", 0),
-                                "rank": function_data.get("rank", ""),
-                                "file": file_name
-                            })
+                            metrics.append(
+                                {
+                                    "name": function_data.get("name", ""),
+                                    "type": function_data.get("type", ""),
+                                    "complexity": function_data.get("complexity", 0),
+                                    "line_number": function_data.get("lineno", 0),
+                                    "end_line": function_data.get("endline", 0),
+                                    "rank": function_data.get("rank", ""),
+                                    "file": file_name,
+                                }
+                            )
 
-                    return PerformanceResult("radon", metrics[:self.config.max_issues])
+                    return PerformanceResult("radon", metrics[: self.config.max_issues])
 
                 except json.JSONDecodeError:
-                    return PerformanceResult("radon", [], [f"Failed to parse radon output: {stdout.decode()[:200]}"])
+                    return PerformanceResult(
+                        "radon",
+                        [],
+                        [f"Failed to parse radon output: {stdout.decode()[:200]}"],
+                    )
 
             else:
                 error_msg = stderr.decode().strip()

@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
+from ..core.context_store import context_store
 from ..core.event import Event
 
 
@@ -34,7 +35,9 @@ class SecurityConfig:
 class SecurityResult:
     """Security scan result."""
 
-    def __init__(self, tool: str, issues: List[Dict[str, Any]], errors: List[str] = None):
+    def __init__(
+        self, tool: str, issues: List[Dict[str, Any]], errors: List[str] = None
+    ):
         self.tool = tool
         self.issues = issues
         self.errors = errors or []
@@ -47,7 +50,7 @@ class SecurityResult:
             "issues": self.issues,
             "errors": self.errors,
             "severity_breakdown": self._get_severity_breakdown(),
-            "confidence_breakdown": self._get_confidence_breakdown()
+            "confidence_breakdown": self._get_confidence_breakdown(),
         }
 
     def _get_severity_breakdown(self) -> Dict[str, int]:
@@ -69,7 +72,9 @@ class SecurityScannerAgent(Agent):
     """Agent for scanning code for security vulnerabilities."""
 
     def __init__(self, config: Dict[str, Any], event_bus):
-        super().__init__("security-scanner", ["file:modified", "file:created"], event_bus)
+        super().__init__(
+            "security-scanner", ["file:modified", "file:created"], event_bus
+        )
         self.config = SecurityConfig(**config)
         self.logger = logging.getLogger(f"agent.{self.name}")
 
@@ -81,7 +86,8 @@ class SecurityScannerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=False,
-                    message="No file path in event"
+                    duration=0.0,
+                    message="No file path in event",
                 )
 
             path = Path(file_path)
@@ -89,7 +95,8 @@ class SecurityScannerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=False,
-                    message=f"File does not exist: {file_path}"
+                    duration=0.0,
+                    message=f"File does not exist: {file_path}",
                 )
 
             # Only scan Python files for now
@@ -97,7 +104,8 @@ class SecurityScannerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
-                    message=f"Skipped non-Python file: {file_path}"
+                    duration=0.0,
+                    message=f"Skipped non-Python file: {file_path}",
                 )
 
             # Check if file matches exclude patterns
@@ -105,7 +113,8 @@ class SecurityScannerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
-                    message=f"Excluded file: {file_path}"
+                    duration=0.0,
+                    message=f"Excluded file: {file_path}",
                 )
 
             # Run security scan
@@ -114,7 +123,7 @@ class SecurityScannerAgent(Agent):
             # Filter results based on thresholds
             filtered_issues = self._filter_issues(results.issues)
 
-            return AgentResult(
+            agent_result = AgentResult(
                 agent_name=self.name,
                 success=True,
                 duration=0.0,  # Would be calculated in real implementation
@@ -126,15 +135,25 @@ class SecurityScannerAgent(Agent):
                     "issues": filtered_issues,
                     "severity_breakdown": results._get_severity_breakdown(),
                     "confidence_breakdown": results._get_confidence_breakdown(),
-                    "errors": results.errors
-                }
+                    "errors": results.errors,
+                },
             )
+
+            # Write to context store for Claude Code integration
+            context_store.write_finding(agent_result)
+
+            return agent_result
         except Exception as e:
-            self.logger.error(f"Error handling security scan for {event.payload.get('path', 'unknown')}: {e}", exc_info=True)
+            self.logger.error(
+                f"Error handling security scan for {event.payload.get('path', 'unknown')}: {e}",
+                exc_info=True,
+            )
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message=f"Security scan failed: {str(e)}"
+                duration=0.0,
+                message=f"Security scan failed: {str(e)}",
+                error=str(e),
             )
 
     def _should_exclude_file(self, file_path: str) -> bool:
@@ -170,7 +189,9 @@ class SecurityScannerAgent(Agent):
 
             return SecurityResult("none", [], ["No security scanning tools available"])
         except Exception as e:
-            self.logger.error(f"Error running security scan on {file_path}: {e}", exc_info=True)
+            self.logger.error(
+                f"Error running security scan on {file_path}: {e}", exc_info=True
+            )
             return SecurityResult("error", [], [f"Security scan error: {str(e)}"])
 
     async def _run_bandit(self, file_path: Path) -> Optional[SecurityResult]:
@@ -178,21 +199,29 @@ class SecurityScannerAgent(Agent):
         try:
             # Check if bandit is available
             import subprocess
+
             result = subprocess.run(
-                [sys.executable, "-c", "import bandit"],
-                capture_output=True,
-                text=True
+                [sys.executable, "-c", "import bandit"], capture_output=True, text=True
             )
             if result.returncode != 0:
-                return SecurityResult("bandit", [], ["Bandit not installed - run: pip install bandit"])
+                return SecurityResult(
+                    "bandit", [], ["Bandit not installed - run: pip install bandit"]
+                )
 
             cmd = [
-                sys.executable, "-m", "bandit",
-                "-f", "json",
-                "-r", str(file_path),
-                "--severity-level", self.config.severity_threshold,
-                "--confidence-level", self.config.confidence_threshold,
-                "-x", ",".join(self.config.exclude_patterns)
+                sys.executable,
+                "-m",
+                "bandit",
+                "-f",
+                "json",
+                "-r",
+                str(file_path),
+                "--severity-level",
+                self.config.severity_threshold,
+                "--confidence-level",
+                self.config.confidence_threshold,
+                "-x",
+                ",".join(self.config.exclude_patterns),
             ]
 
             # Run bandit in subprocess
@@ -200,7 +229,7 @@ class SecurityScannerAgent(Agent):
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=file_path.parent
+                cwd=file_path.parent,
             )
 
             stdout, stderr = await process.communicate()
@@ -214,26 +243,38 @@ class SecurityScannerAgent(Agent):
                     # Extract issues from bandit output
                     for result in data.get("results", []):
                         filename = result.get("filename", "")
-                        if str(file_path) in filename or filename.endswith(str(file_path)):
+                        if str(file_path) in filename or filename.endswith(
+                            str(file_path)
+                        ):
                             for issue in result.get("issues", []):
-                                issues.append({
-                                    "code": issue.get("code", ""),
-                                    "filename": issue.get("filename", ""),
-                                    "line_number": issue.get("line_number", 0),
-                                    "line_range": issue.get("line_range", []),
-                                    "test_id": issue.get("test_id", ""),
-                                    "test_name": issue.get("test_name", ""),
-                                    "severity": issue.get("issue_severity", "unknown"),
-                                    "confidence": issue.get("issue_confidence", "unknown"),
-                                    "text": issue.get("issue_text", ""),
-                                    "cwe": issue.get("cwe", {}),
-                                    "more_info": issue.get("more_info", "")
-                                })
+                                issues.append(
+                                    {
+                                        "code": issue.get("code", ""),
+                                        "filename": issue.get("filename", ""),
+                                        "line_number": issue.get("line_number", 0),
+                                        "line_range": issue.get("line_range", []),
+                                        "test_id": issue.get("test_id", ""),
+                                        "test_name": issue.get("test_name", ""),
+                                        "severity": issue.get(
+                                            "issue_severity", "unknown"
+                                        ),
+                                        "confidence": issue.get(
+                                            "issue_confidence", "unknown"
+                                        ),
+                                        "text": issue.get("issue_text", ""),
+                                        "cwe": issue.get("cwe", {}),
+                                        "more_info": issue.get("more_info", ""),
+                                    }
+                                )
 
-                    return SecurityResult("bandit", issues[:self.config.max_issues])
+                    return SecurityResult("bandit", issues[: self.config.max_issues])
 
                 except json.JSONDecodeError:
-                    return SecurityResult("bandit", [], [f"Failed to parse bandit output: {stdout.decode()[:200]}"])
+                    return SecurityResult(
+                        "bandit",
+                        [],
+                        [f"Failed to parse bandit output: {stdout.decode()[:200]}"],
+                    )
 
             else:
                 error_msg = stderr.decode().strip()
@@ -250,13 +291,22 @@ class SecurityScannerAgent(Agent):
         confidence_levels = {"low": 1, "medium": 2, "high": 3}
 
         threshold_severity = severity_levels.get(self.config.severity_threshold, 1)
-        threshold_confidence = confidence_levels.get(self.config.confidence_threshold, 1)
+        threshold_confidence = confidence_levels.get(
+            self.config.confidence_threshold, 1
+        )
 
         for issue in issues:
-            issue_severity = severity_levels.get(issue.get("severity", "unknown").lower(), 0)
-            issue_confidence = confidence_levels.get(issue.get("confidence", "unknown").lower(), 0)
+            issue_severity = severity_levels.get(
+                issue.get("severity", "unknown").lower(), 0
+            )
+            issue_confidence = confidence_levels.get(
+                issue.get("confidence", "unknown").lower(), 0
+            )
 
-            if issue_severity >= threshold_severity and issue_confidence >= threshold_confidence:
+            if (
+                issue_severity >= threshold_severity
+                and issue_confidence >= threshold_confidence
+            ):
                 filtered.append(issue)
 
-        return filtered[:self.config.max_issues]
+        return filtered[: self.config.max_issues]

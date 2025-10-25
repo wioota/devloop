@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
+from ..core.context_store import context_store
 from ..core.event import Event
 
 
@@ -34,7 +35,9 @@ class TypeCheckerConfig:
 class TypeCheckResult:
     """Type check result."""
 
-    def __init__(self, tool: str, issues: List[Dict[str, Any]], errors: List[str] = None):
+    def __init__(
+        self, tool: str, issues: List[Dict[str, Any]], errors: List[str] = None
+    ):
         self.tool = tool
         self.issues = issues
         self.errors = errors or []
@@ -47,7 +50,7 @@ class TypeCheckResult:
             "issues": self.issues,
             "errors": self.errors,
             "severity_breakdown": self._get_severity_breakdown(),
-            "summary": f"Found {len(self.issues)} type issues"
+            "summary": f"Found {len(self.issues)} type issues",
         }
 
     def _get_severity_breakdown(self) -> Dict[str, int]:
@@ -74,7 +77,8 @@ class TypeCheckerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=False,
-                    message="No file path in event"
+                    duration=0.0,
+                    message="No file path in event",
                 )
 
             path = Path(file_path)
@@ -82,7 +86,8 @@ class TypeCheckerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=False,
-                    message=f"File does not exist: {file_path}"
+                    duration=0.0,
+                    message=f"File does not exist: {file_path}",
                 )
 
             # Only check Python files for now
@@ -90,7 +95,8 @@ class TypeCheckerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
-                    message=f"Skipped non-Python file: {file_path}"
+                    duration=0.0,
+                    message=f"Skipped non-Python file: {file_path}",
                 )
 
             # Check if file matches exclude patterns
@@ -98,13 +104,14 @@ class TypeCheckerAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
-                    message=f"Excluded file: {file_path}"
+                    duration=0.0,
+                    message=f"Excluded file: {file_path}",
                 )
 
             # Run type check
             results = await self._run_type_check(path)
 
-            return AgentResult(
+            agent_result = AgentResult(
                 agent_name=self.name,
                 success=True,
                 duration=0.0,  # Would be calculated in real implementation
@@ -115,15 +122,25 @@ class TypeCheckerAgent(Agent):
                     "issues_found": len(results.issues),
                     "issues": results.issues,
                     "severity_breakdown": results._get_severity_breakdown(),
-                    "errors": results.errors
-                }
+                    "errors": results.errors,
+                },
             )
+
+            # Write to context store for Claude Code integration
+            context_store.write_finding(agent_result)
+
+            return agent_result
         except Exception as e:
-            self.logger.error(f"Error handling type check for {event.payload.get('path', 'unknown')}: {e}", exc_info=True)
+            self.logger.error(
+                f"Error handling type check for {event.payload.get('path', 'unknown')}: {e}",
+                exc_info=True,
+            )
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message=f"Type check failed: {str(e)}"
+                duration=0.0,
+                message=f"Type check failed: {str(e)}",
+                error=str(e),
             )
 
     def _should_exclude_file(self, file_path: str) -> bool:
@@ -163,18 +180,20 @@ class TypeCheckerAgent(Agent):
         try:
             # Check if mypy is available
             result = subprocess.run(
-                [sys.executable, "-c", "import mypy"],
-                capture_output=True,
-                text=True
+                [sys.executable, "-c", "import mypy"], capture_output=True, text=True
             )
             if result.returncode != 0:
-                return TypeCheckResult("mypy", [], ["MyPy not installed - run: pip install mypy"])
+                return TypeCheckResult(
+                    "mypy", [], ["MyPy not installed - run: pip install mypy"]
+                )
 
             cmd = [
-                sys.executable, "-m", "mypy",
+                sys.executable,
+                "-m",
+                "mypy",
                 str(file_path),
                 "--show-error-codes",
-                "--no-error-summary"
+                "--no-error-summary",
             ]
 
             if self.config.strict_mode:
@@ -185,7 +204,7 @@ class TypeCheckerAgent(Agent):
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=file_path.parent
+                cwd=file_path.parent,
             )
 
             stdout, stderr = await process.communicate()
@@ -193,11 +212,11 @@ class TypeCheckerAgent(Agent):
             issues = []
 
             # Parse mypy output (line by line)
-            output_lines = stdout.decode().strip().split('\n')
+            output_lines = stdout.decode().strip().split("\n")
             for line in output_lines:
-                if line.strip() and not line.startswith('Success:'):
+                if line.strip() and not line.startswith("Success:"):
                     # Parse mypy error format: file:line: error: message [error-code]
-                    parts = line.split(':', 3)
+                    parts = line.split(":", 3)
                     if len(parts) >= 4:
                         filename = parts[0].strip()
                         try:
@@ -210,23 +229,25 @@ class TypeCheckerAgent(Agent):
 
                         # Extract error code if present
                         error_code = ""
-                        if '[' in message_and_code and ']' in message_and_code:
-                            message, code_part = message_and_code.rsplit('[', 1)
-                            error_code = code_part.rstrip(']')
+                        if "[" in message_and_code and "]" in message_and_code:
+                            message, code_part = message_and_code.rsplit("[", 1)
+                            error_code = code_part.rstrip("]")
                             message = message.strip()
                         else:
                             message = message_and_code
 
-                        issues.append({
-                            "filename": filename,
-                            "line_number": line_number,
-                            "severity": error_type,
-                            "message": message,
-                            "error_code": error_code,
-                            "tool": "mypy"
-                        })
+                        issues.append(
+                            {
+                                "filename": filename,
+                                "line_number": line_number,
+                                "severity": error_type,
+                                "message": message,
+                                "error_code": error_code,
+                                "tool": "mypy",
+                            }
+                        )
 
-            return TypeCheckResult("mypy", issues[:self.config.max_issues])
+            return TypeCheckResult("mypy", issues[: self.config.max_issues])
 
         except Exception as e:
             return TypeCheckResult("mypy", [], [f"MyPy execution error: {str(e)}"])

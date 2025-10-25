@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
+from claude_agents.core.context_store import context_store
 from claude_agents.core.event import Event
 
 
@@ -213,7 +214,7 @@ class TestRunnerAgent(Agent):
             message = "No tests run"
             success = True
 
-        return AgentResult(
+        agent_result = AgentResult(
             agent_name=self.name,
             success=success,
             duration=result.duration,
@@ -229,6 +230,11 @@ class TestRunnerAgent(Agent):
             },
             error=result.error
         )
+
+        # Write to context store for Claude Code integration
+        context_store.write_finding(agent_result)
+
+        return agent_result
 
     def _is_test_file(self, path: Path) -> bool:
         """Check if file is a test file."""

@@ -5,6 +5,7 @@ from typing import Dict, Any
 
 from claude_agents.core.agent import Agent, AgentResult
 from claude_agents.core.auto_fix import auto_fix
+from claude_agents.core.context_store import context_store
 from claude_agents.core.event import Event
 
 
@@ -47,21 +48,25 @@ class AgentHealthMonitorAgent(Agent):
 
                 if applied_fixes:
                     fix_summary = ", ".join(f"{k}: {v}" for k, v in applied_fixes.items())
-                    return AgentResult(
+                    agent_result = AgentResult(
                         agent_name=self.name,
                         success=True,
                         duration=0.0,
                         message=f"Applied fixes for {agent_name} failure: {fix_summary}",
                         data={"applied_fixes": applied_fixes}
                     )
+                    context_store.write_finding(agent_result)
+                    return agent_result
                 else:
-                    return AgentResult(
+                    agent_result = AgentResult(
                         agent_name=self.name,
                         success=True,
                         duration=0.0,
                         message=f"No safe fixes available for {agent_name} failure",
                         data={"applied_fixes": {}}
                     )
+                    context_store.write_finding(agent_result)
+                    return agent_result
 
             # Agent succeeded, nothing to do
             return AgentResult(

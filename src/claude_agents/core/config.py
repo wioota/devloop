@@ -10,6 +10,7 @@ from dataclasses import dataclass
 @dataclass
 class AutonomousFixesConfig:
     """Configuration for autonomous fix application."""
+
     enabled: bool = False
     safety_level: str = "safe_only"
 
@@ -21,6 +22,7 @@ class AutonomousFixesConfig:
 @dataclass
 class GlobalConfig:
     """Global configuration."""
+
     mode: str = "report-only"
     max_concurrent_agents: int = 5
     notification_level: str = "summary"
@@ -52,7 +54,7 @@ class Config:
             return self._get_default_config()
         else:
             try:
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path, "r") as f:
                     return json.load(f)
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Warning: Could not load config from {self.config_path}: {e}")
@@ -66,16 +68,20 @@ class Config:
         autonomous_fixes_config = global_config.get("autonomousFixes", {})
         autonomous_fixes = AutonomousFixesConfig(
             enabled=autonomous_fixes_config.get("enabled", False),
-            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only")
+            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only"),
         )
 
         return GlobalConfig(
             mode=global_config.get("mode", "report-only"),
             max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
             notification_level=global_config.get("notificationLevel", "summary"),
-            context_store_enabled=global_config.get("contextStore", {}).get("enabled", True),
-            context_store_path=global_config.get("contextStore", {}).get("path", ".claude/context"),
-            autonomous_fixes=autonomous_fixes
+            context_store_enabled=global_config.get("contextStore", {}).get(
+                "enabled", True
+            ),
+            context_store_path=global_config.get("contextStore", {}).get(
+                "path", ".claude/context"
+            ),
+            autonomous_fixes=autonomous_fixes,
         )
 
     def _get_default_config(self) -> Dict[str, Any]:
@@ -94,9 +100,9 @@ class Config:
                         "linters": {
                             "python": "ruff",
                             "javascript": "eslint",
-                            "typescript": "eslint"
-                        }
-                    }
+                            "typescript": "eslint",
+                        },
+                    },
                 },
                 "formatter": {
                     "enabled": True,
@@ -108,9 +114,9 @@ class Config:
                         "formatters": {
                             "python": "black",
                             "javascript": "prettier",
-                            "typescript": "prettier"
-                        }
-                    }
+                            "typescript": "prettier",
+                        },
+                    },
                 },
                 "test-runner": {
                     "enabled": True,
@@ -121,116 +127,76 @@ class Config:
                         "testFrameworks": {
                             "python": "pytest",
                             "javascript": "jest",
-                            "typescript": "jest"
-                        }
-                    }
+                            "typescript": "jest",
+                        },
+                    },
                 },
                 "agent-health-monitor": {
                     "enabled": True,
                     "triggers": ["agent:*:completed"],
-                    "config": {
-                        "monitorAllAgents": True,
-                        "autoFixOnFailure": True
-                    }
+                    "config": {"monitorAllAgents": True, "autoFixOnFailure": True},
                 },
                 "type-checker": {
                     "enabled": True,
                     "triggers": ["file:modified", "file:created"],
                     "config": {
-                    "enabledTools": ["mypy"],
-                    "strictMode": False,
-                    "showErrorCodes": True,
-                    "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
-                    "maxIssues": 50
-                    }
+                        "enabled_tools": ["mypy"],
+                        "strict_mode": False,
+                        "show_error_codes": True,
+                        "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
+                        "max_issues": 50,
+                    },
                 },
                 "security-scanner": {
                     "enabled": True,
                     "triggers": ["file:modified", "file:created"],
                     "config": {
-                        "enabledTools": ["bandit"],
-                        "severityThreshold": "medium",
-                        "confidenceThreshold": "medium",
-                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
-                        "maxIssues": 50
-                    }
+                        "enabled_tools": ["bandit"],
+                        "severity_threshold": "medium",
+                        "confidence_threshold": "medium",
+                        "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
+                        "max_issues": 50,
+                    },
                 },
                 "git-commit-assistant": {
                     "enabled": True,
                     "triggers": ["git:pre-commit", "git:commit"],
                     "config": {
-                    "conventionalCommits": True,
-                    "maxMessageLength": 72,
-                    "includeBreakingChanges": True,
-                    "analyzeFileChanges": True,
-                    "autoGenerateScope": True,
-                    "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
-                    }
+                        "conventional_commits": True,
+                        "max_message_length": 72,
+                        "include_breaking_changes": True,
+                        "analyze_file_changes": True,
+                        "auto_generate_scope": True,
+                        "common_types": [
+                            "feat",
+                            "fix",
+                            "docs",
+                            "style",
+                            "refactor",
+                            "test",
+                            "chore",
+                            "perf",
+                            "ci",
+                            "build",
+                        ],
+                    },
                 },
                 "performance-profiler": {
                     "enabled": True,
                     "triggers": ["file:modified", "file:created"],
                     "config": {
-                        "complexityThreshold": 10,
-                        "minLinesThreshold": 50,
-                        "enabledTools": ["radon"],
-                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*", "__init__.py"],
-                        "maxIssues": 50
-                    }
+                        "complexity_threshold": 10,
+                        "min_lines_threshold": 50,
+                        "enabled_tools": ["radon"],
+                        "exclude_patterns": [
+                            "test_*",
+                            "*_test.py",
+                            "*/tests/*",
+                            "__init__.py",
+                        ],
+                        "max_issues": 50,
+                    },
                 },
-                "agent-health-monitor": {
-                    "enabled": True,
-                    "triggers": ["agent:*:completed"],
-                    "config": {
-                        "monitorAllAgents": True,
-                        "autoFixOnFailure": True
-                    }
-                },
-                "type-checker": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "enabledTools": ["mypy"],
-                        "strictMode": False,
-                        "showErrorCodes": True,
-                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
-                        "maxIssues": 50
-                    }
-                },
-                "security-scanner": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "enabledTools": ["bandit"],
-                        "severityThreshold": "medium",
-                        "confidenceThreshold": "medium",
-                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
-                        "maxIssues": 50
-                    }
-                },
-                "git-commit-assistant": {
-                    "enabled": True,
-                    "triggers": ["git:pre-commit", "git:commit"],
-                    "config": {
-                    "conventionalCommits": True,
-                    "maxMessageLength": 72,
-                    "includeBreakingChanges": True,
-                    "analyzeFileChanges": True,
-                    "autoGenerateScope": True,
-                    "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
-                    }
-                },
-                "performance-profiler": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "complexityThreshold": 10,
-                        "minLinesThreshold": 50,
-                        "enabledTools": ["radon"],
-                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*", "__init__.py"],
-                        "maxIssues": 50
-                    }
-                }
             },
             "global": {
                 "mode": "report-only",
@@ -238,20 +204,10 @@ class Config:
                 "notificationLevel": "summary",
                 "resourceLimits": {},
                 "logging": {},
-                "contextStore": {
-                    "enabled": True,
-                    "path": ".claude/context"
-                },
-                "autonomousFixes": {
-                    "enabled": True,
-                    "safetyLevel": "safe_only"
-                }
+                "contextStore": {"enabled": True, "path": ".claude/context"},
+                "autonomousFixes": {"enabled": True, "safetyLevel": "safe_only"},
             },
-            "eventSystem": {
-                "collectors": {},
-                "dispatcher": {},
-                "store": {}
-            }
+            "eventSystem": {"collectors": {}, "dispatcher": {}, "store": {}},
         }
 
 
@@ -278,16 +234,20 @@ class ConfigWrapper:
         autonomous_fixes_config = global_config.get("autonomousFixes", {})
         autonomous_fixes = AutonomousFixesConfig(
             enabled=autonomous_fixes_config.get("enabled", False),
-            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only")
+            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only"),
         )
 
         return GlobalConfig(
             mode=global_config.get("mode", "report-only"),
             max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
             notification_level=global_config.get("notificationLevel", "summary"),
-            context_store_enabled=global_config.get("contextStore", {}).get("enabled", True),
-            context_store_path=global_config.get("contextStore", {}).get("path", ".claude/context"),
-            autonomous_fixes=autonomous_fixes
+            context_store_enabled=global_config.get("contextStore", {}).get(
+                "enabled", True
+            ),
+            context_store_path=global_config.get("contextStore", {}).get(
+                "path", ".claude/context"
+            ),
+            autonomous_fixes=autonomous_fixes,
         )
 
     def agents(self):
