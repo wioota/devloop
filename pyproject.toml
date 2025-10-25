@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "claude-agents"
+version = "0.1.0"
+description = "Background agents for development workflow automation"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "claude_agents", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.5"
+watchdog = "^3.0"
+typer = "^0.9"
+rich = "^13.7"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+pytest-asyncio = "^0.21"
+black = "^23.12"
+ruff = "^0.1"
+
+[tool.poetry.scripts]
+claude-agents = "claude_agents.cli.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
