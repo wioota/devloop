@@ -136,6 +136,17 @@ class Config:
                         "monitorAllAgents": True,
                         "autoFixOnFailure": True
                     }
+                },
+                "type-checker": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "enabledTools": ["mypy"],
+                        "strictMode": false,
+                        "showErrorCodes": true,
+                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
+                        "maxIssues": 50
+                    }
                 }
             },
             "global": {

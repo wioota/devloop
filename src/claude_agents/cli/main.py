@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, LinterAgent, TestRunnerAgent
+from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, LinterAgent, TestRunnerAgent, TypeCheckerAgent
 from claude_agents.collectors import FileSystemCollector
 from claude_agents.core import AgentManager, Config, ConfigWrapper, EventBus
 
@@ -129,6 +129,14 @@ async def watch_async(path: Path, config_path: Path | None):
             config=monitor_config.get("config", {})
         )
         agent_manager.register(health_monitor)
+
+    if config.is_agent_enabled("type-checker"):
+        type_config = config.get_agent_config("type-checker") or {}
+        type_checker = TypeCheckerAgent(
+            config=type_config.get("config", {}),
+            event_bus=event_bus
+        )
+        agent_manager.register(type_checker)
 
     # Start everything
     await fs_collector.start()
