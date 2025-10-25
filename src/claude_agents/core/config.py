@@ -147,6 +147,17 @@ class Config:
                         "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
                         "maxIssues": 50
                     }
+                },
+                "security-scanner": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "enabledTools": ["bandit"],
+                        "severityThreshold": "medium",
+                        "confidenceThreshold": "medium",
+                        "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
+                        "maxIssues": 50
+                    }
                 }
             },
             "global": {
