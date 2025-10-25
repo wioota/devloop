@@ -23,6 +23,49 @@ class AgentResult:
     data: Dict[str, Any] | None = None
     error: str | None = None
 
+    def __post_init__(self):
+        """Validate AgentResult parameters."""
+        # Validate agent_name
+        if not isinstance(self.agent_name, str):
+            raise TypeError(
+                f"agent_name must be a string, got {type(self.agent_name).__name__}"
+            )
+        if not self.agent_name:
+            raise ValueError("agent_name cannot be empty")
+
+        # Validate success
+        if not isinstance(self.success, bool):
+            raise TypeError(
+                f"success must be a boolean, got {type(self.success).__name__}"
+            )
+
+        # Validate duration
+        if not isinstance(self.duration, (int, float)):
+            raise TypeError(
+                f"duration must be a number, got {type(self.duration).__name__}. "
+                "Did you forget to include duration parameter in AgentResult creation?"
+            )
+        if self.duration < 0:
+            raise ValueError(f"duration must be non-negative, got {self.duration}")
+
+        # Validate message
+        if not isinstance(self.message, str):
+            raise TypeError(
+                f"message must be a string, got {type(self.message).__name__}"
+            )
+
+        # Validate data
+        if self.data is not None and not isinstance(self.data, dict):
+            raise TypeError(
+                f"data must be a dict or None, got {type(self.data).__name__}"
+            )
+
+        # Validate error
+        if self.error is not None and not isinstance(self.error, str):
+            raise TypeError(
+                f"error must be a string or None, got {type(self.error).__name__}"
+            )
+
 
 class Agent(ABC):
     """Base agent class."""
