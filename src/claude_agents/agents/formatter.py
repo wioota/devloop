@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
+from claude_agents.core.context_store import context_store
 from claude_agents.core.event import Event
 
 
@@ -43,6 +44,12 @@ class FormatterAgent(Agent):
         super().__init__(name, triggers, event_bus)
         self.config = FormatterConfig(config or {})
 
+        # Loop prevention mechanisms
+        self._recent_formats = {}  # file_path -> list of timestamps
+        self._format_timeout = 30  # seconds
+        self._loop_detection_window = 10  # seconds
+        self._max_consecutive_formats = 3  # per file per window
+
     async def handle(self, event: Event) -> AgentResult:
         """Handle file change event by formatting the file."""
         # Skip if both format_on_save and report_only are disabled
@@ -66,24 +73,63 @@ class FormatterAgent(Agent):
 
         path = Path(file_path)
 
+        # Loop prevention: Check for formatting loops
+        if self._detect_formatting_loop(path):
+            result = AgentResult(
+                agent_name=self.name,
+                success=False,
+                duration=0,
+                message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
+                error="FORMATTING_LOOP_DETECTED"
+            )
+            context_store.write_finding(result)
+            return result
+
         # Check if file should be formatted
         if not self._should_format(path):
-            return AgentResult(
+            result = AgentResult(
                 agent_name=self.name,
                 success=True,
                 duration=0,
                 message=f"Skipped {path.name} (not in patterns)",
             )
+            context_store.write_finding(result)
+            return result
 
         # Get appropriate formatter
         formatter = self._get_formatter_for_file(path)
         if not formatter:
-            return AgentResult(
+            result = AgentResult(
                 agent_name=self.name,
                 success=True,
                 duration=0,
                 message=f"No formatter configured for {path.suffix}",
             )
+            context_store.write_finding(result)
+            return result
+
+        # Idempotency check: Only format if file actually needs formatting
+        if self.config.format_on_save and not self.config.report_only:
+            needs_formatting, check_error = await self._check_formatter(formatter, path)
+            if check_error:
+                result = AgentResult(
+                    agent_name=self.name,
+                    success=False,
+                    duration=0,
+                    message=f"Failed to check if {path.name} needs formatting: {check_error}",
+                    error=check_error
+                )
+                context_store.write_finding(result)
+                return result
+            if not needs_formatting:
+                result = AgentResult(
+                    agent_name=self.name,
+                    success=True,
+                    duration=0,
+                    message=f"{path.name} is already formatted",
+                )
+                context_store.write_finding(result)
+                return result
 
         # Run formatter
         if self.config.report_only:
@@ -101,7 +147,7 @@ class FormatterAgent(Agent):
                 message = f"No formatting needed for {path.name}"
                 success = True
 
-            return AgentResult(
+            result = AgentResult(
                 agent_name=self.name,
                 success=success,
                 duration=0,
@@ -114,16 +160,20 @@ class FormatterAgent(Agent):
                 },
                 error=error,
             )
+            context_store.write_finding(result)
+            return result
         else:
             # Format mode: actually modify the file
             success, error = await self._run_formatter(formatter, path)
 
             if success:
+                # Record successful formatting operation for loop prevention
+                self._record_formatting_operation(path)
                 message = f"Formatted {path.name} with {formatter}"
             else:
                 message = f"Failed to format {path.name}: {error}"
 
-            return AgentResult(
+            result = AgentResult(
                 agent_name=self.name,
                 success=success,
                 duration=0,
@@ -131,6 +181,8 @@ class FormatterAgent(Agent):
                 data={"file": str(path), "formatter": formatter, "formatted": success},
                 error=error if not success else None,
             )
+            context_store.write_finding(result)
+            return result
 
     def _should_format(self, path: Path) -> bool:
         """Check if file should be formatted based on patterns."""
@@ -167,18 +219,70 @@ class FormatterAgent(Agent):
 
         return None
 
+    def _detect_formatting_loop(self, path: Path) -> bool:
+        """Detect if we're in a formatting loop for this file."""
+        import time
+
+        file_key = str(path.resolve())
+        now = time.time()
+
+        # Clean up old entries (older than detection window)
+        for k in list(self._recent_formats.keys()):
+            self._recent_formats[k] = [
+                ts for ts in self._recent_formats[k]
+                if now - ts < self._loop_detection_window
+            ]
+            if not self._recent_formats[k]:
+                del self._recent_formats[k]
+
+        # Count recent formats for this file
+        timestamps = self._recent_formats.get(file_key, [])
+        recent_count = len(timestamps)
+
+        if recent_count >= self._max_consecutive_formats + 1:
+            self.logger.warning(
+                f"Formatting loop detected for {path.name}: "
+                f"{recent_count} formats in {self._loop_detection_window}s"
+            )
+            return True
+
+        return False
+
+    def _record_formatting_operation(self, path: Path) -> None:
+        """Record that we just formatted this file."""
+        import time
+        file_key = str(path.resolve())
+        if file_key not in self._recent_formats:
+            self._recent_formats[file_key] = []
+        self._recent_formats[file_key].append(time.time())
+
     async def _run_formatter(
         self, formatter: str, path: Path
     ) -> tuple[bool, Optional[str]]:
-        """Run formatter on a file."""
+        """Run formatter on a file with timeout protection."""
         try:
+            # Add timeout protection to prevent hanging formatters
+            import asyncio
+
             if formatter == "black":
-                return await self._run_black(path)
+                result = await asyncio.wait_for(
+                    self._run_black(path),
+                    timeout=self._format_timeout
+                )
+                return result
             elif formatter == "prettier":
-                return await self._run_prettier(path)
+                result = await asyncio.wait_for(
+                    self._run_prettier(path),
+                    timeout=self._format_timeout
+                )
+                return result
             else:
                 return False, f"Unknown formatter: {formatter}"
 
+        except asyncio.TimeoutError:
+            error_msg = f"Formatter {formatter} timed out after {self._format_timeout}s on {path.name}"
+            self.logger.error(error_msg)
+            return False, error_msg
         except Exception as e:
             self.logger.error(f"Error running {formatter}: {e}")
             return False, str(e)

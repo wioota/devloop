@@ -1,4 +1,5 @@
 """Base agent class - simplified for prototype."""
+
 from __future__ import annotations
 
 import asyncio
@@ -14,6 +15,7 @@ from .event import Event, EventBus
 @dataclass
 class AgentResult:
     """Agent execution result."""
+
     agent_name: str
     success: bool
     duration: float
@@ -25,12 +27,7 @@ class AgentResult:
 class Agent(ABC):
     """Base agent class."""
 
-    def __init__(
-        self,
-        name: str,
-        triggers: List[str],
-        event_bus: EventBus
-    ):
+    def __init__(self, name: str, triggers: List[str], event_bus: EventBus):
         self.name = name
         self.triggers = triggers
         self.event_bus = event_bus
@@ -77,10 +74,7 @@ class Agent(ABC):
         while self._running:
             try:
                 # Wait for event with timeout to allow checking _running
-                event = await asyncio.wait_for(
-                    self._event_queue.get(),
-                    timeout=1.0
-                )
+                event = await asyncio.wait_for(self._event_queue.get(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
 
@@ -104,24 +98,28 @@ class Agent(ABC):
 
             except Exception as e:
                 self.logger.error(f"Error in {self.name}: {e}", exc_info=True)
-                await self._publish_result(AgentResult(
-                    agent_name=self.name,
-                    success=False,
-                    duration=time.time() - start_time,
-                    error=str(e)
-                ))
+                await self._publish_result(
+                    AgentResult(
+                        agent_name=self.name,
+                        success=False,
+                        duration=time.time() - start_time,
+                        error=str(e),
+                    )
+                )
 
     async def _publish_result(self, result: AgentResult) -> None:
         """Publish agent result as an event."""
-        await self.event_bus.emit(Event(
-            type=f"agent:{self.name}:completed",
-            payload={
-                "agent_name": result.agent_name,
-                "success": result.success,
-                "duration": result.duration,
-                "message": result.message,
-                "data": result.data,
-                "error": result.error
-            },
-            source=self.name
-        ))
+        await self.event_bus.emit(
+            Event(
+                type=f"agent:{self.name}:completed",
+                payload={
+                    "agent_name": result.agent_name,
+                    "success": result.success,
+                    "duration": result.duration,
+                    "message": result.message,
+                    "data": result.data,
+                    "error": result.error,
+                },
+                source=self.name,
+            )
+        )

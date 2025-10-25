@@ -242,6 +242,68 @@ def config_cmd(
 
 
 @app.command()
+def amp_setup(
+    path: Path = typer.Argument(
+        Path.cwd(),
+        help="Project directory to setup Amp integration"
+    )
+):
+    """Setup Amp integration files in a project."""
+    import shutil
+
+    claude_dir = path / ".claude"
+    if not claude_dir.exists():
+        console.print(f"[red]❌ .claude directory not found. Run 'claude-agents init' first.[/red]")
+        return
+
+    # Get the claude-agents installation directory
+    import claude_agents
+    # Try multiple possible locations for the integration files
+    possible_paths = [
+        Path(claude_agents.__file__).parent.parent / ".claude",  # Installed package
+        Path(claude_agents.__file__).parent.parent.parent / ".claude",  # Development
+    ]
+
+    install_dir = None
+    for path in possible_paths:
+        if path.exists():
+            install_dir = path
+            break
+
+    if not install_dir or not install_dir.exists():
+        console.print(f"[red]❌ Claude agents integration files not found.[/red]")
+        return
+
+    # Copy integration files
+    integration_files = ["AGENTS.md", "CLAUDE.md"]
+    copied = []
+
+    for filename in integration_files:
+        src = install_dir / filename
+        dst = claude_dir / filename
+
+        if src.exists():
+            if src == dst:
+                # File already exists in the right place
+                copied.append(filename)
+                console.print(f"[blue]ℹ️[/blue]  Already present: {filename}")
+            else:
+                shutil.copy2(src, dst)
+                copied.append(filename)
+                console.print(f"[green]✓[/green] Copied: {filename}")
+        else:
+            console.print(f"[yellow]⚠️[/yellow]  Not found: {filename}")
+
+    if copied:
+        console.print(f"\n[green]✓[/green] Amp integration setup complete!")
+        console.print(f"\nCoding agents will now automatically follow the coding rules from:")
+        for filename in copied:
+            console.print(f"  • [cyan]{claude_dir / filename}[/cyan]")
+    else:
+        console.print(f"[red]❌ No integration files copied.[/red]")
+
+
+@app.command()
 def version():
     """Show version information."""
     from claude_agents import __version__

@@ -37,14 +37,34 @@ claude-agents init /path/to/your/project
 
 This creates a `.claude/` directory.
 
-### 2. Watch for file changes
+### 2. Configure autonomous fixes (optional)
+
+Edit `.claude/agents.json` to control autonomous fix behavior:
+
+```json
+{
+  "global": {
+    "autonomousFixes": {
+      "enabled": true,
+      "safetyLevel": "safe_only"
+    }
+  }
+}
+```
+
+Safety levels:
+- `"safe_only"`: Only very safe fixes (whitespace, indentation)
+- `"medium_risk"`: Include import fixes and formatting
+- `"all"`: Apply all fixes (use with caution)
+
+### 3. Watch for file changes
 
 ```bash
 cd /path/to/your/project
 claude-agents watch .
 ```
 
-### 3. Make some file changes
+### 4. Make some file changes
 
 In another terminal, edit files in your project:
 
@@ -53,13 +73,13 @@ echo "hello" > test.txt
 echo "world" >> test.txt
 ```
 
-### 4. Observe the agents
+### 5. Observe the agents
 
 You should see:
 - Console output from the EchoAgent logging each event
 - A `.claude/file-changes.log` file with JSON logs
 
-### 5. Stop watching
+### 6. Stop watching
 
 Press `Ctrl+C` to stop the watch process.
 

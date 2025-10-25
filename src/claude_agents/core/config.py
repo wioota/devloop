@@ -1,88 +1,99 @@
-"""Configuration management."""
-from __future__ import annotations
+"""Configuration management for claude-agents."""
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
-
-
-class AgentConfig(BaseModel):
-    """Configuration for a single agent."""
-    enabled: bool = True
-    triggers: List[str] = Field(default_factory=list)
-    config: Dict[str, Any] = Field(default_factory=dict)
+from dataclasses import dataclass
 
 
-class GlobalConfig(BaseModel):
+@dataclass
+class AutonomousFixesConfig:
+    """Configuration for autonomous fix application."""
+    enabled: bool = False
+    safety_level: str = "safe_only"
+
+    def __post_init__(self):
+        if self.safety_level not in ["safe_only", "medium_risk", "all"]:
+            raise ValueError(f"Invalid safety_level: {self.safety_level}")
+
+
+@dataclass
+class GlobalConfig:
     """Global configuration."""
-    max_concurrent_agents: int = Field(default=5, alias="maxConcurrentAgents")
-    notification_level: str = Field(default="summary", alias="notificationLevel")
-    resource_limits: Dict[str, Any] = Field(default_factory=dict, alias="resourceLimits")
-    logging: Dict[str, Any] = Field(default_factory=dict)
+    mode: str = "report-only"
+    max_concurrent_agents: int = 5
+    notification_level: str = "summary"
+    context_store_enabled: bool = True
+    context_store_path: str = ".claude/context"
+    autonomous_fixes: AutonomousFixesConfig = None
+
+    def __post_init__(self):
+        if self.mode not in ["report-only", "active"]:
+            raise ValueError(f"Invalid mode: {self.mode}")
+        if self.notification_level not in ["none", "summary", "detailed"]:
+            raise ValueError(f"Invalid notification_level: {self.notification_level}")
+        if self.autonomous_fixes is None:
+            self.autonomous_fixes = AutonomousFixesConfig()
 
 
-class EventSystemConfig(BaseModel):
-    """Event system configuration."""
-    collectors: Dict[str, Any] = Field(default_factory=dict)
-    dispatcher: Dict[str, Any] = Field(default_factory=dict)
-    store: Dict[str, Any] = Field(default_factory=dict)
+class Config:
+    """Main configuration manager."""
 
+    def __init__(self, config_path: str = ".claude/agents.json"):
+        self.config_path = Path(config_path)
+        self._config = None
 
-class Config(BaseModel):
-    """Main configuration."""
-    version: str = "1.0.0"
-    enabled: bool = True
-    agents: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    global_config: GlobalConfig = Field(default_factory=GlobalConfig, alias="global")
-    event_system: EventSystemConfig = Field(
-        default_factory=EventSystemConfig,
-        alias="eventSystem"
-    )
-
-    @classmethod
-    def load(cls, path: Path) -> Config:
+    def load(self) -> Dict[str, Any]:
         """Load configuration from file."""
-        if not path.exists():
-            return cls()
+        if self._config is not None:
+            return self._config
 
-        with open(path) as f:
-            data = json.load(f)
-
-        return cls(**data)
-
-    @classmethod
-    def load_or_default(cls, path: Path | None = None) -> Config:
-        """Load configuration from path or use defaults."""
-        if path is None:
-            # Try default locations
-            default_paths = [
-                Path.cwd() / ".claude" / "agents.json",
-                Path.home() / ".claude" / "agents.json",
-            ]
-
-            for default_path in default_paths:
-                if default_path.exists():
-                    return cls.load(default_path)
-
+        if not self.config_path.exists():
             # Return default config
-            return cls.default_config()
+            self._config = self._get_default_config()
+        else:
+            try:
+                with open(self.config_path, 'r') as f:
+                    self._config = json.load(f)
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Warning: Could not load config from {self.config_path}: {e}")
+                self._config = self._get_default_config()
 
-        return cls.load(path)
+        return self._config
 
-    @classmethod
-    def default_config(cls) -> Config:
+    def get_global_config(self) -> GlobalConfig:
+        """Get global configuration."""
+        config = self.load()
+        global_config = config.get("global", {})
+
+        autonomous_fixes_config = global_config.get("autonomousFixes", {})
+        autonomous_fixes = AutonomousFixesConfig(
+            enabled=autonomous_fixes_config.get("enabled", False),
+            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only")
+        )
+
+        return GlobalConfig(
+            mode=global_config.get("mode", "report-only"),
+            max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
+            notification_level=global_config.get("notificationLevel", "summary"),
+            context_store_enabled=global_config.get("contextStore", {}).get("enabled", True),
+            context_store_path=global_config.get("contextStore", {}).get("path", ".claude/context"),
+            autonomous_fixes=autonomous_fixes
+        )
+
+    def _get_default_config(self) -> Dict[str, Any]:
         """Get default configuration."""
-        return Config(
-            version="1.0.0",
-            enabled=True,
-            agents={
+        return {
+            "version": "1.0.0",
+            "enabled": True,
+            "agents": {
                 "linter": {
                     "enabled": True,
                     "triggers": ["file:modified", "file:created"],
                     "config": {
                         "autoFix": False,
+                        "reportOnly": True,
                         "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
                         "linters": {
                             "python": "ruff",
@@ -95,7 +106,8 @@ class Config(BaseModel):
                     "enabled": True,
                     "triggers": ["file:modified"],
                     "config": {
-                        "formatOnSave": True,
+                        "formatOnSave": False,
+                        "reportOnly": True,
                         "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
                         "formatters": {
                             "python": "black",
@@ -117,25 +129,29 @@ class Config(BaseModel):
                         }
                     }
                 }
+            },
+            "global": {
+                "mode": "report-only",
+                "maxConcurrentAgents": 5,
+                "notificationLevel": "summary",
+                "resourceLimits": {},
+                "logging": {},
+                "contextStore": {
+                    "enabled": True,
+                    "path": ".claude/context"
+                },
+                "autonomousFixes": {
+                    "enabled": True,
+                    "safetyLevel": "safe_only"
+                }
+            },
+            "eventSystem": {
+                "collectors": {},
+                "dispatcher": {},
+                "store": {}
             }
-        )
+        }
 
-    def save(self, path: Path) -> None:
-        """Save configuration to file."""
-        path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path, "w") as f:
-            json.dump(
-                self.model_dump(by_alias=True, exclude_none=True),
-                f,
-                indent=2
-            )
-
-    def get_agent_config(self, agent_name: str) -> Optional[Dict[str, Any]]:
-        """Get configuration for a specific agent."""
-        return self.agents.get(agent_name)
-
-    def is_agent_enabled(self, agent_name: str) -> bool:
-        """Check if agent is enabled."""
-        agent_config = self.agents.get(agent_name, {})
-        return agent_config.get("enabled", False)
+# Global config instance
+config = Config()

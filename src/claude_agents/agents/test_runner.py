@@ -16,16 +16,86 @@ class TestRunnerConfig:
         self.enabled = config.get("enabled", True)
         self.run_on_save = config.get("runOnSave", True)
         self.related_tests_only = config.get("relatedTestsOnly", True)
+        self.auto_detect_frameworks = config.get("autoDetectFrameworks", True)
+
+        # Default frameworks (will be overridden by auto-detection if enabled)
         self.test_frameworks = config.get("testFrameworks", {
-            "python": "pytest",
-            "javascript": "jest",
+        "python": "pytest",
+        "javascript": "jest",
             "typescript": "jest"
         })
         self.test_patterns = config.get("testPatterns", {
-            "python": ["**/test_*.py", "**/*_test.py"],
-            "javascript": ["**/*.test.js", "**/*.spec.js"],
-            "typescript": ["**/*.test.ts", "**/*.spec.ts"]
-        })
+        "python": ["**/test_*.py", "**/*_test.py"],
+"javascript": ["**/*.test.js", "**/*.spec.js"],
+"typescript": ["**/*.test.ts", "**/*.spec.ts"]
+})
+
+        # Auto-detect available frameworks if enabled
+        if self.auto_detect_frameworks:
+            detected = self._auto_detect_frameworks()
+            self.test_frameworks.update(detected)
+
+    def _auto_detect_frameworks(self) -> Dict[str, str]:
+        """Auto-detect available test frameworks in the project."""
+        detected = {}
+        project_root = Path.cwd()
+
+        # Python frameworks
+        if (project_root / "pytest.ini").exists() or (project_root / "pyproject.toml").exists():
+            if self._check_command("python -m pytest --version"):
+                detected["python"] = "pytest"
+
+        if (project_root / "requirements.txt").exists():
+            with open(project_root / "requirements.txt") as f:
+                if "unittest" in f.read().lower() or "unittest" in str(project_root):
+                    detected["python"] = "unittest"
+
+        # JavaScript/TypeScript frameworks
+        if (project_root / "package.json").exists():
+            try:
+                with open(project_root / "package.json") as f:
+                    package_data = json.load(f)
+
+                scripts = package_data.get("scripts", {})
+                dependencies = package_data.get("devDependencies", {})
+
+                if "jest" in dependencies or any("jest" in str(v) for v in scripts.values()):
+                    detected["javascript"] = "jest"
+                    detected["typescript"] = "jest"
+
+                if "mocha" in dependencies:
+                    detected["javascript"] = "mocha"
+
+                if "vitest" in dependencies:
+                    detected["javascript"] = "vitest"
+                    detected["typescript"] = "vitest"
+
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+
+        # Fallback to basic detection
+        if not detected.get("python"):
+            if self._check_command("python -m pytest --version"):
+                detected["python"] = "pytest"
+            elif self._check_command("python -m unittest --help > /dev/null 2>&1"):
+                detected["python"] = "unittest"
+
+        return detected
+
+    def _check_command(self, command: str) -> bool:
+        """Check if a command is available."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
 
 
 class TestResult:
