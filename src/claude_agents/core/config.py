@@ -128,6 +128,14 @@ class Config:
                             "typescript": "jest"
                         }
                     }
+                },
+                "agent-health-monitor": {
+                    "enabled": True,
+                    "triggers": ["agent:*:completed"],
+                    "config": {
+                        "monitorAllAgents": True,
+                        "autoFixOnFailure": True
+                    }
                 }
             },
             "global": {
@@ -151,6 +159,46 @@ class Config:
                 "store": {}
             }
         }
+
+
+class ConfigWrapper:
+    """Wrapper around config dictionary to provide object-like access."""
+
+    def __init__(self, config_dict: Dict[str, Any]):
+        self._config = config_dict
+
+    def is_agent_enabled(self, agent_name: str) -> bool:
+        """Check if an agent is enabled."""
+        agents = self._config.get("agents", {})
+        agent_config = agents.get(agent_name, {})
+        return agent_config.get("enabled", False)
+
+    def get_agent_config(self, agent_name: str) -> Optional[Dict[str, Any]]:
+        """Get configuration for a specific agent."""
+        agents = self._config.get("agents", {})
+        return agents.get(agent_name)
+
+    def get_global_config(self) -> GlobalConfig:
+        """Get global configuration."""
+        global_config = self._config.get("global", {})
+        autonomous_fixes_config = global_config.get("autonomousFixes", {})
+        autonomous_fixes = AutonomousFixesConfig(
+            enabled=autonomous_fixes_config.get("enabled", False),
+            safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only")
+        )
+
+        return GlobalConfig(
+            mode=global_config.get("mode", "report-only"),
+            max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
+            notification_level=global_config.get("notificationLevel", "summary"),
+            context_store_enabled=global_config.get("contextStore", {}).get("enabled", True),
+            context_store_path=global_config.get("contextStore", {}).get("path", ".claude/context"),
+            autonomous_fixes=autonomous_fixes
+        )
+
+    def agents(self):
+        """Get agents dictionary."""
+        return self._config.get("agents", {})
 
 
 # Global config instance

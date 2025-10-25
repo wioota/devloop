@@ -9,9 +9,9 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from claude_agents.agents import FormatterAgent, LinterAgent, TestRunnerAgent
+from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, LinterAgent, TestRunnerAgent
 from claude_agents.collectors import FileSystemCollector
-from claude_agents.core import AgentManager, Config, EventBus
+from claude_agents.core import AgentManager, Config, ConfigWrapper, EventBus
 
 app = typer.Typer(
     help="Claude Agents - Development workflow automation",
@@ -71,9 +71,11 @@ async def watch_async(path: Path, config_path: Path | None):
     """Async watch implementation."""
     # Load configuration
     if config_path:
-        config = Config.load(config_path)
+        config_manager = Config(str(config_path))
     else:
-        config = Config.load_or_default()
+        config_manager = Config()
+    config_dict = config_manager.load()
+    config = ConfigWrapper(config_dict)
 
     # Create event bus
     event_bus = EventBus()
@@ -117,6 +119,16 @@ async def watch_async(path: Path, config_path: Path | None):
             config=test_config.get("config", {})
         )
         agent_manager.register(test_runner)
+
+    if config.is_agent_enabled("agent-health-monitor"):
+        monitor_config = config.get_agent_config("agent-health-monitor") or {}
+        health_monitor = AgentHealthMonitorAgent(
+            name="agent-health-monitor",
+            triggers=monitor_config.get("triggers", ["agent:*:completed"]),
+            event_bus=event_bus,
+            config=monitor_config.get("config", {})
+        )
+        agent_manager.register(health_monitor)
 
     # Start everything
     await fs_collector.start()
@@ -192,9 +204,11 @@ def status(
     """Show configuration and agent status."""
     # Load configuration
     if config_path:
-        config = Config.load(config_path)
+        config_manager = Config(str(config_path))
     else:
-        config = Config.load_or_default()
+        config_manager = Config()
+    config_dict = config_manager.load()
+    config = ConfigWrapper(config_dict)
 
     table = Table(title="Agent Configuration")
 
@@ -202,7 +216,7 @@ def status(
     table.add_column("Enabled", style="green")
     table.add_column("Triggers", style="yellow")
 
-    for agent_name, agent_config in config.agents.items():
+    for agent_name, agent_config in config.get("agents", {}).items():
         enabled = "✓" if agent_config.get("enabled") else "✗"
         triggers = ", ".join(agent_config.get("triggers", []))
         table.add_row(agent_name, enabled, triggers)
@@ -222,16 +236,22 @@ def config_cmd(
     """Manage configuration."""
     if action == "show":
         if config_path:
-            config = Config.load(config_path)
+            config_manager = Config(str(config_path))
         else:
-            config = Config.load_or_default()
+            config_manager = Config()
+        config = config_manager.load()
 
-        console.print(config.model_dump_json(indent=2, by_alias=True))
+        import json
+        console.print(json.dumps(config, indent=2))
 
     elif action == "reset":
-        config = Config.default_config()
+        config_manager = Config()
+        default_config = config_manager._get_default_config()
         save_path = config_path or (Path.cwd() / ".claude" / "agents.json")
-        config.save(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        import json
+        with open(save_path, 'w') as f:
+            json.dump(default_config, f, indent=2)
         console.print(f"[green]✓[/green] Reset configuration: {save_path}")
 
     elif action == "edit":
