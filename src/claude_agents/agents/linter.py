@@ -185,11 +185,19 @@ class LinterAgent(Agent):
     async def _run_ruff(self, path: Path) -> LinterResult:
         """Run ruff on a Python file."""
         try:
+            # Get updated environment with venv bin in PATH
+            import os
+            env = os.environ.copy()
+            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
+            if venv_bin.exists():
+                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+
             # Check if ruff is installed
             check = await asyncio.create_subprocess_exec(
                 "ruff", "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
             await check.communicate()
 
@@ -205,7 +213,8 @@ class LinterAgent(Agent):
                 "--output-format", "json",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
 
             stdout, stderr = await proc.communicate()
@@ -277,11 +286,19 @@ class LinterAgent(Agent):
     async def _auto_fix(self, linter: str, path: Path) -> LinterResult:
         """Attempt to auto-fix issues."""
         try:
+            # Get updated environment with venv bin in PATH
+            import os
+            env = os.environ.copy()
+            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
+            if venv_bin.exists():
+                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+
             if linter == "ruff":
                 proc = await asyncio.create_subprocess_exec(
                     "ruff", "check", "--fix", str(path),
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
+                    env=env
                 )
                 await proc.communicate()
                 return LinterResult(success=True)
@@ -290,7 +307,8 @@ class LinterAgent(Agent):
                 proc = await asyncio.create_subprocess_exec(
                     "eslint", "--fix", str(path),
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
+                    env=env
                 )
                 await proc.communicate()
                 return LinterResult(success=True)

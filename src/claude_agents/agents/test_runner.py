@@ -242,11 +242,19 @@ class TestRunnerAgent(Agent):
     async def _run_pytest(self, test_files: List[Path], source_path: Path) -> TestResult:
         """Run pytest."""
         try:
+            # Get updated environment with venv bin in PATH
+            import os
+            env = os.environ.copy()
+            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
+            if venv_bin.exists():
+                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+
             # Check if pytest is installed
             check = await asyncio.create_subprocess_exec(
                 "pytest", "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
             await check.communicate()
 
@@ -267,7 +275,8 @@ class TestRunnerAgent(Agent):
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
 
             stdout, stderr = await proc.communicate()
@@ -298,11 +307,19 @@ class TestRunnerAgent(Agent):
     async def _run_jest(self, test_files: List[Path], source_path: Path) -> TestResult:
         """Run jest."""
         try:
+            # Get updated environment with venv bin in PATH
+            import os
+            env = os.environ.copy()
+            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
+            if venv_bin.exists():
+                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+
             # Check if jest is installed
             check = await asyncio.create_subprocess_exec(
                 "jest", "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
             await check.communicate()
 
@@ -319,7 +336,8 @@ class TestRunnerAgent(Agent):
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
 
             stdout, stderr = await proc.communicate()
