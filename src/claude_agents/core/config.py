@@ -158,6 +158,18 @@ class Config:
                         "excludePatterns": ["test_*", "*_test.py", "*/tests/*"],
                         "maxIssues": 50
                     }
+                },
+                "git-commit-assistant": {
+                    "enabled": True,
+                    "triggers": ["git:pre-commit", "git:commit"],
+                    "config": {
+                        "conventionalCommits": true,
+                        "maxMessageLength": 72,
+                        "includeBreakingChanges": true,
+                        "analyzeFileChanges": true,
+                        "autoGenerateScope": true,
+                        "commonTypes": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
+                    }
                 }
             },
             "global": {
