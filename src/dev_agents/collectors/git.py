@@ -32,8 +32,8 @@ class GitCollector(BaseCollector):
     def _is_git_repo(self) -> bool:
         """Check if current directory is a git repository."""
         try:
-            result = subprocess.run(  # nosec B603,B607
-            ["git", "rev-parse", "--git-dir"],
+            result = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],  # nosec
             cwd=self.repo_path,
             capture_output=True,
             text=True,
