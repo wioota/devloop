@@ -1,0 +1,180 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "agents": {
+    "linter": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "autoFix": false,
+        "reportOnly": true,
+        "filePatterns": [
+          "**/*.py",
+          "**/*.js",
+          "**/*.ts"
+        ],
+        "linters": {
+          "python": "ruff",
+          "javascript": "eslint",
+          "typescript": "eslint"
+        }
+      }
+    },
+    "formatter": {
+      "enabled": true,
+      "triggers": [
+        "file:modified"
+      ],
+      "config": {
+        "formatOnSave": false,
+        "reportOnly": true,
+        "filePatterns": [
+          "**/*.py",
+          "**/*.js",
+          "**/*.ts"
+        ],
+        "formatters": {
+          "python": "black",
+          "javascript": "prettier",
+          "typescript": "prettier"
+        }
+      }
+    },
+    "test-runner": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "runOnSave": true,
+        "relatedTestsOnly": true,
+        "testFrameworks": {
+          "python": "pytest",
+          "javascript": "jest",
+          "typescript": "jest"
+        }
+      }
+    },
+    "agent-health-monitor": {
+      "enabled": true,
+      "triggers": [
+        "agent:*:completed"
+      ],
+      "config": {
+        "monitorAllAgents": true,
+        "autoFixOnFailure": true
+      }
+    },
+    "type-checker": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "enabled_tools": [
+          "mypy"
+        ],
+        "strict_mode": false,
+        "show_error_codes": true,
+        "exclude_patterns": [
+          "test_*",
+          "*_test.py",
+          "*/tests/*"
+        ],
+        "max_issues": 50
+      }
+    },
+    "security-scanner": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "enabled_tools": [
+          "bandit"
+        ],
+        "severity_threshold": "medium",
+        "confidence_threshold": "medium",
+        "exclude_patterns": [
+          "test_*",
+          "*_test.py",
+          "*/tests/*"
+        ],
+        "max_issues": 50
+      }
+    },
+    "git-commit-assistant": {
+      "enabled": true,
+      "triggers": [
+        "git:pre-commit",
+        "git:commit"
+      ],
+      "config": {
+        "conventional_commits": true,
+        "max_message_length": 72,
+        "include_breaking_changes": true,
+        "analyze_file_changes": true,
+        "auto_generate_scope": true,
+        "common_types": [
+          "feat",
+          "fix",
+          "docs",
+          "style",
+          "refactor",
+          "test",
+          "chore",
+          "perf",
+          "ci",
+          "build"
+        ]
+      }
+    },
+    "performance-profiler": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "complexity_threshold": 10,
+        "min_lines_threshold": 50,
+        "enabled_tools": [
+          "radon"
+        ],
+        "exclude_patterns": [
+          "test_*",
+          "*_test.py",
+          "*/tests/*",
+          "__init__.py"
+        ],
+        "max_issues": 50
+      }
+    }
+  },
+  "global": {
+    "mode": "report-only",
+    "maxConcurrentAgents": 5,
+    "notificationLevel": "summary",
+    "resourceLimits": {},
+    "logging": {},
+    "contextStore": {
+      "enabled": true,
+      "path": ".claude/context"
+    },
+    "autonomousFixes": {
+      "enabled": true,
+      "safetyLevel": "safe_only"
+    }
+  },
+  "eventSystem": {
+    "collectors": {},
+    "dispatcher": {},
+    "store": {}
+  }
+}

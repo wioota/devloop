@@ -1,0 +1,94 @@
+{
+  "agent_name": "linter",
+  "last_updated": "2025-11-28T17:09:42.597271",
+  "files": [
+    {
+      "file_path": "/tmp/tmp9tjzg6c6/test.py",
+      "findings": [
+        {
+          "agent_name": "linter",
+          "file_path": "/tmp/tmp9tjzg6c6/test.py",
+          "line_number": 2,
+          "column_number": 8,
+          "severity": "error",
+          "message": "`os` imported but unused",
+          "rule_id": "F401",
+          "suggestion": null,
+          "metadata": {
+            "linter": "ruff",
+            "fixable": true,
+            "auto_fixable": false
+          },
+          "timestamp": "2025-11-28 17:09:28.791960"
+        }
+      ],
+      "last_updated": "2025-11-28 17:09:28.792334"
+    },
+    {
+      "file_path": "/tmp/tmpyrzxxad2/test.py",
+      "findings": [
+        {
+          "agent_name": "linter",
+          "file_path": "/tmp/tmpyrzxxad2/test.py",
+          "line_number": 2,
+          "column_number": 8,
+          "severity": "error",
+          "message": "`os` imported but unused",
+          "rule_id": "F401",
+          "suggestion": null,
+          "metadata": {
+            "linter": "ruff",
+            "fixable": true,
+            "auto_fixable": false
+          },
+          "timestamp": "2025-11-28 17:09:34.176445"
+        }
+      ],
+      "last_updated": "2025-11-28 17:09:34.176744"
+    },
+    {
+      "file_path": "/tmp/tmpircppeoo/test.py",
+      "findings": [
+        {
+          "agent_name": "linter",
+          "file_path": "/tmp/tmpircppeoo/test.py",
+          "line_number": 2,
+          "column_number": 8,
+          "severity": "error",
+          "message": "`os` imported but unused",
+          "rule_id": "F401",
+          "suggestion": null,
+          "metadata": {
+            "linter": "ruff",
+            "fixable": true,
+            "auto_fixable": false
+          },
+          "timestamp": "2025-11-28 17:09:38.148498"
+        }
+      ],
+      "last_updated": "2025-11-28 17:09:38.148735"
+    },
+    {
+      "file_path": "/tmp/tmpzhq3vhd9/test.py",
+      "findings": [
+        {
+          "agent_name": "linter",
+          "file_path": "/tmp/tmpzhq3vhd9/test.py",
+          "line_number": 2,
+          "column_number": 8,
+          "severity": "error",
+          "message": "`os` imported but unused",
+          "rule_id": "F401",
+          "suggestion": null,
+          "metadata": {
+            "linter": "ruff",
+            "fixable": true,
+            "auto_fixable": false
+          },
+          "timestamp": "2025-11-28 17:09:42.596821"
+        }
+      ],
+      "last_updated": "2025-11-28 17:09:42.597255"
+    }
+  ]
+}

@@ -1,0 +1,902 @@
+[
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.322996",
+    "success": true,
+    "message": "Skipped datetime.data.json.34011960e824d8ce (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.330822",
+    "success": true,
+    "message": "Skipped datetime.meta.json.f5bea00424717cbf (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.339032",
+    "success": true,
+    "message": "Skipped contextvars.data.json.05d708cb9b00f21e (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.349515",
+    "success": true,
+    "message": "Skipped contextvars.meta.json.8cb0f69b42122740 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.357667",
+    "success": true,
+    "message": "Skipped _ssl.data.json.2ecda65293879027 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.369496",
+    "success": true,
+    "message": "Skipped _ssl.meta.json.f19f5966c84529d7 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.376658",
+    "success": true,
+    "message": "Skipped ssl.data.json.e9382904c00294a7 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.383718",
+    "success": true,
+    "message": "Skipped ssl.meta.json.106434b57ab91cc9 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.393586",
+    "success": true,
+    "message": "Skipped __init__.data.json.574fc78991f1cf9c (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.401278",
+    "success": true,
+    "message": "Skipped __init__.meta.json.709885d172b5ddd4 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.407930",
+    "success": true,
+    "message": "Skipped _thread.data.json.cd6345ab31366751 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.416040",
+    "success": true,
+    "message": "Skipped _thread.meta.json.f3b9ee18609d886d (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.423300",
+    "success": true,
+    "message": "Skipped threading.data.json.ca4358604b060a1b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.433003",
+    "success": true,
+    "message": "Skipped threading.meta.json.10dcd6399048ba7a (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.440220",
+    "success": true,
+    "message": "Skipped queue.data.json.499668486fd69871 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.450307",
+    "success": true,
+    "message": "Skipped queue.meta.json.bb8bf14aa31dcdd7 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.456820",
+    "success": true,
+    "message": "Skipped mixins.data.json.87920e6566327c41 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.464877",
+    "success": true,
+    "message": "Skipped mixins.meta.json.1677570de4793280 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.474165",
+    "success": true,
+    "message": "Skipped __init__.meta.json.7b6b464dfd593f9c (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.486057",
+    "success": true,
+    "message": "Skipped util.data.json.3570ea2129362212 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.493722",
+    "success": true,
+    "message": "Skipped util.meta.json.bbeea1e52a500947 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.503848",
+    "success": true,
+    "message": "Skipped popen_spawn_win32.data.json.eccf1a8e0f050234 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.512495",
+    "success": true,
+    "message": "Skipped popen_spawn_win32.meta.json.38f9ee31b4d5cbb1 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.522786",
+    "success": true,
+    "message": "Skipped popen_fork.data.json.192022fec873f276 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.533207",
+    "success": true,
+    "message": "Skipped popen_fork.meta.json.89e05d77fc0087a6 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.541583",
+    "success": true,
+    "message": "Skipped thread.data.json.d2da00f55ea7f019 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.551294",
+    "success": true,
+    "message": "Skipped thread.meta.json.e8b312b70db8b88b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.558456",
+    "success": true,
+    "message": "Skipped reduction.data.json.36283dbf351694c0 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.568322",
+    "success": true,
+    "message": "Skipped reduction.meta.json.10306bcf9cacc5aa (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.576835",
+    "success": true,
+    "message": "Skipped popen_spawn_posix.data.json.1383c49945de6fe6 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.588392",
+    "success": true,
+    "message": "Skipped popen_spawn_posix.meta.json.d18f3b125cfe3204 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.597424",
+    "success": true,
+    "message": "Skipped popen_forkserver.data.json.02fa4e5cebf3510b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.607563",
+    "success": true,
+    "message": "Skipped popen_forkserver.meta.json.dcbdb2fc1ab95bdb (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.616055",
+    "success": true,
+    "message": "Skipped sharedctypes.data.json.ab923c7bd0148905 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.625699",
+    "success": true,
+    "message": "Skipped sharedctypes.meta.json.5d3c324d0695b787 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.633120",
+    "success": true,
+    "message": "Skipped pool.data.json.7ee666472887727f (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.661273",
+    "success": true,
+    "message": "Skipped pool.meta.json.b3ef3c06fdbed3c5 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.675950",
+    "success": true,
+    "message": "Skipped managers.data.json.8eccc0120004234b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.684848",
+    "success": true,
+    "message": "Skipped managers.meta.json.bbde3caba691f534 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.695461",
+    "success": true,
+    "message": "Skipped synchronize.data.json.09a5b3fd5f6aa109 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.703683",
+    "success": true,
+    "message": "Skipped synchronize.meta.json.18d1dcbe0d5357e0 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.713095",
+    "success": true,
+    "message": "Skipped context.data.json.308a087a8fddaecb (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.723427",
+    "success": true,
+    "message": "Skipped context.meta.json.89b084c27a693061 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.731735",
+    "success": true,
+    "message": "Skipped __init__.data.json.3fd78412a862bced (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.742453",
+    "success": true,
+    "message": "Skipped __init__.meta.json.4bf0ef3b0bc5b20e (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.750502",
+    "success": true,
+    "message": "Skipped process.data.json.64080e6b06c80b34 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.760099",
+    "success": true,
+    "message": "Skipped process.meta.json.a134272fb6034fc2 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.769676",
+    "success": true,
+    "message": "Skipped __init__.data.json.9ec77a03a5d87935 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.781245",
+    "success": true,
+    "message": "Skipped __init__.meta.json.49f762bd935999f8 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.790103",
+    "success": true,
+    "message": "Skipped selector_events.data.json.14b250cce5a61423 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.801771",
+    "success": true,
+    "message": "Skipped selector_events.meta.json.cf0d676e7993767f (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.808191",
+    "success": true,
+    "message": "Skipped subprocess.data.json.54391dfeb8e68e69 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.814614",
+    "success": true,
+    "message": "Skipped subprocess.meta.json.c014a056712eebe8 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.822495",
+    "success": true,
+    "message": "Skipped protocols.data.json.0f1842e750fbe8b5 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.832235",
+    "success": true,
+    "message": "Skipped protocols.meta.json.e7807b64b2079df6 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.838250",
+    "success": true,
+    "message": "Skipped base_futures.data.json.c5efe94e5e1e1f1c (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.844896",
+    "success": true,
+    "message": "Skipped base_futures.meta.json.9246f1e413b009e2 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.850666",
+    "success": true,
+    "message": "Skipped _asyncio.data.json.33528b7dc213e870 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.856722",
+    "success": true,
+    "message": "Skipped _asyncio.meta.json.a20ae008967248bb (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.863343",
+    "success": true,
+    "message": "Skipped unix_events.data.json.dd3a76794fbe604b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.869654",
+    "success": true,
+    "message": "Skipped unix_events.meta.json.ca3ccc6c2ed8a4eb (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.875946",
+    "success": true,
+    "message": "Skipped taskgroups.data.json.b04522c02156d2b9 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.882848",
+    "success": true,
+    "message": "Skipped taskgroups.meta.json.9cfcd77a77fdc6d2 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.888339",
+    "success": true,
+    "message": "Skipped transports.data.json.9201f479f70c7ca9 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.896460",
+    "success": true,
+    "message": "Skipped transports.meta.json.b0e8ecb272d894d1 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.907230",
+    "success": true,
+    "message": "Skipped tasks.data.json.598aed580ffb0699 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.919057",
+    "success": true,
+    "message": "Skipped tasks.meta.json.da843eba14cb7d70 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.928651",
+    "success": true,
+    "message": "Skipped streams.data.json.ab95082189056fb7 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.966069",
+    "success": true,
+    "message": "Skipped streams.meta.json.ee21f045e2b5877b (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.972671",
+    "success": true,
+    "message": "Skipped runners.data.json.d944f016faad2d45 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.979801",
+    "success": true,
+    "message": "Skipped runners.meta.json.70fe56b6ca52b65e (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.987463",
+    "success": true,
+    "message": "Skipped queues.data.json.7287f9c2810ab5cf (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:03.995710",
+    "success": true,
+    "message": "Skipped queues.meta.json.69e419d4100d13d4 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.003898",
+    "success": true,
+    "message": "Skipped locks.data.json.a12c823976f518b1 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.011639",
+    "success": true,
+    "message": "Skipped locks.meta.json.0a3aac7857282fc9 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.019186",
+    "success": true,
+    "message": "Skipped futures.data.json.22dfd3cc1090cefc (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.026105",
+    "success": true,
+    "message": "Skipped futures.meta.json.e5b9448560a674e0 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.032084",
+    "success": true,
+    "message": "Skipped events.data.json.46c7373d1c4f3472 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.038679",
+    "success": true,
+    "message": "Skipped events.meta.json.92d1ad9dae0b9d76 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.046618",
+    "success": true,
+    "message": "Skipped base_events.data.json.1ff057509f5264ae (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.057238",
+    "success": true,
+    "message": "Skipped base_events.meta.json.36576873399d1062 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.063785",
+    "success": true,
+    "message": "Skipped __init__.data.json.f2ef751e437815e5 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.070299",
+    "success": true,
+    "message": "Skipped __init__.meta.json.0f90a4d7b265e61d (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.079211",
+    "success": true,
+    "message": "Skipped event.data.json.740ff252fc6523dc (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.085453",
+    "success": true,
+    "message": "Skipped event.meta.json.6fbd316064784a0e (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.093791",
+    "success": true,
+    "message": "Skipped agent.data.json.7687e6475b13389f (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.101954",
+    "success": true,
+    "message": "Skipped agent.meta.json.477cbb8965dccd35 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.110776",
+    "success": true,
+    "message": "Skipped context_store.data.json.b15eba383cbcf6b1 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.119128",
+    "success": true,
+    "message": "Skipped context_store.meta.json.1618793cb88d8058 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.128190",
+    "success": true,
+    "message": "Skipped manager.data.json.38f3eaf77e5cdd9a (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.137386",
+    "success": true,
+    "message": "Skipped manager.meta.json.14d4833c6f4b7ae1 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.149940",
+    "success": true,
+    "message": "Skipped __init__.data.json.c1830620603dc079 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.156110",
+    "success": true,
+    "message": "Skipped __init__.meta.json.91ce213b04149e80 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.165704",
+    "success": true,
+    "message": "Skipped @plugins_snapshot.json.ae304174af7d908e (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:45:04.172412",
+    "success": true,
+    "message": "Skipped CACHEDIR.TAG (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:46:43.217383",
+    "success": true,
+    "message": "Skipped AGENT_DEVELOPMENT_GUIDE.md.tmp.64761.1761389203194 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:47:33.518943",
+    "success": true,
+    "message": "Skipped ENHANCEMENTS_SUMMARY.md.tmp.64761.1761389253489 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:47:40.400140",
+    "success": true,
+    "message": "No formatter configured for ",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:47:40.407359",
+    "success": true,
+    "message": "No formatter configured for ",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  },
+  {
+    "agent_name": "formatter",
+    "timestamp": "2025-10-25T23:47:41.155722",
+    "success": true,
+    "message": "Skipped @plugins_snapshot.json.77a8233ad3284156 (not in patterns)",
+    "error": null,
+    "data": {},
+    "metadata": {}
+  }
+]

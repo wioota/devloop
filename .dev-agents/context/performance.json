@@ -1,0 +1,48 @@
+[
+  {
+    "agent_name": "performance-profiler",
+    "timestamp": "2025-10-25T23:15:21.570880",
+    "success": true,
+    "message": "Analyzed /home/wioot/dev/claude-agents/src/claude_agents/agents/security_scanner.py with radon",
+    "error": null,
+    "data": {
+      "file": "/home/wioot/dev/claude-agents/src/claude_agents/agents/security_scanner.py",
+      "tool": "radon",
+      "functions_analyzed": 0,
+      "metrics": [],
+      "complexity_summary": {
+        "average_complexity": 0,
+        "max_complexity": 0,
+        "high_complexity_count": 0
+      },
+      "high_complexity_functions": [],
+      "errors": [
+        "Radon not installed - run: pip install radon"
+      ]
+    },
+    "metadata": {}
+  },
+  {
+    "agent_name": "performance-profiler",
+    "timestamp": "2025-10-25T23:15:21.620669",
+    "success": true,
+    "message": "Analyzed /home/wioot/dev/claude-agents/src/claude_agents/agents/security_scanner.py with radon",
+    "error": null,
+    "data": {
+      "file": "/home/wioot/dev/claude-agents/src/claude_agents/agents/security_scanner.py",
+      "tool": "radon",
+      "functions_analyzed": 0,
+      "metrics": [],
+      "complexity_summary": {
+        "average_complexity": 0,
+        "max_complexity": 0,
+        "high_complexity_count": 0
+      },
+      "high_complexity_functions": [],
+      "errors": [
+        "Radon not installed - run: pip install radon"
+      ]
+    },
+    "metadata": {}
+  }
+]

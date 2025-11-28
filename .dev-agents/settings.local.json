@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(done)",
+      "Bash(gh pr create:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,143 @@
+"""Configuration management."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class AgentConfig(BaseModel):
+    """Configuration for a single agent."""
+
+    enabled: bool = True
+    triggers: List[str] = Field(default_factory=list)
+    config: Dict[str, Any] = Field(default_factory=dict)
+
+
+class GlobalConfig(BaseModel):
+    """Global configuration."""
+
+    max_concurrent_agents: int = Field(default=5, alias="maxConcurrentAgents")
+    notification_level: str = Field(default="summary", alias="notificationLevel")
+    resource_limits: Dict[str, Any] = Field(
+        default_factory=dict, alias="resourceLimits"
+    )
+    logging: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EventSystemConfig(BaseModel):
+    """Event system configuration."""
+
+    collectors: Dict[str, Any] = Field(default_factory=dict)
+    dispatcher: Dict[str, Any] = Field(default_factory=dict)
+    store: Dict[str, Any] = Field(default_factory=dict)
+
+
+class Config(BaseModel):
+    """Main configuration."""
+
+    version: str = "1.0.0"
+    enabled: bool = True
+    agents: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    global_config: GlobalConfig = Field(default_factory=GlobalConfig, alias="global")
+    event_system: EventSystemConfig = Field(
+        default_factory=EventSystemConfig, alias="eventSystem"
+    )
+
+    @classmethod
+    def load(cls, path: Path) -> Config:
+        """Load configuration from file."""
+        if not path.exists():
+            return cls()
+
+        with open(path) as f:
+            data = json.load(f)
+
+        return cls(**data)
+
+    @classmethod
+    def load_or_default(cls, path: Path | None = None) -> Config:
+        """Load configuration from path or use defaults."""
+        if path is None:
+            # Try default locations
+            default_paths = [
+                Path.cwd() / ".claude" / "agents.json",
+                Path.home() / ".claude" / "agents.json",
+            ]
+
+            for default_path in default_paths:
+                if default_path.exists():
+                    return cls.load(default_path)
+
+            # Return default config
+            return cls.default_config()
+
+        return cls.load(path)
+
+    @classmethod
+    def default_config(cls) -> Config:
+        """Get default configuration."""
+        return Config(
+            version="1.0.0",
+            enabled=True,
+            agents={
+                "linter": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "autoFix": False,
+                        "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
+                        "linters": {
+                            "python": "ruff",
+                            "javascript": "eslint",
+                            "typescript": "eslint",
+                        },
+                    },
+                },
+                "formatter": {
+                    "enabled": True,
+                    "triggers": ["file:modified"],
+                    "config": {
+                        "formatOnSave": True,
+                        "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
+                        "formatters": {
+                            "python": "black",
+                            "javascript": "prettier",
+                            "typescript": "prettier",
+                        },
+                    },
+                },
+                "test-runner": {
+                    "enabled": True,
+                    "triggers": ["file:modified", "file:created"],
+                    "config": {
+                        "runOnSave": True,
+                        "relatedTestsOnly": True,
+                        "testFrameworks": {
+                            "python": "pytest",
+                            "javascript": "jest",
+                            "typescript": "jest",
+                        },
+                    },
+                },
+            },
+        )
+
+    def save(self, path: Path) -> None:
+        """Save configuration to file."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, "w") as f:
+            json.dump(self.model_dump(by_alias=True, exclude_none=True), f, indent=2)
+
+    def get_agent_config(self, agent_name: str) -> Optional[Dict[str, Any]]:
+        """Get configuration for a specific agent."""
+        return self.agents.get(agent_name)
+
+    def is_agent_enabled(self, agent_name: str) -> bool:
+        """Check if agent is enabled."""
+        agent_config = self.agents.get(agent_name, {})
+        return agent_config.get("enabled", False)

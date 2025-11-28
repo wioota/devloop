@@ -1,0 +1,22 @@
+{
+  "last_updated": "2025-11-28T09:48:06.338309+00:00Z",
+  "check_now": {
+    "count": 0,
+    "severity_breakdown": {},
+    "files": [],
+    "preview": "0 issues"
+  },
+  "mention_if_relevant": {
+    "count": 0,
+    "categories": {},
+    "summary": "0 issues"
+  },
+  "deferred": {
+    "count": 0,
+    "summary": "0 background items"
+  },
+  "auto_fixed": {
+    "count": 0,
+    "summary": "0 items auto-fixed"
+  }
+}
