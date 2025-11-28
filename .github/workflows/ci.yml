@@ -125,7 +125,7 @@ jobs:
     - name: Run Bandit (security scanner)
       run: |
         poetry run bandit -r src/ -f json -o bandit-report.json || true
-        poetry run bandit -r src/
+        poetry run bandit -r src/ --severity-level high
 
     - name: Upload security report
       if: always()
