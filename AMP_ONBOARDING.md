@@ -1,18 +1,18 @@
 # Amp Onboarding Guide
 
-> **For Amp installations:** Setup process to ensure Dev Agents enforces commit/push discipline
+> **For Amp installations:** Setup process to ensure DevLoop enforces commit/push discipline
 
 ---
 
 ## Overview
 
-This guide ensures that when Dev Agents is used within Amp, the mandatory **commit & push after every task** discipline is automatically enforced.
+This guide ensures that when DevLoop is used within Amp, the mandatory **commit & push after every task** discipline is automatically enforced.
 
 ---
 
 ## Installation Checklist
 
-When setting up Dev Agents in a new Amp workspace, ensure these components are in place:
+When setting up DevLoop in a new Amp workspace, ensure these components are in place:
 
 ### 1. ✅ Configuration Files
 
@@ -35,7 +35,7 @@ Add to Amp workspace configuration (`.amp/config.json` or workspace settings):
 
 ```json
 {
-  "dev_agents": {
+  "devloop": {
     "enabled": true,
     "verification_script": ".agents/verify-task-complete",
     "commit_required": true,
@@ -152,14 +152,14 @@ See CODING_RULES.md for detailed commit message format.
 
 Check if registered in workspace:
 ```bash
-dev-agents amp-status
+devloop amp-status
 ```
 
 If not registered, the summary command can be called manually:
 ```bash
-dev-agents summary recent
-dev-agents summary today
-dev-agents summary --agent linter
+devloop summary recent
+devloop summary today
+devloop summary --agent linter
 ```
 
 ---
@@ -302,7 +302,7 @@ git status  # Should return immediately
 
 ```json
 {
-  "dev_agents": {
+  "devloop": {
     "commit_required": false
   }
 }
@@ -314,7 +314,7 @@ git status  # Should return immediately
 
 ```json
 {
-  "dev_agents": {
+  "devloop": {
     "verification_script": "path/to/custom/verify.sh"
   }
 }
@@ -352,7 +352,7 @@ type(scope): short description
 
 Examples:
 ```
-docs: update README with Dev Agents branding
+docs: update README with DevLoop branding
 feat: add Phase 3 implementation (learning & optimization)
 fix: correct loop detection in formatter agent
 test: add unit tests for custom agent builder
@@ -402,13 +402,13 @@ See documentation:
 
 ## Checklist for Amp Integration
 
-When setting up Dev Agents in Amp:
+When setting up DevLoop in Amp:
 
 - [ ] AGENTS.md present with Development Discipline section
 - [ ] CODING_RULES.md present with Commit & Push Protocol
 - [ ] `.agents/verify-task-complete` exists and is executable
 - [ ] `.agents/hooks/post-task` created and configured (optional)
-- [ ] Amp workspace config includes dev_agents settings
+- [ ] Amp workspace config includes devloop settings
 - [ ] Claude system prompt includes commit discipline instructions
 - [ ] Task template includes completion checklist
 - [ ] Tested: run verify-task-complete in clean state → ✅ PASS

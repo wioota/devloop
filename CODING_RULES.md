@@ -1,8 +1,8 @@
-# Dev Agents Coding Rules & Patterns
+# DevLoop Coding Rules & Patterns
 
 ## Overview
 
-Documented patterns, rules, and lessons learned from dev-agents development to prevent recurring issues and ensure consistent code quality.
+Documented patterns, rules, and lessons learned from devloop development to prevent recurring issues and ensure consistent code quality.
 
 ---
 
@@ -24,9 +24,9 @@ Documented patterns, rules, and lessons learned from dev-agents development to p
    - Add body explaining WHAT and WHY (if needed)
    - Example:
      ```
-     docs: update README with Dev Agents branding and improve developer experience
+     docs: update README with DevLoop branding and improve developer experience
      
-     - Rename project from Claude Agents to Dev Agents throughout
+     - Rename project from Claude Agents to DevLoop throughout
      - Add quick start section with installation steps
      - Add feature summary with emoji badges
      - Follow open source README best practices
@@ -511,7 +511,7 @@ class FileModifyingAgent(Agent):
 # tests/test_agents/test_security_scanner.py
 import pytest
 from unittest.mock import AsyncMock, patch
-from dev_agents.agents.security_scanner import SecurityScannerAgent
+from devloop.agents.security_scanner import SecurityScannerAgent
 
 @pytest.fixture
 def security_agent():

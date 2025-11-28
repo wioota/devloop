@@ -1,4 +1,4 @@
-# Publishing Plan for dev-agents
+# Publishing Plan for devloop
 
 **Status:** PRIVATE - Not ready for public release
 **Target:** Future public release on PyPI, GitHub, and package managers
@@ -16,7 +16,7 @@
 - [ ] Documentation complete and accurate
 
 ### Repository Setup
-- [ ] GitHub repository renamed to `dev-agents` (wioota/dev-agents)
+- [ ] GitHub repository renamed to `devloop` (wioota/devloop)
 - [ ] Repository visibility: Public
 - [ ] README.md polished for public consumption
 - [ ] LICENSE file added (recommend MIT or Apache 2.0)
@@ -28,7 +28,7 @@
 - [ ] GitHub Actions CI/CD configured
 
 ### Package Configuration
-- [ ] Package name verified available on PyPI: `dev-agents`
+- [ ] Package name verified available on PyPI: `devloop`
 - [ ] Version bumped to stable (0.1.0 → 1.0.0?)
 - [ ] pyproject.toml complete with all metadata
 - [ ] Long description prepared (from README)
@@ -79,7 +79,7 @@ git push origin v1.0.0
 **3. Create GitHub Release**
 - Go to Releases → Draft a new release
 - Tag: v1.0.0
-- Title: "Dev Agents v1.0.0 - First Public Release"
+- Title: "DevLoop v1.0.0 - First Public Release"
 - Description: Release notes from CHANGELOG.md
 - Attach any release assets (binaries, etc.)
 - Publish release
@@ -98,7 +98,7 @@ twine check dist/*
 twine upload --repository testpypi dist/*
 
 # Test installation from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ dev-agents
+pip install --index-url https://test.pypi.org/simple/ devloop
 ```
 
 **2. Upload to PyPI**
@@ -107,7 +107,7 @@ pip install --index-url https://test.pypi.org/simple/ dev-agents
 twine upload dist/*
 
 # Verify it's live
-pip install dev-agents
+pip install devloop
 ```
 
 **3. Post-Publication Verification**
@@ -115,9 +115,9 @@ pip install dev-agents
 # Test in clean environment
 python -m venv /tmp/test-env
 source /tmp/test-env/bin/activate
-pip install dev-agents
-dev-agents --version
-dev-agents --help
+pip install devloop
+devloop --version
+devloop --help
 ```
 
 ### Phase 3: Package Managers (Optional)
@@ -165,7 +165,7 @@ dev-agents --help
 
 ```toml
 [project]
-name = "dev-agents"
+name = "devloop"
 version = "1.0.0"  # Bump from 0.1.0
 description = "Autonomous development agents for code quality, testing, and workflow automation"
 readme = "README.md"
@@ -203,11 +203,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/wioota/dev-agents"
-Documentation = "https://dev-agents.readthedocs.io"  # If created
-Repository = "https://github.com/wioota/dev-agents"
-Issues = "https://github.com/wioota/dev-agents/issues"
-Changelog = "https://github.com/wioota/dev-agents/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/wioota/devloop"
+Documentation = "https://devloop.readthedocs.io"  # If created
+Repository = "https://github.com/wioota/devloop"
+Issues = "https://github.com/wioota/devloop/issues"
+Changelog = "https://github.com/wioota/devloop/blob/main/CHANGELOG.md"
 ```
 
 ---
@@ -349,7 +349,7 @@ twine check dist/*
 twine upload --repository testpypi dist/*
 
 # Install from TestPyPI
-pip install --index-url https://test.pypi.org/simple/ dev-agents
+pip install --index-url https://test.pypi.org/simple/ devloop
 
 # Upload to PyPI (production)
 twine upload dist/*

@@ -164,7 +164,7 @@ project/
 
 ## Configuration
 
-**File:** `.dev-agents/agents.json`
+**File:** `.devloop/agents.json`
 
 ```json
 {
@@ -247,8 +247,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import re
 
-from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.event import Event
+from devloop.core.agent import Agent, AgentResult
+from devloop.core.event import Event
 
 @dataclass
 class DocLifecycleConfig:
@@ -457,7 +457,7 @@ class DocLifecycleAgent(Agent):
 ## Integration Points
 
 ### 1. Context Store
-Writes findings to `.dev-agents/context/` for Claude Code integration:
+Writes findings to `.devloop/context/` for Claude Code integration:
 ```json
 {
   "agent": "doc-lifecycle",
@@ -476,22 +476,22 @@ Writes findings to `.dev-agents/context/` for Claude Code integration:
 Before commits, check for documentation issues:
 ```bash
 # Git hook: pre-commit
-dev-agents check-docs
+devloop check-docs
 ```
 
 ### 3. CLI Commands
 ```bash
 # Scan documentation
-dev-agents doc-scan
+devloop doc-scan
 
 # Show archival candidates
-dev-agents doc-archive --suggest
+devloop doc-archive --suggest
 
 # Auto-fix issues (with confirmation)
-dev-agents doc-fix --interactive
+devloop doc-fix --interactive
 
 # Generate documentation index
-dev-agents doc-index
+devloop doc-index
 ```
 
 ---

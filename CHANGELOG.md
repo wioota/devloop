@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to dev-agents will be documented in this file.
+All notable changes to devloop will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,15 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Project renamed from `claude-agents` to `dev-agents` (November 28, 2025)
-- GitHub repository renamed to `wioota/dev-agents`
-- Package name changed to `dev-agents`
-- CLI command changed to `dev-agents`
+---
 
-### Fixed
-- Fixed IndentationError in `type_checker.py` preventing test execution (November 28, 2025)
-- Type safety improvements across multiple agents (`any` → `Any`, added `Optional`)
+## [0.2.0] - 2025-11-29
+
+### Changed - Project Rename: dev-agents → DevLoop
+**BREAKING CHANGE:** Complete project rename from "dev-agents"/"Dev Agents" to "devloop"/"DevLoop"
+
+#### Package & Installation
+- Python package: `dev_agents` → `devloop`
+- PyPI package name: `dev-agents` → `devloop`
+- CLI command: `dev-agents` → `devloop`
+- Version: 0.1.0 → 0.2.0
+
+#### Configuration & Directories
+- Config directory: `.dev-agents/` → `.devloop/`
+- All path references updated throughout codebase
+
+#### Migration Required
+- Users must reinstall: `pip uninstall dev-agents && pip install devloop`
+- Update all imports: `from dev_agents` → `from devloop`
+- Update CLI commands: `dev-agents` → `devloop`
+- Rename config directory: `mv .dev-agents .devloop`
+
+#### Files Modified
+- 616 occurrences across 75 files
+- All Python imports updated
+- All documentation updated (25+ markdown files)
+- All configuration files updated (pyproject.toml, setup.py)
+- All string references in code updated
+- All test mocks updated
+
+#### Testing
+- All 167 tests passing after rename
+- Full regression testing completed
 
 ---
 
@@ -35,13 +60,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local-first architecture (all data stays on machine)
 
 #### Files Created
-- `src/dev_agents/core/context_store.py` (530 lines) - Complete context store implementation
+- `src/devloop/core/context_store.py` (530 lines) - Complete context store implementation
 - `tests/unit/core/test_context_store.py` (500+ lines) - Comprehensive test suite
-- `.dev-agents/context/` directory structure for storing findings
+- `.devloop/context/` directory structure for storing findings
 
 #### Integration
 - All agents (linter, formatter, test-runner, security-scanner) integrated with context store
-- Claude Code integration via `.dev-agents/AGENT_STATUS.md` proactive checking
+- Claude Code integration via `.devloop/AGENT_STATUS.md` proactive checking
 - Context reader module for querying findings
 
 #### Testing
@@ -77,12 +102,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Built-in templates for file watching, command running, data processing
 
 #### New Modules
-- `src/dev_agents/core/feedback.py` (200+ lines)
-- `src/dev_agents/core/performance.py` (250+ lines)
-- `src/dev_agents/core/agent_template.py` (300+ lines)
-- `src/dev_agents/core/contextual_feedback.py` - Developer action tracking
-- `src/dev_agents/core/proactive_feedback.py` - Proactive feedback engine
-- `src/dev_agents/cli/phase3_commands.py` (150+ lines)
+- `src/devloop/core/feedback.py` (200+ lines)
+- `src/devloop/core/performance.py` (250+ lines)
+- `src/devloop/core/agent_template.py` (300+ lines)
+- `src/devloop/core/contextual_feedback.py` - Developer action tracking
+- `src/devloop/core/proactive_feedback.py` - Proactive feedback engine
+- `src/devloop/cli/phase3_commands.py` (150+ lines)
 
 #### Enhanced Features
 - Enhanced Agent Manager with feedback and performance integration
@@ -100,54 +125,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Agents Implemented
 
-**1. LinterAgent** (`src/dev_agents/agents/linter.py`)
+**1. LinterAgent** (`src/devloop/agents/linter.py`)
 - Multi-language support (Python/ruff, JavaScript/TypeScript/eslint)
 - Configurable file patterns
 - Auto-fix capability
 - JSON output parsing
 - Error handling and tool detection
 
-**2. FormatterAgent** (`src/dev_agents/agents/formatter.py`)
+**2. FormatterAgent** (`src/devloop/agents/formatter.py`)
 - Multi-language formatting (Python/black, JavaScript/prettier, Go/gofmt)
 - Configurable formatting rules
 - Auto-format on save option
 - Integration with context store
 
-**3. TestRunnerAgent** (`src/dev_agents/agents/test_runner.py`)
+**3. TestRunnerAgent** (`src/devloop/agents/test_runner.py`)
 - Multi-framework support (pytest, jest, go test)
 - Related tests detection
 - Watch mode support
 - Test result parsing and reporting
 
-**4. SecurityScannerAgent** (`src/dev_agents/agents/security_scanner.py`)
+**4. SecurityScannerAgent** (`src/devloop/agents/security_scanner.py`)
 - Bandit integration for Python security scanning
 - Configurable severity and confidence thresholds
 - Security finding categorization
 - Integration with context store
 
-**5. TypeCheckerAgent** (`src/dev_agents/agents/type_checker.py`)
+**5. TypeCheckerAgent** (`src/devloop/agents/type_checker.py`)
 - Static type checking (mypy, pyright, pyre)
 - Configurable strict mode
 - Error code display
 - Exclude pattern support
 
-**6. AgentHealthMonitorAgent** (`src/dev_agents/agents/agent_health_monitor.py`)
+**6. AgentHealthMonitorAgent** (`src/devloop/agents/agent_health_monitor.py`)
 - Monitors agent execution health
 - Failure pattern detection
 - Resource usage tracking
 
-**7. GitCommitAssistantAgent** (`src/dev_agents/agents/git_commit_assistant.py`)
+**7. GitCommitAssistantAgent** (`src/devloop/agents/git_commit_assistant.py`)
 - Analyzes staged changes
 - Suggests commit messages based on conventions
 - Template support for commit message formatting
 
-**8. PerformanceProfilerAgent** (`src/dev_agents/agents/performance_profiler.py`)
+**8. PerformanceProfilerAgent** (`src/devloop/agents/performance_profiler.py`)
 - Profiles Python code execution
 - Identifies performance bottlenecks
 - Generates performance reports
 
 #### Configuration System
-- JSON-based configuration (`.dev-agents/agents.json`)
+- JSON-based configuration (`.devloop/agents.json`)
 - Per-agent enable/disable
 - Configurable triggers
 - Agent-specific configuration options
@@ -169,17 +194,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Process monitoring
 
 #### Core Modules
-- `src/dev_agents/core/agent.py` - Base agent implementation
-- `src/dev_agents/core/event.py` - Event system
-- `src/dev_agents/core/manager.py` - Agent management
-- `src/dev_agents/core/config.py` - Configuration management
-- `src/dev_agents/collectors/filesystem.py` - File system monitoring
-- `src/dev_agents/collectors/git.py` - Git event collection
+- `src/devloop/core/agent.py` - Base agent implementation
+- `src/devloop/core/event.py` - Event system
+- `src/devloop/core/manager.py` - Agent management
+- `src/devloop/core/config.py` - Configuration management
+- `src/devloop/collectors/filesystem.py` - File system monitoring
+- `src/devloop/collectors/git.py` - Git event collection
 
 #### CLI
-- `dev-agents init` - Initialize project
-- `dev-agents watch` - Start agent system
-- `dev-agents status` - Show configuration
+- `devloop init` - Initialize project
+- `devloop watch` - Start agent system
+- `devloop status` - Show configuration
 
 #### Demonstration
 - EchoAgent prototype for testing
@@ -197,8 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Project Milestones
 
 ### November 28, 2025
-- **Project Rename:** claude-agents → dev-agents
-- **Repository:** https://github.com/wioota/dev-agents
+- **Project Rename:** claude-agents → devloop
+- **Repository:** https://github.com/wioota/devloop
 - **Context Store:** Complete implementation with all agents integrated
 - **Tests:** 96 tests passing (up from 22 originally)
 

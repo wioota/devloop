@@ -7,7 +7,7 @@
 ## Problem Statement
 
 Today, ensuring commit/push discipline requires:
-1. User manually runs `dev-agents init`
+1. User manually runs `devloop init`
 2. User reads AGENTS.md and CODING_RULES.md
 3. User configures Amp workspace (if in Amp)
 4. User registers hooks
@@ -23,12 +23,12 @@ Today, ensuring commit/push discipline requires:
 
 **Single command:**
 ```bash
-dev-agents init /path/to/project
+devloop init /path/to/project
 ```
 
 **Automatically handles:**
 - ✅ Environment detection (Amp, git, existing setup)
-- ✅ Core setup (.dev-agents dir, agents.json, docs)
+- ✅ Core setup (.devloop dir, agents.json, docs)
 - ✅ Git hooks (pre-commit, pre-push)
 - ✅ Amp registration (slash commands, hooks, prompts)
 - ✅ Verification (test everything works)
@@ -45,7 +45,7 @@ dev-agents init /path/to/project
 # Detects:
 - Is running in Amp? → AMP_WORKSPACE env var
 - Git repository? → .git exists
-- Already initialized? → .dev-agents exists
+- Already initialized? → .devloop exists
 ```
 
 **Impact:** Decide what to install without user input
@@ -53,12 +53,12 @@ dev-agents init /path/to/project
 ### 2. Core Setup
 
 **Files created:**
-- `.dev-agents/agents.json` — Agent configuration
+- `.devloop/agents.json` — Agent configuration
 - `AGENTS.md` — System design (copied)
 - `CODING_RULES.md` — Development rules (copied)
 - `.agents/verify-task-complete` — Verification script (copied)
 - `.agents/hooks/post-task` — Amp hook (copied)
-- `.gitignore` — Updated with .dev-agents entries
+- `.gitignore` — Updated with .devloop entries
 
 **Result:** Everything needed to run agents is in place
 
@@ -99,12 +99,12 @@ dev-agents init /path/to/project
 ### Before (Manual)
 
 ```bash
-$ dev-agents init /path/to/project
-✓ Created: /path/to/project/.dev-agents
+$ devloop init /path/to/project
+✓ Created: /path/to/project/.devloop
 
 Next steps:
-  1. Review/edit: /path/to/project/.dev-agents/agents.json
-  2. Run: dev-agents watch /path/to/project
+  1. Review/edit: /path/to/project/.devloop/agents.json
+  2. Run: devloop watch /path/to/project
   3. Read: AGENTS.md
   4. Read: CODING_RULES.md
   5. Configure Amp (if in Amp)
@@ -118,9 +118,9 @@ Next steps:
 ### After (Fully Automated)
 
 ```bash
-$ dev-agents init /path/to/project
+$ devloop init /path/to/project
 
-Dev Agents Installation
+DevLoop Installation
 ============================================================
 
 → Detecting environment...
@@ -128,7 +128,7 @@ Dev Agents Installation
   ✓ Git repository detected
 
 → Setting up core infrastructure...
-  ✓ Created .dev-agents directory
+  ✓ Created .devloop directory
   ✓ Created agents.json configuration
   ✓ Copied AGENTS.md and CODING_RULES.md
 
@@ -150,8 +150,8 @@ Ready to use:
   • Amp slash commands: /agent-summary, /agent-status
   • Post-task verification: Automatic
   • Commit discipline: Enforced
-  • Start watching: dev-agents watch /path/to/project
-  • View config: cat /path/to/project/.dev-agents/agents.json
+  • Start watching: devloop watch /path/to/project
+  • View config: cat /path/to/project/.devloop/agents.json
 
 Documentation:
   • AGENTS.md - System design and discipline
@@ -163,7 +163,7 @@ Documentation:
 
 ## Architecture
 
-### Enhanced `dev-agents init` Command
+### Enhanced `devloop init` Command
 
 ```python
 @app.command()
@@ -175,14 +175,14 @@ def init(
     interactive: bool = typer.Option(True),       # New
     verbose: bool = typer.Option(False),          # New
 ):
-    """Initialize dev-agents with full automation."""
+    """Initialize devloop with full automation."""
     # See INSTALLATION_AUTOMATION.md for details
 ```
 
 ### Workflow
 
 ```
-dev-agents init
+devloop init
     ↓
 detect_environment()
     ├─ in_amp?
@@ -190,7 +190,7 @@ detect_environment()
     └─ has_claude_dir?
     ↓
 setup_core(path)
-    ├─ create .dev-agents
+    ├─ create .devloop
     ├─ copy AGENTS.md, CODING_RULES.md
     ├─ generate agents.json
     └─ update .gitignore
@@ -251,20 +251,20 @@ Success!
 
 When done, a user should be able to:
 
-1. **Install dev-agents**
+1. **Install devloop**
    ```bash
    poetry install
    ```
 
 2. **Initialize in a project**
    ```bash
-   dev-agents init /path/to/project
+   devloop init /path/to/project
    ```
 
 3. **Start using**
    ```bash
    cd /path/to/project
-   dev-agents watch .
+   devloop watch .
    ```
 
 4. **Discipline enforced automatically**
@@ -278,14 +278,14 @@ When done, a user should be able to:
 ## Files Involved
 
 ### Modified
-- `src/dev_agents/cli/main.py` — Enhanced init command
+- `src/devloop/cli/main.py` — Enhanced init command
 - `AGENTS.md` — New "Automated Installation" section
 - `README.md` — Updated quick start
 
 ### New
 - `INSTALLATION_AUTOMATION.md` — Complete architecture
-- `src/dev_agents/core/installation.py` — Installation logic
-- `src/dev_agents/core/amp_api.py` — Amp API client
+- `src/devloop/core/installation.py` — Installation logic
+- `src/devloop/core/amp_api.py` — Amp API client
 - `tests/integration/test_installation.py` — Integration tests
 
 ### Reference (provided to user)
@@ -312,13 +312,13 @@ If part of setup fails:
 ### 3. Opt-Out Available
 Advanced users can skip parts:
 ```bash
-dev-agents init --skip-amp --skip-git-hooks
+devloop init --skip-amp --skip-git-hooks
 ```
 
 ### 4. Non-Interactive Mode
 For CI/CD and scripting:
 ```bash
-dev-agents init --non-interactive
+devloop init --non-interactive
 ```
 
 ---

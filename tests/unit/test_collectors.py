@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from dev_agents.collectors.base import BaseCollector
-from dev_agents.collectors.filesystem import FileSystemCollector
-from dev_agents.collectors.git import GitCollector
-from dev_agents.collectors.manager import CollectorManager
-from dev_agents.collectors.process import ProcessCollector, HAS_PSUTIL
-from dev_agents.core.event import EventBus
+from devloop.collectors.base import BaseCollector
+from devloop.collectors.filesystem import FileSystemCollector
+from devloop.collectors.git import GitCollector
+from devloop.collectors.manager import CollectorManager
+from devloop.collectors.process import ProcessCollector, HAS_PSUTIL
+from devloop.core.event import EventBus
 
 
 class TestBaseCollector:

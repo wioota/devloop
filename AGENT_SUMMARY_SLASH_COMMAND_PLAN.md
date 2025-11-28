@@ -30,7 +30,7 @@ Create a `/agent-summary` slash command for Amp and Claude Code that provides in
 
 ### A. Summary Generator Module
 ```python
-# src/dev_agents/core/summary_generator.py
+# src/devloop/core/summary_generator.py
 class SummaryGenerator:
     def __init__(self, context_store):
         self.context_store = context_store
@@ -58,7 +58,7 @@ class SummaryGenerator:
 
 ### B. CLI Integration
 ```python
-# src/dev_agents/cli/commands/summary.py
+# src/devloop/cli/commands/summary.py
 @app.command()
 def agent_summary(
     scope: str = typer.Argument("recent", help="Summary scope: recent|today|session|all"),
@@ -68,7 +68,7 @@ def agent_summary(
 ):
     """Generate intelligent summary of dev-agent findings."""
     import asyncio
-    from dev_agents.core.summary_generator import SummaryGenerator
+    from devloop.core.summary_generator import SummaryGenerator
     
     filters = {}
     if agent:
@@ -86,7 +86,7 @@ def agent_summary(
 
 ### C. Amp/Claude Code Integration
 ```python
-# src/dev_agents/core/amp_integration.py
+# src/devloop/core/amp_integration.py
 async def generate_agent_summary(
     scope: str = "recent", 
     filters: Dict[str, Any] = None
@@ -240,7 +240,7 @@ registerSlashCommand({
 def handle_slash_command(command, args):
     if command == "agent-summary":
         result = subprocess.run(
-            ["dev-agents", "agent-summary"] + args, 
+            ["devloop", "agent-summary"] + args, 
             capture_output=True, 
             text=True
         )
@@ -317,9 +317,9 @@ def handle_slash_command(command, args):
 ---
 
 ## Files to Create/Modify:
-- `src/dev_agents/core/summary_generator.py` - Core summary logic
-- `src/dev_agents/cli/commands/summary.py` - CLI command
-- `src/dev_agents/core/amp_integration.py` - Amp/Claude integration
+- `src/devloop/core/summary_generator.py` - Core summary logic
+- `src/devloop/cli/commands/summary.py` - CLI command
+- `src/devloop/core/amp_integration.py` - Amp/Claude integration
 - `tests/unit/core/test_summary_generator.py` - Unit tests
 - `AGENTS.md` - Update with new feature documentation
 

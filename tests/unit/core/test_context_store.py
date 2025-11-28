@@ -9,7 +9,7 @@ import shutil
 
 import pytest
 
-from dev_agents.core.context_store import (
+from devloop.core.context_store import (
     ContextStore,
     Finding,
     Severity,

@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from datetime import datetime
 
-from dev_agents.agents.doc_lifecycle import DocLifecycleAgent, DocLifecycleConfig
-from dev_agents.core.event import Event
+from devloop.agents.doc_lifecycle import DocLifecycleAgent, DocLifecycleConfig
+from devloop.core.event import Event
 
 
 class TestDocLifecycleAgent:

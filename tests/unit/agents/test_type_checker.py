@@ -3,8 +3,8 @@
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch, MagicMock
-from dev_agents.agents.type_checker import TypeCheckerAgent, TypeCheckerConfig
-from dev_agents.core.event import Event
+from devloop.agents.type_checker import TypeCheckerAgent, TypeCheckerConfig
+from devloop.core.event import Event
 
 
 class TestTypeCheckerConfig:
@@ -140,7 +140,7 @@ class TestTypeCheckerAgent:
             test_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
-    @patch("dev_agents.agents.type_checker.TypeCheckerAgent._run_type_check")
+    @patch("devloop.agents.type_checker.TypeCheckerAgent._run_type_check")
     async def test_handle_python_file(self, mock_check, agent):
         """Test handling of Python files."""
         # Create a temporary Python file
@@ -200,7 +200,7 @@ Found 1 error in 1 file (checked 1 source file)
 
         with patch.object(agent, "_run_mypy") as mock_run_mypy:
             # Mock the _run_mypy method directly to return parsed result
-            from dev_agents.agents.type_checker import TypeCheckResult
+            from devloop.agents.type_checker import TypeCheckResult
 
             expected_issues = [
                 {

@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from typer.testing import CliRunner
 
-from dev_agents.cli.main import (
+from devloop.cli.main import (
     app,
     init,
     status,
@@ -21,7 +21,7 @@ from dev_agents.cli.main import (
     amp_findings,
     amp_context,
 )
-from dev_agents.core import Config, ConfigWrapper
+from devloop.core import Config, ConfigWrapper
 
 
 @pytest.fixture
@@ -41,11 +41,11 @@ class TestInitCommand:
     """Tests for the init command."""
 
     def test_init_creates_claude_directory(self, cli_runner, temp_project_dir):
-        """Test that init creates .dev-agents directory."""
+        """Test that init creates .devloop directory."""
         result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
 
         assert result.exit_code == 0
-        assert (temp_project_dir / ".dev-agents").exists()
+        assert (temp_project_dir / ".devloop").exists()
         assert (
             "[green]✓[/green] Created:" in result.stdout or "Created:" in result.stdout
         )
@@ -55,7 +55,7 @@ class TestInitCommand:
         result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
 
         assert result.exit_code == 0
-        config_file = temp_project_dir / ".dev-agents" / "agents.json"
+        config_file = temp_project_dir / ".devloop" / "agents.json"
         assert config_file.exists()
 
         # Verify it's valid JSON
@@ -70,9 +70,9 @@ class TestInitCommand:
         )
 
         assert result.exit_code == 0
-        config_file = temp_project_dir / ".dev-agents" / "agents.json"
+        config_file = temp_project_dir / ".devloop" / "agents.json"
         assert not config_file.exists()
-        assert (temp_project_dir / ".dev-agents").exists()
+        assert (temp_project_dir / ".devloop").exists()
 
     def test_init_idempotent(self, cli_runner, temp_project_dir):
         """Test that init can be run multiple times safely."""
@@ -85,7 +85,7 @@ class TestInitCommand:
         assert result2.exit_code == 0
 
         # Directory should still exist
-        assert (temp_project_dir / ".dev-agents").exists()
+        assert (temp_project_dir / ".devloop").exists()
 
     def test_init_default_path_current_directory(self, cli_runner):
         """Test that init without path argument works."""
@@ -101,8 +101,8 @@ class TestInitCommand:
 class TestStatusCommand:
     """Tests for the status command."""
 
-    @patch("dev_agents.cli.main.ConfigWrapper")
-    @patch("dev_agents.cli.main.Config")
+    @patch("devloop.cli.main.ConfigWrapper")
+    @patch("devloop.cli.main.Config")
     def test_status_displays_agents(
         self, mock_config_class, mock_wrapper_class, cli_runner
     ):
@@ -128,8 +128,8 @@ class TestStatusCommand:
         assert result.exit_code == 0
         assert "linter" in result.stdout or "Agent" in result.stdout
 
-    @patch("dev_agents.cli.main.ConfigWrapper")
-    @patch("dev_agents.cli.main.Config")
+    @patch("devloop.cli.main.ConfigWrapper")
+    @patch("devloop.cli.main.Config")
     def test_status_shows_enabled_disabled(
         self, mock_config_class, mock_wrapper_class, cli_runner
     ):
@@ -159,8 +159,8 @@ class TestStopCommand:
 
     def test_stop_with_running_daemon(self, cli_runner, temp_project_dir):
         """Test stop with an actual PID file."""
-        # Create .dev-agents directory and PID file
-        claude_dir = temp_project_dir / ".dev-agents"
+        # Create .devloop directory and PID file
+        claude_dir = temp_project_dir / ".devloop"
         claude_dir.mkdir()
 
         pid_file = claude_dir / "dev-agents.pid"
@@ -193,7 +193,7 @@ class TestVersionCommand:
 
         assert result.exit_code == 0
         assert "v" in result.stdout or "version" in result.stdout.lower()
-        assert "Dev Agents" in result.stdout
+        assert "DevLoop" in result.stdout
 
     def test_version_is_valid_semver(self, cli_runner):
         """Test that version output contains valid semantic version."""
@@ -209,7 +209,7 @@ class TestVersionCommand:
 class TestAmpStatusCommand:
     """Tests for the amp_status command."""
 
-    @patch("dev_agents.cli.main.show_agent_status")
+    @patch("devloop.cli.main.show_agent_status")
     def test_amp_status_returns_json(self, mock_show_status, cli_runner):
         """Test that amp_status returns valid JSON."""
         mock_show_status.return_value = {
@@ -228,7 +228,7 @@ class TestAmpStatusCommand:
             except json.JSONDecodeError:
                 pytest.fail("Output is not valid JSON")
 
-    @patch("dev_agents.cli.main.show_agent_status")
+    @patch("devloop.cli.main.show_agent_status")
     def test_amp_status_async_call(self, mock_show_status, cli_runner):
         """Test that amp_status properly calls async function."""
         mock_result = {"status": "ok", "agents": []}
@@ -243,7 +243,7 @@ class TestAmpStatusCommand:
 class TestAmpFindingsCommand:
     """Tests for the amp_findings command."""
 
-    @patch("dev_agents.cli.main.check_agent_findings")
+    @patch("devloop.cli.main.check_agent_findings")
     def test_amp_findings_returns_json(self, mock_check_findings, cli_runner):
         """Test that amp_findings returns valid JSON."""
         mock_check_findings.return_value = {"findings": [], "count": 0}
@@ -271,7 +271,7 @@ class TestAmpContextCommand:
 
     def test_amp_context_with_valid_index(self, cli_runner, temp_project_dir):
         """Test amp_context with valid index file."""
-        context_dir = temp_project_dir / ".dev-agents" / "context"
+        context_dir = temp_project_dir / ".devloop" / "context"
         context_dir.mkdir(parents=True, exist_ok=True)
 
         index_data = {"files": [], "metadata": {}}
@@ -349,7 +349,7 @@ class TestCLIHelp:
         result = cli_runner.invoke(app, ["--help"])
 
         assert result.exit_code == 0
-        assert "Dev Agents" in result.stdout or "usage" in result.stdout.lower()
+        assert "DevLoop" in result.stdout or "usage" in result.stdout.lower()
 
     def test_all_commands_listed(self, cli_runner):
         """Test that all commands are listed in help."""
@@ -384,7 +384,7 @@ class TestCLIErrorHandling:
         # Should fail gracefully
         assert result.exit_code != 0 or "error" in result.stdout.lower()
 
-    @patch("dev_agents.cli.main.Config")
+    @patch("devloop.cli.main.Config")
     def test_status_handles_missing_config(self, mock_config_class, cli_runner):
         """Test that status handles missing config gracefully."""
         mock_config = MagicMock()
@@ -411,12 +411,12 @@ class TestCLIIntegration:
         try:
             os.chdir(temp_project_dir)
 
-            with patch("dev_agents.cli.main.ConfigWrapper") as mock_wrapper_class:
+            with patch("devloop.cli.main.ConfigWrapper") as mock_wrapper_class:
                 mock_wrapper = MagicMock()
                 mock_wrapper.agents.return_value = {}
                 mock_wrapper_class.return_value = mock_wrapper
 
-                with patch("dev_agents.cli.main.Config") as mock_config_class:
+                with patch("devloop.cli.main.Config") as mock_config_class:
                     mock_config = MagicMock()
                     mock_config.load.return_value = {"agents": {}}
                     mock_config_class.return_value = mock_config

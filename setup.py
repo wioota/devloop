@@ -2,8 +2,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="dev-agents",
-    version="0.1.0",
+    name="devloop",
+    version="0.2.0",
     description="Background agents for development workflow automation",
     author="Your Name",
     author_email="your.email@example.com",
@@ -26,7 +26,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "dev-agents=dev_agents.cli.main:app",
+            "devloop=devloop.cli.main:app",
         ],
     },
 )

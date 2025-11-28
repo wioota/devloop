@@ -1,6 +1,6 @@
 # DevLoop Renaming Plan
 
-A comprehensive plan to rename the project from "dev-agents"/"Dev Agents" to "devloop"/"DevLoop".
+A comprehensive plan to rename the project from "devloop"/"DevLoop" to "devloop"/"DevLoop".
 
 ## Overview
 
@@ -32,33 +32,33 @@ Before proceeding, verify:
 ## Phase 2: Core Package Renaming
 
 ### 2.1 Python Package Structure
-**Current:** `src/dev_agents/` → **New:** `src/devloop/`
+**Current:** `src/devloop/` → **New:** `src/devloop/`
 
 ```bash
 # Step 1: Rename the package directory
-mv src/dev_agents src/devloop
+mv src/devloop src/devloop
 
 # Step 2: Update __init__.py files if they reference the package name
 # (Usually not needed, but check for hardcoded strings)
 ```
 
 **Files affected:**
-- `src/dev_agents/` directory → `src/devloop/`
+- `src/devloop/` directory → `src/devloop/`
 - All subdirectories remain the same structure
 
 ### 2.2 Python Module Imports
-**Pattern:** `from dev_agents.*` → `from devloop.*`
+**Pattern:** `from devloop.*` → `from devloop.*`
 
 Use ripgrep to find and replace all imports:
 
 ```bash
 # Find all import statements
-grep -r "from dev_agents" src/ tests/ --include="*.py"
-grep -r "import dev_agents" src/ tests/ --include="*.py"
+grep -r "from devloop" src/ tests/ --include="*.py"
+grep -r "import devloop" src/ tests/ --include="*.py"
 
 # Replace all occurrences (using sed or similar)
-find src/ tests/ -name "*.py" -exec sed -i 's/from dev_agents/from devloop/g' {} \;
-find src/ tests/ -name "*.py" -exec sed -i 's/import dev_agents/import devloop/g' {} \;
+find src/ tests/ -name "*.py" -exec sed -i 's/from devloop/from devloop/g' {} \;
+find src/ tests/ -name "*.py" -exec sed -i 's/import devloop/import devloop/g' {} \;
 ```
 
 **Directories to search:**
@@ -72,11 +72,11 @@ find src/ tests/ -name "*.py" -exec sed -i 's/import dev_agents/import devloop/g
 ```toml
 # OLD
 [tool.poetry]
-name = "dev-agents"
-packages = [{include = "dev_agents", from = "src"}]
+name = "devloop"
+packages = [{include = "devloop", from = "src"}]
 
 [tool.poetry.scripts]
-dev-agents = "dev_agents.cli.main:app"
+devloop = "devloop.cli.main:app"
 
 # NEW
 [tool.poetry]
@@ -88,50 +88,50 @@ devloop = "devloop.cli.main:app"
 ```
 
 **Changes:**
-- Project name: `dev-agents` → `devloop`
-- Package include: `dev_agents` → `devloop`
-- CLI entry point: `dev-agents` → `devloop`
+- Project name: `devloop` → `devloop`
+- Package include: `devloop` → `devloop`
+- CLI entry point: `devloop` → `devloop`
 
 #### 2.3.2 setup.py
-- Update package name from `dev-agents` to `devloop`
-- Update py_modules to use `devloop` instead of `dev_agents`
+- Update package name from `devloop` to `devloop`
+- Update py_modules to use `devloop` instead of `devloop`
 
 ---
 
 ## Phase 3: Configuration & Metadata
 
 ### 3.1 Directory Names in Config
-**.dev-agents directory → .devloop**
+**.devloop directory → .devloop**
 
 This directory is referenced in many config files and code. Changes needed in:
 
 ```bash
 # 1. Rename directory
-mv .dev-agents .devloop
+mv .devloop .devloop
 
 # 2. Update all references (run search & replace)
-grep -r "\.dev-agents" . --include="*.py" --include="*.md" --include="*.json"
+grep -r "\.devloop" . --include="*.py" --include="*.md" --include="*.json"
 
 # Replace in Python files
-find . -name "*.py" -exec sed -i 's/\.dev-agents/.devloop/g' {} \;
+find . -name "*.py" -exec sed -i 's/\.devloop/.devloop/g' {} \;
 
 # Replace in Markdown files
-find . -name "*.md" -exec sed -i 's/\.dev-agents/.devloop/g' {} \;
+find . -name "*.md" -exec sed -i 's/\.devloop/.devloop/g' {} \;
 ```
 
 **Files containing references:**
-- `src/dev_agents/core/config.py` (many references)
-- `src/dev_agents/core/manager.py`
-- `src/dev_agents/core/event_store.py`
-- `src/dev_agents/agents/file_logger.py`
-- `src/dev_agents/cli/main.py`
-- `src/dev_agents/cli/commands/custom_agents.py`
-- `src/dev_agents/cli/commands/feedback.py`
-- `src/dev_agents/core/context_store.py`
+- `src/devloop/core/config.py` (many references)
+- `src/devloop/core/manager.py`
+- `src/devloop/core/event_store.py`
+- `src/devloop/agents/file_logger.py`
+- `src/devloop/cli/main.py`
+- `src/devloop/cli/commands/custom_agents.py`
+- `src/devloop/cli/commands/feedback.py`
+- `src/devloop/core/context_store.py`
 - All documentation files (*.md)
 
 ### 3.2 String References in Code
-**Pattern:** `"dev-agents"` → `"devloop"`
+**Pattern:** `"devloop"` → `"devloop"`
 
 Search for hardcoded strings:
 - Help text in CLI
@@ -141,13 +141,13 @@ Search for hardcoded strings:
 
 ```bash
 # Find all string references
-grep -r '"dev-agents"' . --include="*.py"
-grep -r "'dev-agents'" . --include="*.py"
+grep -r '"devloop"' . --include="*.py"
+grep -r "'devloop'" . --include="*.py"
 
 # Example locations:
-# - src/dev_agents/cli/main.py (help text)
-# - src/dev_agents/cli/main_v1.py (help text)
-# - src/dev_agents/core/summary_formatter.py (help text)
+# - src/devloop/cli/main.py (help text)
+# - src/devloop/cli/main_v1.py (help text)
+# - src/devloop/core/summary_formatter.py (help text)
 ```
 
 ---
@@ -157,12 +157,12 @@ grep -r "'dev-agents'" . --include="*.py"
 ### 4.1 README.md Changes
 **Current section:**
 ```markdown
-# Dev Agents
+# DevLoop
 # Quick Start
-git clone https://github.com/wioota/dev-agents
-cd dev-agents
-dev-agents init /path/to/your/project
-dev-agents watch .
+git clone https://github.com/wioota/devloop
+cd devloop
+devloop init /path/to/your/project
+devloop watch .
 ```
 
 **New section:**
@@ -176,13 +176,13 @@ devloop watch .
 ```
 
 **Search & replace:**
-- `dev-agents` → `devloop` (command references)
-- `Dev Agents` → `DevLoop` (title references)
-- `dev_agents` → `devloop` (code references)
+- `devloop` → `devloop` (command references)
+- `DevLoop` → `DevLoop` (title references)
+- `devloop` → `devloop` (code references)
 
 ### 4.2 Other Documentation Files
 Update all `.md` files:
-- `AGENTS.md` - References to "dev-agents"
+- `AGENTS.md` - References to "devloop"
 - `AMP_ONBOARDING.md` - Amp integration guides
 - `CODING_RULES.md` - Code style guides
 - `INSTALLATION_AUTOMATION.md` - Installation docs
@@ -195,7 +195,7 @@ Update all `.md` files:
 
 ### 5.1 Repository Metadata
 If using GitHub:
-- [ ] Repository URL will change: `.../dev-agents` → `.../devloop`
+- [ ] Repository URL will change: `.../devloop` → `.../devloop`
 - Update in:
   - `README.md` links
   - `CONTRIBUTING.md`
@@ -211,7 +211,7 @@ git remote set-url origin https://github.com/wioota/devloop.git
 
 ### 5.3 Workflow Files
 Update `.github/workflows/*.yml`:
-- References to `dev-agents` command
+- References to `devloop` command
 - References to package paths
 - References in documentation links
 
@@ -250,8 +250,8 @@ devloop watch . --help
 
 ### 6.4 Documentation Check
 - [ ] All code examples in docs use correct command names
-- [ ] All import examples use `devloop` not `dev_agents`
-- [ ] All directory references use `.devloop` not `.dev-agents`
+- [ ] All import examples use `devloop` not `devloop`
+- [ ] All directory references use `.devloop` not `.devloop`
 
 ---
 
@@ -271,10 +271,10 @@ Add entry to `CHANGELOG.md`:
 ## [0.2.0] - YYYY-MM-DD
 
 ### Changed
-- **BREAKING:** Renamed project from "Dev Agents" to "DevLoop"
-  - Python package: `dev_agents` → `devloop`
-  - CLI command: `dev-agents` → `devloop`
-  - Config directory: `.dev-agents` → `.devloop`
+- **BREAKING:** Renamed project from "DevLoop" to "DevLoop"
+  - Python package: `devloop` → `devloop`
+  - CLI command: `devloop` → `devloop`
+  - Config directory: `.devloop` → `.devloop`
   - All imports updated to use `devloop`
 ```
 
@@ -288,11 +288,11 @@ Add entry to `CHANGELOG.md`:
 git add -A
 
 # Create comprehensive commit message
-git commit -m "refactor: rename project from dev-agents to devloop
+git commit -m "refactor: rename project from devloop to devloop
 
-- Rename Python package: src/dev_agents → src/devloop
-- Update CLI command: dev-agents → devloop
-- Rename config dir: .dev-agents → .devloop
+- Rename Python package: src/devloop → src/devloop
+- Update CLI command: devloop → devloop
+- Rename config dir: .devloop → .devloop
 - Update all imports throughout codebase
 - Update all documentation and examples
 - Update configuration files (pyproject.toml, setup.py)
@@ -329,13 +329,13 @@ git push origin v0.2.0
 - [ ] Branch created
 
 **Package & Code:**
-- [ ] `src/dev_agents/` → `src/devloop/`
+- [ ] `src/devloop/` → `src/devloop/`
 - [ ] All imports updated
 - [ ] All string references updated
 - [ ] Configuration files updated
 
 **Configuration:**
-- [ ] `.dev-agents/` → `.devloop/`
+- [ ] `.devloop/` → `.devloop/`
 - [ ] All path references updated
 - [ ] CLI entry point updated
 
@@ -370,13 +370,13 @@ git push origin v0.2.0
 
 **Breaking changes:**
 - Users must reinstall: `pip install devloop`
-- CLI command changes from `dev-agents` to `devloop`
-- Config directory changes from `.dev-agents` to `.devloop`
+- CLI command changes from `devloop` to `devloop`
+- Config directory changes from `.devloop` to `.devloop`
 - All imports must be updated if used as a library
 
 **Non-breaking with migration:**
 - Provide migration guide for users
-- Consider keeping symlinks in `.devloop/.dev-agents` for backward compat
+- Consider keeping symlinks in `.devloop/.devloop` for backward compat
 - Document upgrade path
 
 ---
@@ -390,10 +390,10 @@ git push origin v0.2.0
 
 # Search patterns to replace
 declare -a patterns=(
-    "dev_agents:devloop"
-    "dev-agents:devloop"
-    "Dev Agents:DevLoop"
-    ".dev-agents:.devloop"
+    "devloop:devloop"
+    "devloop:devloop"
+    "DevLoop:DevLoop"
+    ".devloop:.devloop"
 )
 
 for pattern in "${patterns[@]}"; do
@@ -404,8 +404,8 @@ for pattern in "${patterns[@]}"; do
 done
 
 echo "Renaming directories..."
-mv src/dev_agents src/devloop 2>/dev/null || true
-mv .dev-agents .devloop 2>/dev/null || true
+mv src/devloop src/devloop 2>/dev/null || true
+mv .devloop .devloop 2>/dev/null || true
 
 echo "✓ Bulk renaming complete"
 ```
@@ -426,5 +426,5 @@ echo "✓ Bulk renaming complete"
 
 1. Should we keep the GitHub repo name or change it too?
 2. Do we need backward compatibility or is breaking change acceptable?
-3. Should we migrate existing .dev-agents directories or force users to reinit?
-4. Will we maintain the old dev-agents package for legacy users?
+3. Should we migrate existing .devloop directories or force users to reinit?
+4. Will we maintain the old devloop package for legacy users?

@@ -1,13 +1,13 @@
 # Installation Automation Plan
 
-> **Goal:** Eliminate manual setup. The `dev-agents init` command and related tools should fully automate all onboarding and discipline enforcement.
+> **Goal:** Eliminate manual setup. The `devloop init` command and related tools should fully automate all onboarding and discipline enforcement.
 
 ---
 
 ## Current State
 
 Today, users must manually:
-1. Run `dev-agents init /path/to/project`
+1. Run `devloop init /path/to/project`
 2. Configure Amp workspace
 3. Register hooks
 4. Set up slash commands
@@ -20,10 +20,10 @@ Today, users must manually:
 
 ## Desired State
 
-When a user installs dev-agents:
+When a user installs devloop:
 
 ```bash
-dev-agents init /path/to/project
+devloop init /path/to/project
 ```
 
 Everything should be automatically:
@@ -40,7 +40,7 @@ Everything should be automatically:
 
 ### Phase 1: Environment Detection
 
-**During `dev-agents init`, detect:**
+**During `devloop init`, detect:**
 
 ```python
 def detect_environment():
@@ -55,7 +55,7 @@ def detect_environment():
     has_git = subprocess.run(["git", "status"], capture_output=True).returncode == 0
     
     # Check if already initialized
-    has_claude_dir = Path(".dev-agents").exists()
+    has_claude_dir = Path(".devloop").exists()
     
     return {
         "in_amp": in_amp,
@@ -72,10 +72,10 @@ def detect_environment():
 
 ```python
 def setup_core(path: Path):
-    """Set up core dev-agents infrastructure."""
+    """Set up core devloop infrastructure."""
     
-    # 1. Create .dev-agents directory
-    claude_dir = path / ".dev-agents"
+    # 1. Create .devloop directory
+    claude_dir = path / ".devloop"
     claude_dir.mkdir(exist_ok=True)
     
     # 2. Create AGENTS.md (copy from installation)
@@ -91,7 +91,7 @@ def setup_core(path: Path):
     if has_git_repo(path):
         setup_git_hooks(path)
     
-    # 6. Create .gitignore entries for .dev-agents
+    # 6. Create .gitignore entries for .devloop
     setup_gitignore(path)
 ```
 
@@ -107,7 +107,7 @@ def setup_amp_integration(path: Path, workspace_id: str, api_endpoint: str):
     create_workspace_config(
         path,
         workspace_id=workspace_id,
-        dev_agents_enabled=True,
+        devloop_enabled=True,
         verification_script=".agents/verify-task-complete"
     )
     
@@ -116,12 +116,12 @@ def setup_amp_integration(path: Path, workspace_id: str, api_endpoint: str):
         {
             "name": "agent-summary",
             "description": "Show recent agent findings",
-            "command": "dev-agents summary recent"
+            "command": "devloop summary recent"
         },
         {
             "name": "agent-status", 
             "description": "Show agent health",
-            "command": "dev-agents status"
+            "command": "devloop status"
         }
     ])
     
@@ -152,7 +152,7 @@ def setup_git_hooks(path: Path):
     # 1. Create pre-commit hook
     create_hook(hooks_dir / "pre-commit", """
     #!/bin/bash
-    # dev-agents pre-commit hook
+    # devloop pre-commit hook
     # Prevents commits with uncommitted changes
     
     if ! git diff-index --quiet --cached HEAD --; then
@@ -164,7 +164,7 @@ def setup_git_hooks(path: Path):
     # 2. Create pre-push hook
     create_hook(hooks_dir / "pre-push", """
     #!/bin/bash
-    # dev-agents pre-push hook
+    # devloop pre-push hook
     # Ensure clean state before push
     
     .agents/verify-task-complete || exit 1
@@ -186,7 +186,7 @@ def verify_installation(path: Path, in_amp: bool):
     checks = []
     
     # Core files exist
-    checks.append(check_file_exists(path / ".dev-agents" / "agents.json"))
+    checks.append(check_file_exists(path / ".devloop" / "agents.json"))
     checks.append(check_file_exists(path / "AGENTS.md"))
     checks.append(check_file_exists(path / "CODING_RULES.md"))
     checks.append(check_file_executable(path / ".agents" / "verify-task-complete"))
@@ -211,7 +211,7 @@ def verify_installation(path: Path, in_amp: bool):
 
 ---
 
-## Enhanced `dev-agents init` Command
+## Enhanced `devloop init` Command
 
 New signature:
 
@@ -225,10 +225,10 @@ def init(
     interactive: bool = typer.Option(True, help="Interactive setup"),
 ):
     """
-    Initialize dev-agents in a project.
+    Initialize devloop in a project.
     
     This command:
-    - Sets up .dev-agents directory and configuration
+    - Sets up .devloop directory and configuration
     - Creates AGENTS.md and CODING_RULES.md 
     - Registers git hooks (if git repo)
     - Auto-configures Amp integration (if in Amp)
@@ -237,7 +237,7 @@ def init(
     
     Everything is automatic - no manual setup needed.
     """
-    console.print("[bold]Dev Agents Installation[/bold]")
+    console.print("[bold]DevLoop Installation[/bold]")
     console.print("=" * 60)
     
     # Step 1: Detect environment
@@ -252,7 +252,7 @@ def init(
     # Step 2: Setup core
     console.print("\n[cyan]→[/cyan] Setting up core infrastructure...")
     setup_core(path)
-    console.print("  ✓ Created .dev-agents directory")
+    console.print("  ✓ Created .devloop directory")
     console.print("  ✓ Created agents.json configuration")
     console.print("  ✓ Copied AGENTS.md and CODING_RULES.md")
     
@@ -289,8 +289,8 @@ def init(
         console.print("  • Post-task verification: Automatic")
         console.print("  • Commit discipline: Enforced")
     
-    console.print(f"  • Start watching: [cyan]dev-agents watch {path}[/cyan]")
-    console.print(f"  • View config: [cyan]cat {path}/.dev-agents/agents.json[/cyan]")
+    console.print(f"  • Start watching: [cyan]devloop watch {path}[/cyan]")
+    console.print(f"  • View config: [cyan]cat {path}/.devloop/agents.json[/cyan]")
     console.print("\nDocumentation:")
     console.print("  • AGENTS.md - System design and discipline")
     console.print("  • CODING_RULES.md - Development standards")
@@ -307,7 +307,7 @@ def init(
 project-root/
 ├── AGENTS.md                          ← Copied from installation
 ├── CODING_RULES.md                    ← Copied from installation
-├── .dev-agents/
+├── .devloop/
 │   ├── agents.json                    ← Default configuration
 │   └── .gitignore                     ← Ignore logs, caches
 ├── .agents/
@@ -317,7 +317,7 @@ project-root/
 ├── .git/hooks/                        ← If git repo
 │   ├── pre-commit                     ← Verify clean state
 │   └── pre-push                       ← Run verification
-├── .gitignore                         ← Updated with .dev-agents entries
+├── .gitignore                         ← Updated with .devloop entries
 ├── .amp-workspace.json                ← If in Amp (auto-generated)
 └── .system-prompt-config.json         ← If in Amp (auto-generated)
 ```
@@ -345,7 +345,7 @@ AMP_API_ENDPOINT       # Amp API for registrations
 
 ```bash
 # In .git/config (auto-added)
-[hooks "dev-agents"]
+[hooks "devloop"]
     enabled = true
     verify-on-push = true
     verify-on-commit = true
@@ -363,7 +363,7 @@ AMP_API_ENDPOINT       # Amp API for registrations
 ### One-Command Setup
 
 ```bash
-dev-agents init /path/to/project
+devloop init /path/to/project
 ```
 
 This automatically:
@@ -374,7 +374,7 @@ This automatically:
    - Checks existing configuration
 
 2. **Core Setup**
-   - Creates .dev-agents directory
+   - Creates .devloop directory
    - Generates agents.json configuration
    - Copies AGENTS.md and CODING_RULES.md
    - Sets up .gitignore
@@ -405,13 +405,13 @@ This automatically:
 
 ### Zero Manual Setup Required
 
-After `dev-agents init`, everything is ready:
+After `devloop init`, everything is ready:
 - Agents are configured and enabled
 - Verification is automatic
 - Commit discipline is enforced
 - Amp integration is working (if in Amp)
 
-Just start using: `dev-agents watch .`
+Just start using: `devloop watch .`
 ```
 
 ---
@@ -422,7 +422,7 @@ Just start using: `dev-agents watch .`
 - [ ] Implement environment detection
 - [ ] Implement core setup (directory, files, config)
 - [ ] Implement verification system
-- [ ] Update `dev-agents init` command
+- [ ] Update `devloop init` command
 - [ ] Test on multiple project types
 
 ### Phase 2: Git Integration (Weeks 2-3)
@@ -449,7 +449,7 @@ Just start using: `dev-agents watch .`
 
 ## Success Criteria
 
-✅ User runs: `dev-agents init /path/to/project`
+✅ User runs: `devloop init /path/to/project`
 ✅ No additional manual setup needed
 ✅ All features work out of the box
 ✅ Commit discipline automatically enforced
@@ -463,14 +463,14 @@ Just start using: `dev-agents watch .`
 
 **If environment detection fails:**
 ```bash
-dev-agents init /path/to/project --skip-amp --skip-git-hooks
+devloop init /path/to/project --skip-amp --skip-git-hooks
 ```
 
 **If specific setup fails:**
 - Continue with other setup
 - Show which parts failed
 - Provide recovery instructions
-- Log errors to `.dev-agents/installation.log`
+- Log errors to `.devloop/installation.log`
 
 **If verification fails:**
 - Show what failed
@@ -525,7 +525,7 @@ Create:
 1. Review and approve this plan
 2. Create environment detection module
 3. Create Amp API client for registrations
-4. Implement enhanced `dev-agents init`
+4. Implement enhanced `devloop init`
 5. Add comprehensive tests
 6. Document user-facing guides
 

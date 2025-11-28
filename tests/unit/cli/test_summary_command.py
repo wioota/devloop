@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import pytest
 from typer.testing import CliRunner
 
-from dev_agents.cli.commands.summary import app as summary_app
+from devloop.cli.commands.summary import app as summary_app
 
 
 @pytest.fixture

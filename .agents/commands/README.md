@@ -1,6 +1,6 @@
 # Amp Slash Commands
 
-This directory contains custom slash commands for Amp that integrate with the dev-agents system.
+This directory contains custom slash commands for Amp that integrate with the devloop system.
 
 ## `/agent-summary`
 

@@ -111,7 +111,7 @@ A powerful command-line interface and Amp slash command that provides intelligen
 
 #### Integration Points
 
-- **CLI Command**: `dev-agents summary agent-summary [options]`
+- **CLI Command**: `devloop summary agent-summary [options]`
 - **Amp Slash Command**: `/agent-summary` - registered via `.agents/commands/agent-summary` executable script
 - **JSON API**: For programmatic access and third-party integrations
 
@@ -140,7 +140,7 @@ A powerful command-line interface and Amp slash command that provides intelligen
 ### One-Command Project Initialization
 
 ```bash
-dev-agents init /path/to/project
+devloop init /path/to/project
 ```
 
 This command **automatically handles everything:**
@@ -151,7 +151,7 @@ This command **automatically handles everything:**
    - Checks existing setup
 
 2. **Core Infrastructure**
-   - Creates `.dev-agents` directory
+   - Creates `.devloop` directory
    - Generates `agents.json` configuration
    - Copies `AGENTS.md` and `CODING_RULES.md`
    - Sets up `.gitignore` for agent files
@@ -174,31 +174,31 @@ This command **automatically handles everything:**
 
 ### What You Get
 
-After `dev-agents init`:
+After `devloop init`:
 
 - ✅ All agents configured and enabled
 - ✅ Commit/push discipline automatically enforced
 - ✅ Git hooks monitoring your workflow
 - ✅ Amp integration ready (if in Amp)
 - ✅ Verification system active
-- ✅ Ready to start: `dev-agents watch .`
+- ✅ Ready to start: `devloop watch .`
 
-**Zero manual configuration required.** The system is production-ready immediately after `dev-agents init`.
+**Zero manual configuration required.** The system is production-ready immediately after `devloop init`.
 
 ### Advanced Options
 
 ```bash
 # Skip Amp auto-configuration
-dev-agents init /path/to/project --skip-amp
+devloop init /path/to/project --skip-amp
 
 # Skip git hooks
-dev-agents init /path/to/project --skip-git-hooks
+devloop init /path/to/project --skip-git-hooks
 
 # Non-interactive (no prompts)
-dev-agents init /path/to/project --non-interactive
+devloop init /path/to/project --non-interactive
 
 # Show detailed setup logs
-dev-agents init /path/to/project --verbose
+devloop init /path/to/project --verbose
 ```
 
 See [INSTALLATION_AUTOMATION.md](./INSTALLATION_AUTOMATION.md) for complete technical details.
@@ -228,7 +228,7 @@ See CODING_RULES.md for detailed protocol.
 
 ## Configuration
 
-Agents are configured via `.dev-agents/agents.json`:
+Agents are configured via `.devloop/agents.json`:
 
 ```json
 {

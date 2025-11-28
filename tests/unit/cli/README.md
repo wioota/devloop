@@ -1,12 +1,12 @@
 # CLI Test Suite
 
-Comprehensive test coverage for the dev-agents CLI commands.
+Comprehensive test coverage for the devloop CLI commands.
 
 ## Test Files
 
 ### test_main_commands.py (30 tests)
 
-Tests for the main CLI entry point (`dev_agents.cli.main`).
+Tests for the main CLI entry point (`devloop.cli.main`).
 
 #### Test Classes
 
@@ -66,7 +66,7 @@ Tests for the main CLI entry point (`dev_agents.cli.main`).
 
 ### test_summary_command.py (5 tests)
 
-Tests for the summary subcommand (`dev_agents.cli.commands.summary`).
+Tests for the summary subcommand (`devloop.cli.commands.summary`).
 
 #### Test Classes
 
@@ -93,7 +93,7 @@ poetry run pytest tests/unit/cli/test_main_commands.py::TestInitCommand -v
 
 Run with coverage:
 ```bash
-poetry run pytest tests/unit/cli/ --cov=dev_agents.cli --cov-report=html
+poetry run pytest tests/unit/cli/ --cov=devloop.cli --cov-report=html
 ```
 
 ## Test Coverage

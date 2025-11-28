@@ -45,7 +45,7 @@ The Development Background Agents System is **fully implemented, tested, and ope
 - ✅ **Agent Health Monitor** - Tracks agent health/status
 
 ### 4. CLI & Integration ✅
-- **Main CLI** (`dev_agents.cli.main`)
+- **Main CLI** (`devloop.cli.main`)
   - `init` - Initialize in a project
   - `watch` - Monitor file changes
   - `status` - Show agent status
@@ -190,12 +190,12 @@ tests/unit/test_collectors.py                             [112/112] PASSED
 ### Start Watching a Project
 ```bash
 cd /path/to/project
-dev-agents watch .
+devloop watch .
 ```
 
 ### Check Agent Status
 ```bash
-dev-agents status
+devloop status
 ```
 
 ### View Agent Findings (in Amp)
@@ -207,7 +207,7 @@ dev-agents status
 
 ### Initialize in a New Project
 ```bash
-dev-agents init /path/to/project
+devloop init /path/to/project
 ```
 
 ---

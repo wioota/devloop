@@ -3,8 +3,8 @@
 import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch, MagicMock
-from dev_agents.agents.security_scanner import SecurityScannerAgent, SecurityConfig
-from dev_agents.core.event import Event
+from devloop.agents.security_scanner import SecurityScannerAgent, SecurityConfig
+from devloop.core.event import Event
 
 
 class TestSecurityConfig:
@@ -145,7 +145,7 @@ class TestSecurityScannerAgent:
             test_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
-    @patch("dev_agents.agents.security_scanner.SecurityScannerAgent._run_security_scan")
+    @patch("devloop.agents.security_scanner.SecurityScannerAgent._run_security_scan")
     async def test_handle_python_file(self, mock_scan, agent):
         """Test handling of Python files."""
         # Create a temporary Python file

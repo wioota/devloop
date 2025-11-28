@@ -15,7 +15,7 @@ Phase 3 implements the "Learning & Optimization" phase of the Development Backgr
 
 ### 1. Custom Agent Framework
 
-**Module:** `dev_agents/core/custom_agent.py`
+**Module:** `devloop/core/custom_agent.py`
 
 A complete framework for creating and managing custom agents programmatically:
 
@@ -27,7 +27,7 @@ A complete framework for creating and managing custom agents programmatically:
 
 #### Example Usage:
 ```python
-from dev_agents.core.custom_agent import AgentBuilder, CustomAgentType
+from devloop.core.custom_agent import AgentBuilder, CustomAgentType
 
 # Create a custom pattern matcher agent
 config = (
@@ -47,7 +47,7 @@ config = (
 
 ### 2. Learning System
 
-**Module:** `dev_agents/core/learning.py`
+**Module:** `devloop/core/learning.py`
 
 Intelligent learning system that extracts patterns from agent behavior:
 
@@ -65,9 +65,9 @@ Intelligent learning system that extracts patterns from agent behavior:
 
 #### Example Usage:
 ```python
-from dev_agents.core.learning import LearningSystem
+from devloop.core.learning import LearningSystem
 
-learning = LearningSystem(Path(".dev-agents/learning"))
+learning = LearningSystem(Path(".devloop/learning"))
 
 # Learn a pattern
 await learning.learn_pattern(
@@ -88,7 +88,7 @@ suggestion = await learning.suggest_optimization("formatter")
 
 ### 3. Enhanced Feedback System
 
-**Module:** `dev_agents/core/feedback.py` (enhanced)
+**Module:** `devloop/core/feedback.py` (enhanced)
 
 Extended feedback system with learning integration:
 
@@ -106,7 +106,7 @@ Extended feedback system with learning integration:
 
 ### 4. Performance Analytics
 
-**Module:** `dev_agents/core/performance.py` (enhanced)
+**Module:** `devloop/core/performance.py` (enhanced)
 
 Advanced performance monitoring and optimization:
 
@@ -132,46 +132,46 @@ Advanced performance monitoring and optimization:
 
 ```bash
 # List all custom agents
-dev-agents phase3 custom-list
+devloop phase3 custom-list
 
 # Create a new custom agent
-dev-agents phase3 custom-create "my_agent" pattern_matcher \
+devloop phase3 custom-create "my_agent" pattern_matcher \
   --description "Find TODO comments" \
   --triggers file:created,file:modified
 
 # Show details of a custom agent
-dev-agents phase3 custom-show <agent-id>
+devloop phase3 custom-show <agent-id>
 
 # Delete a custom agent
-dev-agents phase3 custom-delete <agent-id>
+devloop phase3 custom-delete <agent-id>
 ```
 
 ### Learning System Commands
 
 ```bash
 # Show learning insights for an agent
-dev-agents phase3 learning-insights --agent linter
+devloop phase3 learning-insights --agent linter
 
 # Get recommendations for an agent
-dev-agents phase3 learning-recommendations linter
+devloop phase3 learning-recommendations linter
 
 # Show learned behavior patterns
-dev-agents phase3 learning-patterns linter
+devloop phase3 learning-patterns linter
 ```
 
 ### Performance Commands
 
 ```bash
 # Show performance summary
-dev-agents phase3 perf-summary
-dev-agents phase3 perf-summary --agent linter --hours 48
+devloop phase3 perf-summary
+devloop phase3 perf-summary --agent linter --hours 48
 
 # Submit feedback for an agent
-dev-agents phase3 feedback-submit linter thumbs_up true \
+devloop phase3 feedback-submit linter thumbs_up true \
   --comment "Great job fixing that bug!"
 
 # List feedback for an agent
-dev-agents phase3 feedback-list linter
+devloop phase3 feedback-list linter
 ```
 
 ---
@@ -315,8 +315,8 @@ AdaptiveConfig Applies:
 ### Example 1: Create and Use Custom Pattern Agent
 
 ```python
-from dev_agents.core.custom_agent import AgentBuilder, CustomAgentType
-from dev_agents.core.learning import LearningSystem
+from devloop.core.custom_agent import AgentBuilder, CustomAgentType
+from devloop.core.learning import LearningSystem
 
 # Build custom agent
 config = (
@@ -328,11 +328,11 @@ config = (
 )
 
 # Store agent
-store = CustomAgentStore(Path(".dev-agents/custom_agents"))
+store = CustomAgentStore(Path(".devloop/custom_agents"))
 await store.save_agent(config)
 
 # Learn from executions
-learning = LearningSystem(Path(".dev-agents/learning"))
+learning = LearningSystem(Path(".devloop/learning"))
 await learning.learn_pattern(
     agent_name="todo_finder",
     pattern_name="high_todo_density",
@@ -346,7 +346,7 @@ await learning.learn_pattern(
 ### Example 2: Adaptive Configuration
 
 ```python
-from dev_agents.core.learning import AdaptiveAgentConfig
+from devloop.core.learning import AdaptiveAgentConfig
 
 adaptive_config = AdaptiveAgentConfig(learning, "formatter")
 
@@ -363,7 +363,7 @@ if await adaptive_config.should_execute():
 ### Example 3: Feedback Submission
 
 ```python
-from dev_agents.core.feedback import FeedbackAPI, FeedbackType
+from devloop.core.feedback import FeedbackAPI, FeedbackType
 
 feedback_api = FeedbackAPI(feedback_store)
 
@@ -478,16 +478,16 @@ insights = await feedback_api.get_agent_insights("linter")
 ### Custom agents not found
 ```bash
 # Check if custom agents directory exists
-ls .dev-agents/custom_agents/
+ls .devloop/custom_agents/
 
 # List all custom agents
-dev-agents phase3 custom-list
+devloop phase3 custom-list
 ```
 
 ### Learning patterns not stored
 ```bash
 # Check learning storage
-ls .dev-agents/learning/
+ls .devloop/learning/
 
 # Verify LearningSystem initialization
 # Ensure storage path is writable
@@ -496,7 +496,7 @@ ls .dev-agents/learning/
 ### Performance optimization not applied
 ```bash
 # Check performance metrics
-dev-agents phase3 perf-summary
+devloop phase3 perf-summary
 
 # Verify PerformanceMonitor is tracking
 # Ensure sufficient history (>10 operations)

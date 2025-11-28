@@ -8,7 +8,7 @@ import tempfile
 import json
 import time
 
-from dev_agents.core.custom_agent import (
+from devloop.core.custom_agent import (
     AgentBuilder,
     CustomAgentConfig,
     CustomAgentStore,
@@ -18,9 +18,9 @@ from dev_agents.core.custom_agent import (
     OutputAnalyzerAgent,
     get_agent_template,
 )
-from dev_agents.core.learning import LearningSystem, AdaptiveAgentConfig
-from dev_agents.core.feedback import FeedbackStore, FeedbackAPI, FeedbackType, Feedback
-from dev_agents.core.performance import PerformanceMonitor, PerformanceOptimizer
+from devloop.core.learning import LearningSystem, AdaptiveAgentConfig
+from devloop.core.feedback import FeedbackStore, FeedbackAPI, FeedbackType, Feedback
+from devloop.core.performance import PerformanceMonitor, PerformanceOptimizer
 
 
 class TestCustomAgentBuilder:

@@ -1,4 +1,4 @@
-# Dev Agents
+# DevLoop
 
 > **Intelligent background agents for development workflow automation** — automate code quality checks, testing, documentation, and more while you code.
 
@@ -15,7 +15,7 @@
 
 ## Features
 
-Dev Agents runs background agents that automatically:
+DevLoop runs background agents that automatically:
 
 - **🔍 Linting & Type Checking** — Detect issues as you code (mypy, custom linters)
 - **📝 Code Formatting** — Auto-format files with Black, isort, and more
@@ -40,8 +40,8 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 
 ```bash
 # Clone the repository
-git clone https://github.com/wioota/dev-agents
-cd dev-agents
+git clone https://github.com/wioota/devloop
+cd devloop
 
 # Install poetry (if needed)
 curl -sSL https://install.python-poetry.org | python3 -
@@ -57,11 +57,11 @@ poetry shell
 
 ```bash
 # 1. Initialize in your project (handles everything automatically)
-dev-agents init /path/to/your/project
+devloop init /path/to/your/project
 ```
 
 The `init` command automatically:
-- ✅ Sets up .dev-agents directory and configuration
+- ✅ Sets up .devloop directory and configuration
 - ✅ Creates AGENTS.md and CODING_RULES.md
 - ✅ Sets up git hooks (if git repo)
 - ✅ Registers Amp integration (if in Amp)
@@ -72,12 +72,12 @@ Then just:
 ```bash
 # 2. Start watching for changes
 cd /path/to/your/project
-dev-agents watch .
+devloop watch .
 
 # 3. Make code changes and watch agents respond
 ```
 
-**That's it!** No manual configuration needed. Dev Agents will automatically monitor your project, run agents on file changes, and enforce commit discipline.
+**That's it!** No manual configuration needed. DevLoop will automatically monitor your project, run agents on file changes, and enforce commit discipline.
 
 [View the installation automation details →](./INSTALLATION_AUTOMATION.md)
 
@@ -85,10 +85,10 @@ dev-agents watch .
 
 ```bash
 # Watch a directory for changes
-dev-agents watch .
+devloop watch .
 
 # Show agent status and health
-dev-agents status
+devloop status
 
 # View current findings in Amp
 /agent-summary          # Recent findings
@@ -96,7 +96,7 @@ dev-agents status
 /agent-summary --agent linter --severity error
 
 # Create a custom agent (Phase 3)
-dev-agents phase3 custom-create my_agent pattern_matcher
+devloop phase3 custom-create my_agent pattern_matcher
 ```
 
 [View all CLI commands →](./docs/cli-commands.md)
@@ -132,7 +132,7 @@ File Changes → Collectors → Event Bus → Agents → Results
 
 ## Agents
 
-Dev Agents includes **8 built-in agents** out of the box:
+DevLoop includes **8 built-in agents** out of the box:
 
 ### Phase 1: Core Agents
 - **Linter Agent** — Runs linters on changed files
@@ -150,7 +150,7 @@ Dev Agents includes **8 built-in agents** out of the box:
 Create your own agents without writing code:
 
 ```python
-from dev_agents.core.custom_agent import AgentBuilder, CustomAgentType
+from devloop.core.custom_agent import AgentBuilder, CustomAgentType
 
 # Create a custom pattern matcher
 config = (
@@ -168,7 +168,7 @@ config = (
 
 ## Configuration
 
-Configure agent behavior in `.dev-agents/agents.json`:
+Configure agent behavior in `.devloop/agents.json`:
 
 ```json
 {
@@ -231,25 +231,25 @@ echo "x=1" > app.py  # Auto-formatted to x = 1
 
 ```bash
 # Create agent to find TODO comments
-dev-agents phase3 custom-create find_todos pattern_matcher \
+devloop phase3 custom-create find_todos pattern_matcher \
   --description "Find TODO comments" \
   --triggers file:created,file:modified
 
 # List your custom agents
-dev-agents phase3 custom-list
+devloop phase3 custom-list
 ```
 
 ### Example 4: Learn & Optimize
 
 ```bash
 # View learned patterns
-dev-agents phase3 learning-insights --agent linter
+devloop phase3 learning-insights --agent linter
 
 # Get recommendations
-dev-agents phase3 learning-recommendations linter
+devloop phase3 learning-recommendations linter
 
 # Check performance data
-dev-agents phase3 perf-summary --agent formatter
+devloop phase3 perf-summary --agent formatter
 ```
 
 [More examples →](./examples/)
@@ -263,7 +263,7 @@ dev-agents phase3 perf-summary --agent formatter
 poetry run pytest
 
 # Run with coverage report
-poetry run pytest --cov=dev_agents
+poetry run pytest --cov=devloop
 
 # Run specific test file
 poetry run pytest tests/unit/agents/test_linter.py -v
@@ -283,8 +283,8 @@ poetry run pytest -v
 ### Project Structure
 
 ```
-dev-agents/
-├── src/dev_agents/
+devloop/
+├── src/devloop/
 │   ├── core/              # Event system, agents, context
 │   ├── collectors/        # Event collectors
 │   ├── agents/            # Built-in agents
@@ -297,11 +297,11 @@ dev-agents/
 
 ### Adding a New Agent
 
-1. Create `src/dev_agents/agents/my_agent.py`:
+1. Create `src/devloop/agents/my_agent.py`:
 
 ```python
-from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.event import Event
+from devloop.core.agent import Agent, AgentResult
+from devloop.core.event import Event
 
 class MyAgent(Agent):
     async def handle(self, event: Event) -> AgentResult:
@@ -314,7 +314,7 @@ class MyAgent(Agent):
         )
 ```
 
-2. Register in `src/dev_agents/cli/main.py`
+2. Register in `src/devloop/cli/main.py`
 
 3. Add tests in `tests/unit/agents/test_my_agent.py`
 
@@ -351,7 +351,7 @@ poetry run mypy src
 
 ## Design Principles
 
-Dev Agents follows these core principles:
+DevLoop follows these core principles:
 
 ✅ **Non-Intrusive** — Runs in background without blocking workflow  
 ✅ **Event-Driven** — All actions triggered by observable events  
@@ -370,18 +370,18 @@ Dev Agents follows these core principles:
 
 ```bash
 # Check status
-dev-agents status
+devloop status
 
 # View logs
-tail -f .dev-agents/agent.log
+tail -f .devloop/agent.log
 
 # Enable verbose mode
-dev-agents watch . --verbose
+devloop watch . --verbose
 ```
 
 ### Performance issues
 
-Check `.dev-agents/agents.json`:
+Check `.devloop/agents.json`:
 
 ```json
 {
@@ -399,10 +399,10 @@ Check `.dev-agents/agents.json`:
 
 ```bash
 # Verify they exist
-dev-agents phase3 custom-list
+devloop phase3 custom-list
 
 # Check storage
-ls -la .dev-agents/custom_agents/
+ls -la .devloop/custom_agents/
 ```
 
 [Full troubleshooting guide →](./docs/troubleshooting.md)
@@ -441,7 +441,7 @@ All operations are async and non-blocking.
 
 ## Amp Integration
 
-Using Dev Agents in Amp? See [AMP_ONBOARDING.md](./AMP_ONBOARDING.md) for:
+Using DevLoop in Amp? See [AMP_ONBOARDING.md](./AMP_ONBOARDING.md) for:
 
 - Installation and registration checklist
 - Required configuration
@@ -464,8 +464,8 @@ Contributions welcome! Please read [CODING_RULES.md](./CODING_RULES.md) for:
 ### Development Setup
 
 ```bash
-git clone https://github.com/wioota/dev-agents
-cd dev-agents
+git clone https://github.com/wioota/devloop
+cd devloop
 poetry install
 poetry run pytest
 ```
@@ -480,7 +480,7 @@ poetry run pytest
 poetry run pytest tests/unit/agents/test_linter.py
 
 # With coverage
-poetry run pytest --cov=dev_agents
+poetry run pytest --cov=devloop
 ```
 
 ---
@@ -494,8 +494,8 @@ TBD
 ## Support
 
 - 📚 **Documentation:** [./docs/](./docs/)
-- 🐛 **Issues:** [GitHub Issues](https://github.com/wioota/dev-agents/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/wioota/dev-agents/discussions)
+- 🐛 **Issues:** [GitHub Issues](https://github.com/wioota/devloop/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/wioota/devloop/discussions)
 - 🤝 **Contributing:** [CONTRIBUTING.md](./CODING_RULES.md)
 
 ---
@@ -510,5 +510,5 @@ Built with:
 
 ---
 
-**Made with ❤️ by the Dev Agents team**
+**Made with ❤️ by the DevLoop team**
 

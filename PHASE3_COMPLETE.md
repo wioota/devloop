@@ -26,7 +26,7 @@ Phase 3 of the Development Background Agents System is **complete and production
 
 ### 1. Custom Agent Framework
 
-**File:** `src/dev_agents/core/custom_agent.py` (400+ lines)
+**File:** `src/devloop/core/custom_agent.py` (400+ lines)
 
 Allows users to create custom agents without writing agent code:
 
@@ -51,7 +51,7 @@ config = (
 
 ### 2. Learning System
 
-**File:** `src/dev_agents/core/learning.py` (350+ lines)
+**File:** `src/devloop/core/learning.py` (350+ lines)
 
 Enables agents to learn from behavior and feedback:
 
@@ -77,26 +77,26 @@ recommendations = await learning.get_recommendations("linter")
 
 ### 3. CLI Commands
 
-**File:** `src/dev_agents/cli/phase3.py` (500+ lines)
+**File:** `src/devloop/cli/phase3.py` (500+ lines)
 
 New `phase3` subcommand with 10 commands:
 
 ```bash
 # Custom agent commands
-dev-agents phase3 custom-list
-dev-agents phase3 custom-create <name> <type>
-dev-agents phase3 custom-show <id>
-dev-agents phase3 custom-delete <id>
+devloop phase3 custom-list
+devloop phase3 custom-create <name> <type>
+devloop phase3 custom-show <id>
+devloop phase3 custom-delete <id>
 
 # Learning commands
-dev-agents phase3 learning-insights --agent linter
-dev-agents phase3 learning-recommendations linter
-dev-agents phase3 learning-patterns linter
+devloop phase3 learning-insights --agent linter
+devloop phase3 learning-recommendations linter
+devloop phase3 learning-patterns linter
 
 # Performance/feedback commands
-dev-agents phase3 perf-summary
-dev-agents phase3 feedback-submit linter rating 5
-dev-agents phase3 feedback-list linter
+devloop phase3 perf-summary
+devloop phase3 feedback-submit linter rating 5
+devloop phase3 feedback-list linter
 ```
 
 ### 4. Tests
@@ -183,7 +183,7 @@ PerformanceOptimizer
 Phase 3 uses JSON files for persistence:
 
 ```
-.dev-agents/
+.devloop/
 ├── custom_agents/
 │   └── agents.json        # Custom agent definitions
 ├── learning/
@@ -229,7 +229,7 @@ Phase 3 seamlessly integrates with existing infrastructure:
 
 ✅ **Event System** - Custom agents receive same events as built-in agents  
 ✅ **Agent Manager** - Works with existing agent lifecycle  
-✅ **Storage** - Uses same `.dev-agents/` directory structure  
+✅ **Storage** - Uses same `.devloop/` directory structure  
 ✅ **Configuration** - Respects existing config system  
 ✅ **Context Store** - Custom agent findings stored in context  
 ✅ **Performance Monitor** - Tracks custom agents same as built-in  
@@ -242,7 +242,7 @@ Phase 3 seamlessly integrates with existing infrastructure:
 ### Example 1: Create and Use Custom Agent
 
 ```python
-from dev_agents.core.custom_agent import AgentBuilder, CustomAgentType
+from devloop.core.custom_agent import AgentBuilder, CustomAgentType
 from pathlib import Path
 
 # Create custom agent
@@ -259,7 +259,7 @@ config = (
 )
 
 # Store it
-store = CustomAgentStore(Path(".dev-agents/custom_agents"))
+store = CustomAgentStore(Path(".devloop/custom_agents"))
 await store.save_agent(config)
 
 # Use it
@@ -270,9 +270,9 @@ result = await template.execute({"file_path": "main.py"})
 ### Example 2: Learn from Behavior
 
 ```python
-from dev_agents.core.learning import LearningSystem
+from devloop.core.learning import LearningSystem
 
-learning = LearningSystem(Path(".dev-agents/learning"))
+learning = LearningSystem(Path(".devloop/learning"))
 
 # Record a pattern
 await learning.learn_pattern(
@@ -293,7 +293,7 @@ for rec in recs:
 ### Example 3: Adaptive Configuration
 
 ```python
-from dev_agents.core.learning import AdaptiveAgentConfig
+from devloop.core.learning import AdaptiveAgentConfig
 
 adaptive = AdaptiveAgentConfig(learning, "formatter")
 
@@ -314,7 +314,7 @@ if await adaptive.should_execute():
 ### Example 4: Collect Feedback
 
 ```python
-from dev_agents.core.feedback import FeedbackAPI, FeedbackType
+from devloop.core.feedback import FeedbackAPI, FeedbackType
 
 api = FeedbackAPI(feedback_store)
 
@@ -361,14 +361,14 @@ print(f"Average rating: {insights['performance']['average_rating']:.1f}/5")
 ## Files Modified/Created
 
 ### New Files
-- `src/dev_agents/core/custom_agent.py`
-- `src/dev_agents/core/learning.py`
-- `src/dev_agents/cli/phase3.py`
+- `src/devloop/core/custom_agent.py`
+- `src/devloop/core/learning.py`
+- `src/devloop/cli/phase3.py`
 - `tests/unit/core/test_phase3.py`
 - `PHASE3_IMPLEMENTATION.md`
 
 ### Modified Files
-- `src/dev_agents/cli/main.py` - Added phase3 integration
+- `src/devloop/cli/main.py` - Added phase3 integration
 - `README.md` - Updated with Phase 3 status
 
 ---
@@ -416,23 +416,23 @@ Integration:
 **Custom agents not appearing**
 ```bash
 # Check storage
-ls -la .dev-agents/custom_agents/
+ls -la .devloop/custom_agents/
 # List via CLI
-dev-agents phase3 custom-list
+devloop phase3 custom-list
 ```
 
 **Learning patterns not stored**
 ```bash
 # Verify directory exists
-mkdir -p .dev-agents/learning
+mkdir -p .devloop/learning
 # Check files
-ls -la .dev-agents/learning/
+ls -la .devloop/learning/
 ```
 
 **Performance data missing**
 ```bash
 # Need sufficient history (>10 operations)
-dev-agents phase3 perf-summary
+devloop phase3 perf-summary
 # Data is accumulated over time
 ```
 
@@ -507,8 +507,8 @@ Phase 3 maintains security standards:
 
 ### CLI Help
 ```bash
-dev-agents phase3 --help              # Overview
-dev-agents phase3 custom-create --help # Specific command
+devloop phase3 --help              # Overview
+devloop phase3 custom-create --help # Specific command
 ```
 
 ---
@@ -548,24 +548,24 @@ The implementation is:
 
 ### 1. Create a Custom Agent
 ```bash
-dev-agents phase3 custom-create "my_agent" pattern_matcher \
+devloop phase3 custom-create "my_agent" pattern_matcher \
   --description "Find patterns" \
   --triggers file:created,file:modified
 ```
 
 ### 2. Monitor Learning
 ```bash
-dev-agents phase3 learning-insights --agent linter
+devloop phase3 learning-insights --agent linter
 ```
 
 ### 3. Check Performance
 ```bash
-dev-agents phase3 perf-summary --agent formatter
+devloop phase3 perf-summary --agent formatter
 ```
 
 ### 4. Submit Feedback
 ```bash
-dev-agents phase3 feedback-submit linter rating 5
+devloop phase3 feedback-submit linter rating 5
 ```
 
 ---

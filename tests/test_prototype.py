@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from dev_agents.agents import EchoAgent
-from dev_agents.core import Event, EventBus, Priority
+from devloop.agents import EchoAgent
+from devloop.core import Event, EventBus, Priority
 
 
 @pytest.mark.asyncio
