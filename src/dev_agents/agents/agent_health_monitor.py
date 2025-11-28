@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 from dev_agents.core.agent import Agent, AgentResult
 from dev_agents.core.auto_fix import auto_fix
-from dev_agents.core.context_store import context_store
+from dev_agents.core.context_store import context_store, Finding
 from dev_agents.core.event import Event
 
 
@@ -59,7 +59,16 @@ class AgentHealthMonitorAgent(Agent):
                         message=f"Applied fixes for {agent_name} failure: {fix_summary}",
                         data={"applied_fixes": applied_fixes},
                     )
-                    context_store.write_finding(agent_result)
+                    await context_store.add_finding(
+                        Finding(
+                            id=f"{self.name}-{agent_name}-failure-fix",
+                            agent=self.name,
+                            timestamp=str(event.timestamp),
+                            file="",
+                            message=agent_result.message,
+                            context=agent_result.data or {},
+                        )
+                    )
                     return agent_result
                 else:
                     agent_result = AgentResult(
@@ -69,7 +78,16 @@ class AgentHealthMonitorAgent(Agent):
                         message=f"No safe fixes available for {agent_name} failure",
                         data={"applied_fixes": {}},
                     )
-                    context_store.write_finding(agent_result)
+                    await context_store.add_finding(
+                        Finding(
+                            id=f"{self.name}-{agent_name}-no-fix",
+                            agent=self.name,
+                            timestamp=str(event.timestamp),
+                            file="",
+                            message=agent_result.message,
+                            context=agent_result.data or {},
+                        )
+                    )
                     return agent_result
 
             # Agent succeeded, nothing to do

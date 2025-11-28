@@ -23,6 +23,7 @@ ruff = "^0.1"
 mypy = "^1.8"
 bandit = "^1.7"
 radon = "^6.0"
+types-aiofiles = "^23.2"
 
 [tool.poetry.scripts]
 dev-agents = "dev_agents.cli.main:app"

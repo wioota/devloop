@@ -5,6 +5,7 @@ from dev_agents.core.config import config
 from dev_agents.core.context_store import context_store
 from dev_agents.core.summary_generator import SummaryGenerator
 from dev_agents.core.summary_formatter import SummaryFormatter
+from typing import Any, Callable, Coroutine, Dict
 
 
 async def check_agent_findings():
@@ -134,9 +135,10 @@ async def generate_agent_summary(scope: str = "recent", filters: dict = None):
     generator = SummaryGenerator(context_store)
     report = await generator.generate_summary(scope, filters)
 
+    formatter = SummaryFormatter()
     return {
-        "summary": SummaryFormatter.format_json(report),
-        "formatted_report": SummaryFormatter.format_markdown(report),
+        "summary": formatter.format_json(report),
+        "formatted_report": formatter.format_markdown(report),
         "quick_stats": {
             "total_findings": report.total_findings,
             "critical_issues": len(report.critical_issues),
@@ -147,7 +149,7 @@ async def generate_agent_summary(scope: str = "recent", filters: dict = None):
 
 
 # Amp subagent command mappings
-AMP_COMMANDS = {
+AMP_COMMANDS: Dict[str, Callable[..., Coroutine[Any, Any, Any]]] = {
     "check_agent_findings": check_agent_findings,
     "apply_autonomous_fixes": apply_autonomous_fixes,
     "show_agent_status": show_agent_status,
@@ -155,9 +157,12 @@ AMP_COMMANDS = {
 }
 
 
-async def execute_amp_command(command: str, **kwargs):
+from typing import Any, Callable, Coroutine
+
+async def execute_amp_command(command: str, **kwargs) -> Any:
     """Execute an Amp integration command."""
     if command not in AMP_COMMANDS:
         raise ValueError(f"Unknown command: {command}")
 
-    return await AMP_COMMANDS[command](**kwargs)
+    func: Callable[..., Coroutine[Any, Any, Any]] = AMP_COMMANDS[command]
+    return await func(**kwargs)

@@ -99,7 +99,7 @@ jobs:
 
     - name: Run mypy (type checking)
        run: |
-         cd src && poetry run mypy dev_agents/core/ dev_agents/agents/ --no-error-summary
+         cd src && poetry run mypy dev_agents/core/ dev_agents/agents/
 
   security:
     runs-on: ubuntu-latest

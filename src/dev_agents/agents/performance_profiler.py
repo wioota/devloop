@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
-from ..core.context_store import context_store
+from ..core.context_store import context_store, Finding
 from ..core.event import Event
 
 
@@ -155,7 +155,18 @@ class PerformanceProfilerAgent(Agent):
         )
 
         # Write to context store for Claude Code integration
-        context_store.write_finding(agent_result)
+        for func in high_complexity:
+            await context_store.add_finding(
+                Finding(
+                    id=f"{self.name}-{file_path}-{func['name']}",
+                    agent=self.name,
+                    timestamp=str(event.timestamp),
+                    file=str(file_path),
+                    line=func["line_number"],
+                    message=f"High complexity function: {func['name']} (complexity: {func['complexity']})",
+                    context=func,
+                )
+            )
 
         return agent_result
 
@@ -170,6 +181,8 @@ class PerformanceProfilerAgent(Agent):
 
     def _should_exclude_file(self, file_path: str) -> bool:
         """Check if file should be excluded from analysis."""
+        if not self.config.exclude_patterns:
+            return False
         for pattern in self.config.exclude_patterns:
             if pattern.startswith("*") and pattern.endswith("*"):
                 if pattern[1:-1] in file_path:
@@ -189,7 +202,7 @@ class PerformanceProfilerAgent(Agent):
         results = []
 
         # Try radon first (good for complexity analysis)
-        if "radon" in self.config.enabled_tools:
+        if self.config.enabled_tools and "radon" in self.config.enabled_tools:
             radon_result = await self._run_radon(file_path)
             if radon_result:
                 results.append(radon_result)

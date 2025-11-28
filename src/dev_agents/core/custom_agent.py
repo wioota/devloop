@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -31,26 +31,11 @@ class CustomAgentConfig:
     description: str
     agent_type: CustomAgentType
     enabled: bool = True
-    triggers: List[str] = None
-    config: Dict[str, Any] = None
-    metadata: Dict[str, Any] = None
+    triggers: List[str] = field(default_factory=list)
+    config: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
     created_at: Optional[float] = None
     updated_at: Optional[float] = None
-
-    def __post_init__(self):
-        if self.triggers is None:
-            self.triggers = []
-        if self.config is None:
-            self.config = {}
-        if self.metadata is None:
-            self.metadata = {}
-
-        import time
-
-        if self.created_at is None:
-            self.created_at = time.time()
-        if self.updated_at is None:
-            self.updated_at = self.created_at
 
 
 class AgentBuilder:

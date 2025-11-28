@@ -6,7 +6,7 @@ import subprocess  # nosec B404 - Required for running type checking tools
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..core.agent import Agent, AgentResult
 from ..core.event import Event
@@ -16,17 +16,13 @@ from ..core.event import Event
 class TypeCheckerConfig:
     """Configuration for type checking."""
 
-    enabled_tools: List[str] = None  # ["mypy", "pyright", "pyre"]
+    enabled_tools: List[str] = field(default_factory=lambda: ["mypy"])
     strict_mode: bool = False
     show_error_codes: bool = True
-    exclude_patterns: List[str] = None
+    exclude_patterns: List[str] = field(
+        default_factory=lambda: ["test*", "*_test.py", "*/tests/*"]
+    )
     max_issues: int = 50
-
-    def __post_init__(self):
-        if self.enabled_tools is None:
-            self.enabled_tools = ["mypy"]
-        if self.exclude_patterns is None:
-            self.exclude_patterns = ["test*", "*_test.py", "*/tests/*"]
 
 
 class TypeCheckResult:

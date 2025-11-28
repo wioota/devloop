@@ -111,7 +111,7 @@ class DocLifecycleAgent(Agent):
 
     async def scan_documentation(self) -> List[Dict[str, Any]]:
         """Scan all documentation and return findings."""
-        findings = []
+        findings: List[Dict[str, Any]] = []
 
         # Find all markdown files
         md_files = self._find_markdown_files()
@@ -157,7 +157,7 @@ class DocLifecycleAgent(Agent):
     def _find_markdown_files(self) -> List[Path]:
         """Find all markdown files in project."""
         # Search in current directory and docs/
-        md_files = []
+        md_files: List[Path] = []
 
         # Root level markdown files
         md_files.extend(self.project_root.glob("*.md"))
@@ -179,7 +179,7 @@ class DocLifecycleAgent(Agent):
 
     async def _analyze_file(self, file_path: Path) -> List[Dict[str, Any]]:
         """Analyze a single markdown file for lifecycle patterns."""
-        findings = []
+        findings: List[Dict[str, Any]] = []
 
         # Skip if in never_archive list
         if file_path.name in self.config.never_archive:
@@ -320,7 +320,7 @@ class DocLifecycleAgent(Agent):
         duplicates = []
 
         # Group by similar names (normalized)
-        name_groups = {}
+        name_groups: Dict[str, List[Path]] = {}
         for f in md_files:
             # Normalize name: lowercase, remove common suffixes/prefixes, remove version numbers
             normalized = f.stem.lower()
