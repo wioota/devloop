@@ -1,0 +1,63 @@
+{
+  "workspace": {
+    "name": "Dev Agents",
+    "description": "Background agents for development workflow automation"
+  },
+  "dev_agents": {
+    "enabled": true,
+    "verification_script": ".agents/verify-task-complete",
+    "commit_required": true,
+    "auto_format_messages": true,
+    "hooks": {
+      "post_task": ".agents/hooks/post-task"
+    }
+  },
+  "coding_agent": {
+    "system_prompt_includes": [
+      "See AGENTS.md for development discipline",
+      "See CODING_RULES.md for commit protocol",
+      "Every task must end with: git add, git commit, git push origin main",
+      "Always verify with: .agents/verify-task-complete"
+    ],
+    "post_task_checklist": [
+      "Run: .agents/verify-task-complete",
+      "Output should show: ✅ PASS: All checks successful",
+      "If FAIL: Follow error message suggestions",
+      "Do NOT move to next task until PASS"
+    ]
+  },
+  "integration": {
+    "slash_commands": [
+      {
+        "name": "agent-summary",
+        "command": "dev-agents summary recent",
+        "description": "Show recent agent findings"
+      },
+      {
+        "name": "agent-status",
+        "command": "dev-agents status",
+        "description": "Show agent health and status"
+      }
+    ],
+    "git_integration": {
+      "auto_commit_on_task_end": false,
+      "require_clean_tree": true,
+      "push_after_commit": true
+    }
+  },
+  "task_workflow": {
+    "pre_task": [
+      "Ensure working tree is clean",
+      "Pull latest changes"
+    ],
+    "during_task": [
+      "Follow CODING_RULES.md patterns",
+      "Write tests as you code"
+    ],
+    "post_task": [
+      "Run .agents/verify-task-complete",
+      "Fix any issues shown",
+      "Only mark task complete if ✅ PASS"
+    ]
+  }
+}

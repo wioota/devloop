@@ -427,6 +427,19 @@ All operations are async and non-blocking.
 
 ---
 
+## Amp Integration
+
+Using Dev Agents in Amp? See [AMP_ONBOARDING.md](./AMP_ONBOARDING.md) for:
+
+- Installation and registration checklist
+- Required configuration
+- Post-task verification workflow
+- Troubleshooting guide
+
+The commit/push discipline is automatically enforced via `.agents/verify-task-complete`.
+
+---
+
 ## Contributing
 
 Contributions welcome! Please read [CODING_RULES.md](./CODING_RULES.md) for:

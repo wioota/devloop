@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Post-task verification hook
+# Called by Amp/system after task completion to enforce commit discipline
+# 
+# This hook ensures all work is committed and pushed before moving to next task
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+
+cd "$PROJECT_ROOT"
+
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+echo "Post-Task Verification"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+
+# Run verification
+if .agents/verify-task-complete; then
+    echo ""
+    echo "✨ All checks passed. Ready for next task."
+    echo ""
+    exit 0
+else
+    echo ""
+    echo "⚠️  Task verification failed. Please fix the issues above."
+    echo ""
+    echo "Quick fix steps:"
+    echo "  1. git status              # See what needs to be done"
+    echo "  2. git add <files>         # Stage changes"
+    echo "  3. git commit -m '...'     # Commit with descriptive message"
+    echo "  4. git push origin main    # Push changes"
+    echo "  5. .agents/verify-task-complete  # Verify again"
+    echo ""
+    exit 1
+fi
