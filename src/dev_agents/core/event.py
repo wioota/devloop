@@ -76,7 +76,11 @@ class EventBus:
                         try:
                             await queue.put(event)
                             notified_queues.add(queue)
-                        except (asyncio.QueueFull, asyncio.CancelledError, RuntimeError):
+                        except (
+                            asyncio.QueueFull,
+                            asyncio.CancelledError,
+                            RuntimeError,
+                        ):
                             pass  # Queue might be closed or in a bad state
 
     def _matches_pattern(self, event_type: str, pattern: str) -> bool:
