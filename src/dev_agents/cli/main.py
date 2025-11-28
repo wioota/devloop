@@ -11,6 +11,9 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
+from .commands import custom_agents as custom_agents_cmd
+from .commands import feedback as feedback_cmd
+from .commands import summary as summary_cmd
 from dev_agents.agents import (
     AgentHealthMonitorAgent,
     FormatterAgent,
@@ -36,11 +39,6 @@ app = typer.Typer(
     help="Dev Agents - Development workflow automation", add_completion=False
 )
 console = Console()
-
-# Import and add command submodules
-from .commands import summary as summary_cmd
-from .commands import custom_agents as custom_agents_cmd
-from .commands import feedback as feedback_cmd
 
 app.add_typer(summary_cmd.app, name="summary")
 app.add_typer(custom_agents_cmd.app, name="custom")
@@ -122,7 +120,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     # Child process continues
     # Convert path to absolute before changing directory
     project_dir = path.resolve()
-    
+
     os.chdir("/")
     os.setsid()
     os.umask(0)
@@ -148,11 +146,16 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
 
     # Run the async main loop (will run indefinitely)
     # Ensure config_path is also absolute if specified
-    abs_config_path = config_path.resolve() if config_path else project_dir / ".dev-agents" / "agents.json"
+    abs_config_path = (
+        config_path.resolve()
+        if config_path
+        else project_dir / ".dev-agents" / "agents.json"
+    )
     try:
         asyncio.run(watch_async(project_dir, abs_config_path))
     except Exception as e:
         import traceback
+
         print(f"Daemon error: {e}")
         traceback.print_exc()
     finally:
@@ -328,7 +331,9 @@ async def watch_async(path: Path, config_path: Path | None):
 @app.command()
 def init(
     path: Path = typer.Argument(Path.cwd(), help="Project directory"),
-    skip_config: bool = typer.Option(False, "--skip-config", help="Skip creating configuration file"),
+    skip_config: bool = typer.Option(
+        False, "--skip-config", help="Skip creating configuration file"
+    ),
 ):
     """Initialize dev-agents in a project."""
     claude_dir = path / ".dev-agents"

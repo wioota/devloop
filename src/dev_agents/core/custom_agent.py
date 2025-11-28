@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import aiofiles
@@ -44,8 +44,9 @@ class CustomAgentConfig:
             self.config = {}
         if self.metadata is None:
             self.metadata = {}
-        
+
         import time
+
         if self.created_at is None:
             self.created_at = time.time()
         if self.updated_at is None:
@@ -57,7 +58,7 @@ class AgentBuilder:
 
     def __init__(self, name: str, agent_type: CustomAgentType):
         """Initialize agent builder.
-        
+
         Args:
             name: Name of the custom agent
             agent_type: Type of custom agent
@@ -107,7 +108,7 @@ class CustomAgentStore:
 
     def __init__(self, storage_path: Path):
         """Initialize custom agent store.
-        
+
         Args:
             storage_path: Path to store custom agent definitions
         """
@@ -117,12 +118,12 @@ class CustomAgentStore:
 
     async def save_agent(self, config: CustomAgentConfig) -> None:
         """Save a custom agent configuration.
-        
+
         Args:
             config: Agent configuration to save
         """
         agents = await self._load_all_agents()
-        
+
         # Update or add
         agents[config.id] = {
             "id": config.id,
@@ -136,24 +137,24 @@ class CustomAgentStore:
             "created_at": config.created_at,
             "updated_at": config.updated_at,
         }
-        
+
         async with aiofiles.open(self.agents_file, "w") as f:
             await f.write(json.dumps(agents, indent=2))
 
     async def get_agent(self, agent_id: str) -> Optional[CustomAgentConfig]:
         """Get a custom agent by ID.
-        
+
         Args:
             agent_id: Agent ID to retrieve
-            
+
         Returns:
             Agent configuration or None if not found
         """
         agents = await self._load_all_agents()
-        
+
         if agent_id not in agents:
             return None
-        
+
         data = agents[agent_id]
         return CustomAgentConfig(
             id=data["id"],
@@ -170,13 +171,13 @@ class CustomAgentStore:
 
     async def get_all_agents(self) -> List[CustomAgentConfig]:
         """Get all custom agents.
-        
+
         Returns:
             List of all custom agent configurations
         """
         agents_data = await self._load_all_agents()
         agents = []
-        
+
         for data in agents_data.values():
             agents.append(
                 CustomAgentConfig(
@@ -192,42 +193,44 @@ class CustomAgentStore:
                     updated_at=data.get("updated_at"),
                 )
             )
-        
+
         return agents
 
     async def delete_agent(self, agent_id: str) -> bool:
         """Delete a custom agent.
-        
+
         Args:
             agent_id: Agent ID to delete
-            
+
         Returns:
             True if deleted, False if not found
         """
         agents = await self._load_all_agents()
-        
+
         if agent_id not in agents:
             return False
-        
+
         del agents[agent_id]
-        
+
         async with aiofiles.open(self.agents_file, "w") as f:
             await f.write(json.dumps(agents, indent=2))
-        
+
         return True
 
-    async def list_agents_by_type(self, agent_type: CustomAgentType) -> List[CustomAgentConfig]:
+    async def list_agents_by_type(
+        self, agent_type: CustomAgentType
+    ) -> List[CustomAgentConfig]:
         """Get agents by type.
-        
+
         Args:
             agent_type: Type of agents to retrieve
-            
+
         Returns:
             List of agents matching the type
         """
         agents_data = await self._load_all_agents()
         agents = []
-        
+
         for data in agents_data.values():
             if CustomAgentType(data["agent_type"]) == agent_type:
                 agents.append(
@@ -244,21 +247,21 @@ class CustomAgentStore:
                         updated_at=data.get("updated_at"),
                     )
                 )
-        
+
         return agents
 
     async def _load_all_agents(self) -> Dict[str, Dict[str, Any]]:
         """Load all agents from file.
-        
+
         Returns:
             Dictionary of agents indexed by ID
         """
         if not self.agents_file.exists():
             return {}
-        
+
         async with aiofiles.open(self.agents_file, "r") as f:
             content = await f.read()
-        
+
         try:
             return json.loads(content)
         except json.JSONDecodeError:
@@ -270,7 +273,7 @@ class AgentTemplate(ABC):
 
     def __init__(self, config: CustomAgentConfig):
         """Initialize agent template.
-        
+
         Args:
             config: Agent configuration
         """
@@ -282,10 +285,10 @@ class AgentTemplate(ABC):
     @abstractmethod
     async def execute(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the custom agent.
-        
+
         Args:
             event_data: Event data to process
-            
+
         Returns:
             Result of agent execution
         """
@@ -293,16 +296,16 @@ class AgentTemplate(ABC):
 
     async def should_handle(self, event_type: str) -> bool:
         """Check if this agent should handle the event.
-        
+
         Args:
             event_type: Type of event
-            
+
         Returns:
             True if agent should handle the event
         """
         if not self.config.enabled:
             return False
-        
+
         return event_type in self.config.triggers
 
 
@@ -311,37 +314,40 @@ class PatternMatcherAgent(AgentTemplate):
 
     async def execute(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute pattern matching.
-        
+
         Args:
             event_data: Event data containing file information
-            
+
         Returns:
             Matches found in files
         """
         patterns = self.config.config.get("patterns", [])
         file_path = event_data.get("file_path", "")
-        
+
         if not file_path or not patterns:
             return {"matches": []}
-        
+
         matches = []
         try:
             path = Path(file_path)
             if path.exists() and path.is_file():
                 content = path.read_text()
-                
+
                 import re
+
                 for pattern in patterns:
                     regex = re.compile(pattern)
                     for match in regex.finditer(content):
-                        matches.append({
-                            "pattern": pattern,
-                            "match": match.group(),
-                            "position": match.start(),
-                        })
+                        matches.append(
+                            {
+                                "pattern": pattern,
+                                "match": match.group(),
+                                "position": match.start(),
+                            }
+                        )
         except Exception as e:
             return {"error": str(e), "matches": []}
-        
+
         return {"matches": matches}
 
 
@@ -350,19 +356,19 @@ class FileProcessorAgent(AgentTemplate):
 
     async def execute(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute file processing.
-        
+
         Args:
             event_data: Event data containing file information
-            
+
         Returns:
             Processing results
         """
         file_path = event_data.get("file_path", "")
         operation = self.config.config.get("operation", "read")
-        
+
         try:
             path = Path(file_path)
-            
+
             if operation == "read" and path.exists():
                 content = path.read_text()
                 return {
@@ -378,12 +384,14 @@ class FileProcessorAgent(AgentTemplate):
                     "status": "success",
                     "operation": "analyze",
                     "total_lines": len(lines),
-                    "empty_lines": len([l for l in lines if not l.strip()]),
-                    "comment_lines": len([l for l in lines if l.strip().startswith("#")]),
+                    "empty_lines": len([line for line in lines if not line.strip()]),
+                    "comment_lines": len(
+                        [line for line in lines if line.strip().startswith("#")]
+                    ),
                 }
             else:
                 return {"status": "error", "message": f"File not found: {file_path}"}
-        
+
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
@@ -393,45 +401,46 @@ class OutputAnalyzerAgent(AgentTemplate):
 
     async def execute(self, event_data: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze output.
-        
+
         Args:
             event_data: Event data containing output information
-            
+
         Returns:
             Analysis results
         """
         output = event_data.get("output", "")
         patterns = self.config.config.get("error_patterns", [])
-        
+
         analysis = {
             "output_length": len(output),
             "line_count": len(output.splitlines()),
             "errors_found": 0,
             "warnings_found": 0,
         }
-        
+
         if patterns:
             import re
+
             for pattern in patterns:
                 regex = re.compile(pattern)
                 matches = regex.findall(output)
                 if matches:
                     analysis["errors_found"] += len(matches)
-        
+
         # Simple heuristic analysis
         lower_output = output.lower()
         analysis["warnings_found"] = lower_output.count("warning")
         analysis["errors_found"] += lower_output.count("error")
-        
+
         return analysis
 
 
 def get_agent_template(config: CustomAgentConfig) -> AgentTemplate:
     """Get the appropriate template instance for a custom agent.
-    
+
     Args:
         config: Agent configuration
-        
+
     Returns:
         Agent template instance
     """

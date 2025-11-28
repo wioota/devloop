@@ -1,7 +1,6 @@
 """Documentation Lifecycle Agent - manages documentation lifecycle."""
 
 import re
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -20,44 +19,43 @@ class DocLifecycleConfig:
     archival_age_days: int = 30
     root_md_limit: int = 10
 
-    completion_markers: List[str] = field(default_factory=lambda: [
-        "COMPLETE ✅",
-        "RESOLVED ✅",
-        "Complete!",
-        "Status: Complete"
-    ])
+    completion_markers: List[str] = field(
+        default_factory=lambda: [
+            "COMPLETE ✅",
+            "RESOLVED ✅",
+            "Complete!",
+            "Status: Complete",
+        ]
+    )
 
-    temporary_prefixes: List[str] = field(default_factory=lambda: [
-        "SESSION_",
-        "FIX_",
-        "THREADING_",
-        "STATUS"
-    ])
+    temporary_prefixes: List[str] = field(
+        default_factory=lambda: ["SESSION_", "FIX_", "THREADING_", "STATUS"]
+    )
 
     archive_dir: str = "docs/archive"
     enforce_docs_structure: bool = True
     detect_duplicates: bool = True
     similarity_threshold: float = 0.5
 
-    keep_in_root: List[str] = field(default_factory=lambda: [
-        "README.md",
-        "CHANGELOG.md",
-        "LICENSE",
-        "LICENSE.md",
-        "CONTRIBUTING.md",
-        "CODE_OF_CONDUCT.md",
-        "SECURITY.md",
-        "CLAUDE.md",
-        "CODING_RULES.md",
-        "PUBLISHING_PLAN.md",
-        "CI_QUALITY_COMMITMENT.md"
-    ])
+    keep_in_root: List[str] = field(
+        default_factory=lambda: [
+            "README.md",
+            "CHANGELOG.md",
+            "LICENSE",
+            "LICENSE.md",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            "SECURITY.md",
+            "CLAUDE.md",
+            "CODING_RULES.md",
+            "PUBLISHING_PLAN.md",
+            "CI_QUALITY_COMMITMENT.md",
+        ]
+    )
 
-    never_archive: List[str] = field(default_factory=lambda: [
-        "README.md",
-        "CLAUDE.md",
-        "CODING_RULES.md"
-    ])
+    never_archive: List[str] = field(
+        default_factory=lambda: ["README.md", "CLAUDE.md", "CODING_RULES.md"]
+    )
 
 
 class DocLifecycleAgent(Agent):
@@ -67,18 +65,21 @@ class DocLifecycleAgent(Agent):
         self,
         name: str = "doc-lifecycle",
         triggers: Optional[List[str]] = None,
-        event_bus = None,
-        config: Optional[Dict[str, Any]] = None
+        event_bus=None,
+        config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
             name=name,
-            triggers=triggers or ["file:created:**.md", "file:modified:**.md", "schedule:daily"],
-            event_bus=event_bus
+            triggers=triggers
+            or ["file:created:**.md", "file:modified:**.md", "schedule:daily"],
+            event_bus=event_bus,
         )
 
         # Parse config
         config_dict = config or {}
-        self.config = DocLifecycleConfig(**config_dict) if config_dict else DocLifecycleConfig()
+        self.config = (
+            DocLifecycleConfig(**config_dict) if config_dict else DocLifecycleConfig()
+        )
 
         self.project_root = Path.cwd()
 
@@ -96,8 +97,8 @@ class DocLifecycleAgent(Agent):
                 data={
                     "findings": findings,
                     "total_md_files": self._count_md_files(),
-                    "root_md_files": self._count_root_md_files()
-                }
+                    "root_md_files": self._count_root_md_files(),
+                },
             )
         except Exception as e:
             return AgentResult(
@@ -105,7 +106,7 @@ class DocLifecycleAgent(Agent):
                 success=False,
                 duration=0.0,
                 message=f"Documentation scan failed: {str(e)}",
-                error=str(e)
+                error=str(e),
             )
 
     async def scan_documentation(self) -> List[Dict[str, Any]]:
@@ -118,15 +119,17 @@ class DocLifecycleAgent(Agent):
         # Check root directory overflow
         root_md_count = self._count_root_md_files()
         if root_md_count > self.config.root_md_limit:
-            findings.append({
-                "type": "documentation",
-                "severity": "info",
-                "category": "root_overflow",
-                "file": "(root directory)",
-                "message": f"Root directory has {root_md_count} markdown files (limit: {self.config.root_md_limit})",
-                "suggestion": "Consider moving reference docs to docs/ directory",
-                "auto_fixable": False
-            })
+            findings.append(
+                {
+                    "type": "documentation",
+                    "severity": "info",
+                    "category": "root_overflow",
+                    "file": "(root directory)",
+                    "message": f"Root directory has {root_md_count} markdown files (limit: {self.config.root_md_limit})",
+                    "suggestion": "Consider moving reference docs to docs/ directory",
+                    "auto_fixable": False,
+                }
+            )
 
         # Analyze each file
         for md_file in md_files:
@@ -137,15 +140,17 @@ class DocLifecycleAgent(Agent):
         if self.config.detect_duplicates:
             duplicates = self._detect_duplicate_docs(md_files)
             for dup_group in duplicates:
-                findings.append({
-                    "type": "documentation",
-                    "severity": "info",
-                    "category": "duplicates",
-                    "files": [str(f) for f in dup_group],
-                    "message": f"Found {len(dup_group)} similar documentation files",
-                    "suggestion": f"Consider consolidating: {', '.join(f.name for f in dup_group)}",
-                    "auto_fixable": False
-                })
+                findings.append(
+                    {
+                        "type": "documentation",
+                        "severity": "info",
+                        "category": "duplicates",
+                        "files": [str(f) for f in dup_group],
+                        "message": f"Found {len(dup_group)} similar documentation files",
+                        "suggestion": f"Consider consolidating: {', '.join(f.name for f in dup_group)}",
+                        "auto_fixable": False,
+                    }
+                )
 
         return findings
 
@@ -195,65 +200,78 @@ class DocLifecycleAgent(Agent):
                     if age_days > self.config.archival_age_days:
                         message += f" (> {self.config.archival_age_days} days old)"
 
-                    findings.append({
-                        "type": "documentation",
-                        "severity": "info",
-                        "category": "archival",
-                        "file": str(file_path),
-                        "message": message,
-                        "suggestion": suggestion,
-                        "auto_fixable": True,
-                        "age_days": age_days
-                    })
+                    findings.append(
+                        {
+                            "type": "documentation",
+                            "severity": "info",
+                            "category": "archival",
+                            "file": str(file_path),
+                            "message": message,
+                            "suggestion": suggestion,
+                            "auto_fixable": True,
+                            "age_days": age_days,
+                        }
+                    )
                     break  # Only report once per file
 
             # Check for temporary file patterns
             if self._is_temporary_file(file_path):
-                findings.append({
-                    "type": "documentation",
-                    "severity": "info",
-                    "category": "temporary",
-                    "file": str(file_path),
-                    "message": f"Temporary documentation file: {file_path.name}",
-                    "suggestion": "Consider archiving or consolidating",
-                    "auto_fixable": False
-                })
+                findings.append(
+                    {
+                        "type": "documentation",
+                        "severity": "info",
+                        "category": "temporary",
+                        "file": str(file_path),
+                        "message": f"Temporary documentation file: {file_path.name}",
+                        "suggestion": "Consider archiving or consolidating",
+                        "auto_fixable": False,
+                    }
+                )
 
             # Check for date stamps
-            date_pattern = r'\*\*Date:\*\*\s+(\w+ \d+, \d{4})'
+            date_pattern = r"\*\*Date:\*\*\s+(\w+ \d+, \d{4})"
             dates = re.findall(date_pattern, content)
             if dates:
-                findings.append({
-                    "type": "documentation",
-                    "severity": "info",
-                    "category": "dated",
-                    "file": str(file_path),
-                    "message": f"Found date stamp: {dates[0]}",
-                    "metadata": {"dates": dates},
-                    "auto_fixable": False
-                })
+                findings.append(
+                    {
+                        "type": "documentation",
+                        "severity": "info",
+                        "category": "dated",
+                        "file": str(file_path),
+                        "message": f"Found date stamp: {dates[0]}",
+                        "metadata": {"dates": dates},
+                        "auto_fixable": False,
+                    }
+                )
 
             # Check if file should be in docs/ instead of root
-            if file_path.parent == self.project_root and file_path.name not in self.config.keep_in_root:
-                findings.append({
-                    "type": "documentation",
-                    "severity": "info",
-                    "category": "location",
-                    "file": str(file_path),
-                    "message": f"File in root should possibly be in docs/: {file_path.name}",
-                    "suggestion": self._suggest_docs_location(file_path),
-                    "auto_fixable": False
-                })
+            if (
+                file_path.parent == self.project_root
+                and file_path.name not in self.config.keep_in_root
+            ):
+                findings.append(
+                    {
+                        "type": "documentation",
+                        "severity": "info",
+                        "category": "location",
+                        "file": str(file_path),
+                        "message": f"File in root should possibly be in docs/: {file_path.name}",
+                        "suggestion": self._suggest_docs_location(file_path),
+                        "auto_fixable": False,
+                    }
+                )
 
         except Exception as e:
-            findings.append({
-                "type": "documentation",
-                "severity": "warning",
-                "category": "error",
-                "file": str(file_path),
-                "message": f"Failed to analyze: {e}",
-                "auto_fixable": False
-            })
+            findings.append(
+                {
+                    "type": "documentation",
+                    "severity": "warning",
+                    "category": "error",
+                    "file": str(file_path),
+                    "message": f"Failed to analyze: {e}",
+                    "auto_fixable": False,
+                }
+            )
 
         return findings
 
@@ -276,7 +294,11 @@ class DocLifecycleAgent(Agent):
         mod_time = datetime.fromtimestamp(file_path.stat().st_mtime)
         archive_month = mod_time.strftime("%Y-%m")
 
-        archive_path = Path(self.config.archive_dir) / archive_month / file_path.name.lower().replace('_', '-')
+        archive_path = (
+            Path(self.config.archive_dir)
+            / archive_month
+            / file_path.name.lower().replace("_", "-")
+        )
         return f"Archive to {archive_path}"
 
     def _suggest_docs_location(self, file_path: Path) -> str:
@@ -302,10 +324,14 @@ class DocLifecycleAgent(Agent):
         for f in md_files:
             # Normalize name: lowercase, remove common suffixes/prefixes, remove version numbers
             normalized = f.stem.lower()
-            normalized = re.sub(r'[_-]v\d+', '', normalized)  # Remove version numbers
-            normalized = re.sub(r'[_-]complete.*', '', normalized)  # Remove "complete" suffix
-            normalized = re.sub(r'[_-]summary.*', '', normalized)  # Remove "summary" suffix
-            normalized = normalized.replace('_', '-')
+            normalized = re.sub(r"[_-]v\d+", "", normalized)  # Remove version numbers
+            normalized = re.sub(
+                r"[_-]complete.*", "", normalized
+            )  # Remove "complete" suffix
+            normalized = re.sub(
+                r"[_-]summary.*", "", normalized
+            )  # Remove "summary" suffix
+            normalized = normalized.replace("_", "-")
 
             if normalized not in name_groups:
                 name_groups[normalized] = []
@@ -330,7 +356,7 @@ class DocLifecycleAgent(Agent):
 
             # Extract destination from suggestion
             # Format: "Archive to docs/archive/YYYY-MM/filename.md"
-            match = re.search(r'Archive to (.+)$', suggestion)
+            match = re.search(r"Archive to (.+)$", suggestion)
             if match:
                 dest = Path(match.group(1))
                 dest.parent.mkdir(parents=True, exist_ok=True)

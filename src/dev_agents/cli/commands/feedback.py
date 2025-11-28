@@ -8,7 +8,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from dev_agents.core.feedback import FeedbackAPI, FeedbackStore, FeedbackType
+from dev_agents.core.feedback import FeedbackAPI, FeedbackStore
 from dev_agents.core.performance import PerformanceMonitor
 
 app = typer.Typer(help="Feedback and performance monitoring")

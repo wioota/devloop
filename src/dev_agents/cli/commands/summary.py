@@ -19,10 +19,16 @@ console = Console()
 
 @app.command()
 def agent_summary(
-    scope: str = typer.Argument("recent", help="Summary scope: recent|today|session|all"),
+    scope: str = typer.Argument(
+        "recent", help="Summary scope: recent|today|session|all"
+    ),
     agent: Optional[str] = typer.Option(None, "--agent", help="Filter by agent name"),
-    severity: Optional[str] = typer.Option(None, "--severity", help="Filter by severity"),
-    category: Optional[str] = typer.Option(None, "--category", help="Filter by category")
+    severity: Optional[str] = typer.Option(
+        None, "--severity", help="Filter by severity"
+    ),
+    category: Optional[str] = typer.Option(
+        None, "--category", help="Filter by category"
+    ),
 ):
     """Generate intelligent summary of dev-agent findings."""
     filters = {}
