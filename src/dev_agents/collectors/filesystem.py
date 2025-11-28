@@ -23,7 +23,7 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
             [
                 "*/.git/*",
                 "*/__pycache__/*",
-                "*/.claude/*",
+                "*/.dev-agents/*",
                 "*/node_modules/*",
                 "*/.venv/*",
                 "*/venv/*",

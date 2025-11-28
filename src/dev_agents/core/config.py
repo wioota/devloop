@@ -27,7 +27,7 @@ class GlobalConfig:
     max_concurrent_agents: int = 5
     notification_level: str = "summary"
     context_store_enabled: bool = True
-    context_store_path: str = ".claude/context"
+    context_store_path: str = ".dev-agents/context"
     autonomous_fixes: Optional[AutonomousFixesConfig] = None
 
     def __post_init__(self):
@@ -42,7 +42,7 @@ class GlobalConfig:
 class Config:
     """Main configuration manager."""
 
-    def __init__(self, config_path: str = ".claude/agents.json"):
+    def __init__(self, config_path: str = ".dev-agents/agents.json"):
         self.config_path = Path(config_path)
         self._config: Optional[Dict[str, Any]] = None
 
@@ -79,7 +79,7 @@ class Config:
                 "enabled", True
             ),
             context_store_path=global_config.get("contextStore", {}).get(
-                "path", ".claude/context"
+                "path", ".dev-agents/context"
             ),
             autonomous_fixes=autonomous_fixes,
         )
@@ -217,7 +217,7 @@ class Config:
                 "notificationLevel": "summary",
                 "resourceLimits": {},
                 "logging": {},
-                "contextStore": {"enabled": True, "path": ".claude/context"},
+                "contextStore": {"enabled": True, "path": ".dev-agents/context"},
                 "autonomousFixes": {"enabled": True, "safetyLevel": "safe_only"},
             },
             "eventSystem": {"collectors": {}, "dispatcher": {}, "store": {}},
@@ -258,7 +258,7 @@ class ConfigWrapper:
                 "enabled", True
             ),
             context_store_path=global_config.get("contextStore", {}).get(
-                "path", ".claude/context"
+                "path", ".dev-agents/context"
             ),
             autonomous_fixes=autonomous_fixes,
         )

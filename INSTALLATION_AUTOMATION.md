@@ -55,7 +55,7 @@ def detect_environment():
     has_git = subprocess.run(["git", "status"], capture_output=True).returncode == 0
     
     # Check if already initialized
-    has_claude_dir = Path(".claude").exists()
+    has_claude_dir = Path(".dev-agents").exists()
     
     return {
         "in_amp": in_amp,
@@ -74,8 +74,8 @@ def detect_environment():
 def setup_core(path: Path):
     """Set up core dev-agents infrastructure."""
     
-    # 1. Create .claude directory
-    claude_dir = path / ".claude"
+    # 1. Create .dev-agents directory
+    claude_dir = path / ".dev-agents"
     claude_dir.mkdir(exist_ok=True)
     
     # 2. Create AGENTS.md (copy from installation)
@@ -91,7 +91,7 @@ def setup_core(path: Path):
     if has_git_repo(path):
         setup_git_hooks(path)
     
-    # 6. Create .gitignore entries for .claude
+    # 6. Create .gitignore entries for .dev-agents
     setup_gitignore(path)
 ```
 
@@ -186,7 +186,7 @@ def verify_installation(path: Path, in_amp: bool):
     checks = []
     
     # Core files exist
-    checks.append(check_file_exists(path / ".claude" / "agents.json"))
+    checks.append(check_file_exists(path / ".dev-agents" / "agents.json"))
     checks.append(check_file_exists(path / "AGENTS.md"))
     checks.append(check_file_exists(path / "CODING_RULES.md"))
     checks.append(check_file_executable(path / ".agents" / "verify-task-complete"))
@@ -228,7 +228,7 @@ def init(
     Initialize dev-agents in a project.
     
     This command:
-    - Sets up .claude directory and configuration
+    - Sets up .dev-agents directory and configuration
     - Creates AGENTS.md and CODING_RULES.md 
     - Registers git hooks (if git repo)
     - Auto-configures Amp integration (if in Amp)
@@ -252,7 +252,7 @@ def init(
     # Step 2: Setup core
     console.print("\n[cyan]→[/cyan] Setting up core infrastructure...")
     setup_core(path)
-    console.print("  ✓ Created .claude directory")
+    console.print("  ✓ Created .dev-agents directory")
     console.print("  ✓ Created agents.json configuration")
     console.print("  ✓ Copied AGENTS.md and CODING_RULES.md")
     
@@ -290,7 +290,7 @@ def init(
         console.print("  • Commit discipline: Enforced")
     
     console.print(f"  • Start watching: [cyan]dev-agents watch {path}[/cyan]")
-    console.print(f"  • View config: [cyan]cat {path}/.claude/agents.json[/cyan]")
+    console.print(f"  • View config: [cyan]cat {path}/.dev-agents/agents.json[/cyan]")
     console.print("\nDocumentation:")
     console.print("  • AGENTS.md - System design and discipline")
     console.print("  • CODING_RULES.md - Development standards")
@@ -307,7 +307,7 @@ def init(
 project-root/
 ├── AGENTS.md                          ← Copied from installation
 ├── CODING_RULES.md                    ← Copied from installation
-├── .claude/
+├── .dev-agents/
 │   ├── agents.json                    ← Default configuration
 │   └── .gitignore                     ← Ignore logs, caches
 ├── .agents/
@@ -317,7 +317,7 @@ project-root/
 ├── .git/hooks/                        ← If git repo
 │   ├── pre-commit                     ← Verify clean state
 │   └── pre-push                       ← Run verification
-├── .gitignore                         ← Updated with .claude entries
+├── .gitignore                         ← Updated with .dev-agents entries
 ├── .amp-workspace.json                ← If in Amp (auto-generated)
 └── .system-prompt-config.json         ← If in Amp (auto-generated)
 ```
@@ -374,7 +374,7 @@ This automatically:
    - Checks existing configuration
 
 2. **Core Setup**
-   - Creates .claude directory
+   - Creates .dev-agents directory
    - Generates agents.json configuration
    - Copies AGENTS.md and CODING_RULES.md
    - Sets up .gitignore
@@ -470,7 +470,7 @@ dev-agents init /path/to/project --skip-amp --skip-git-hooks
 - Continue with other setup
 - Show which parts failed
 - Provide recovery instructions
-- Log errors to `.claude/installation.log`
+- Log errors to `.dev-agents/installation.log`
 
 **If verification fails:**
 - Show what failed

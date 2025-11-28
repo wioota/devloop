@@ -33,12 +33,12 @@ class AgentManager:
         self.performance_monitor = None
 
         if enable_feedback:
-            feedback_storage = self.project_dir / ".claude" / "feedback"
+            feedback_storage = self.project_dir / ".dev-agents" / "feedback"
             feedback_store = FeedbackStore(feedback_storage)
             self.feedback_api = FeedbackAPI(feedback_store)
 
         if enable_performance:
-            performance_storage = self.project_dir / ".claude" / "performance"
+            performance_storage = self.project_dir / ".dev-agents" / "performance"
             self.performance_monitor = PerformanceMonitor(performance_storage)
 
     def register(self, agent: Agent) -> None:

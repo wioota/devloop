@@ -71,7 +71,7 @@ def amp_context():
     from pathlib import Path
 
     # Try to read the context index
-    context_dir = Path(".claude/context")
+    context_dir = Path(".dev-agents/context")
     index_file = context_dir / "index.json"
 
     if index_file.exists():
@@ -128,7 +128,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     os.umask(0)
 
     # Redirect stdout/stderr to log file
-    log_file = project_dir / ".claude" / "dev-agents.log"
+    log_file = project_dir / ".dev-agents" / "dev-agents.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_file, "a") as f:
@@ -139,7 +139,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     setup_logging(verbose)
 
     # Write PID file
-    pid_file = project_dir / ".claude" / "dev-agents.pid"
+    pid_file = project_dir / ".dev-agents" / "dev-agents.pid"
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
 
@@ -148,7 +148,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
 
     # Run the async main loop (will run indefinitely)
     # Ensure config_path is also absolute if specified
-    abs_config_path = config_path.resolve() if config_path else project_dir / ".claude" / "agents.json"
+    abs_config_path = config_path.resolve() if config_path else project_dir / ".dev-agents" / "agents.json"
     try:
         asyncio.run(watch_async(project_dir, abs_config_path))
     except Exception as e:
@@ -204,8 +204,8 @@ async def watch_async(path: Path, config_path: Path | None):
         # Ensure it's a Path object and convert to string
         config_manager = Config(str(Path(config_path).resolve()))
     else:
-        # Default to project .claude/agents.json
-        config_manager = Config(str((path / ".claude" / "agents.json").resolve()))
+        # Default to project .dev-agents/agents.json
+        config_manager = Config(str((path / ".dev-agents" / "agents.json").resolve()))
     config_dict = config_manager.load()
     config = ConfigWrapper(config_dict)
 
@@ -213,11 +213,11 @@ async def watch_async(path: Path, config_path: Path | None):
     event_bus = EventBus()
 
     # Initialize context store
-    context_store.context_dir = path / ".claude" / "context"
+    context_store.context_dir = path / ".dev-agents" / "context"
     await context_store.initialize()
 
     # Initialize event store
-    event_store.db_path = path / ".claude" / "events.db"
+    event_store.db_path = path / ".dev-agents" / "events.db"
     await event_store.initialize()
     console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
     console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
@@ -331,7 +331,7 @@ def init(
     skip_config: bool = typer.Option(False, "--skip-config", help="Skip creating configuration file"),
 ):
     """Initialize dev-agents in a project."""
-    claude_dir = path / ".claude"
+    claude_dir = path / ".dev-agents"
 
     if claude_dir.exists():
         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
@@ -384,7 +384,7 @@ def stop(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
     import os
     import signal
 
-    pid_file = path / ".claude" / "dev-agents.pid"
+    pid_file = path / ".dev-agents" / "dev-agents.pid"
 
     if not pid_file.exists():
         console.print(f"[yellow]No daemon running in {path}[/yellow]")
@@ -403,7 +403,7 @@ def stop(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
 
         # Clean up files
         pid_file.unlink()
-        log_file = path / ".claude" / "dev-agents.log"
+        log_file = path / ".dev-agents" / "dev-agents.log"
         if log_file.exists():
             console.print(f"[dim]Logs available at: {log_file}[/dim]")
 

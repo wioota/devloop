@@ -153,10 +153,10 @@ class ContextStore:
         Initialize context store.
 
         Args:
-            context_dir: Directory for context files. Defaults to .claude/context
+            context_dir: Directory for context files. Defaults to .dev-agents/context
         """
         if context_dir is None:
-            context_dir = Path.cwd() / ".claude" / "context"
+            context_dir = Path.cwd() / ".dev-agents" / "context"
         self.context_dir = Path(context_dir)
         self._lock = asyncio.Lock()
         self._findings: Dict[Tier, List[Finding]] = {

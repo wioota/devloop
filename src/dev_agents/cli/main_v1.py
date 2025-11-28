@@ -87,7 +87,7 @@ async def watch_async(path: Path):
     console.print("[green]✓[/green] Agents started:")
     console.print("  • [cyan]echo[/cyan] - logs all file events")
     console.print(
-        "  • [cyan]file-logger[/cyan] - writes changes to .claude/file-changes.log"
+        "  • [cyan]file-logger[/cyan] - writes changes to .dev-agents/file-changes.log"
     )
     console.print("\n[dim]Waiting for file changes... (Ctrl+C to stop)[/dim]\n")
 
@@ -115,13 +115,13 @@ def events(
 ):
     """Show recent events (from last watch session)."""
     console.print("[yellow]Event history not yet implemented in prototype[/yellow]")
-    console.print("Events are logged to .claude/file-changes.log")
+    console.print("Events are logged to .dev-agents/file-changes.log")
 
 
 @app.command()
 def init(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
     """Initialize dev-agents in a project."""
-    claude_dir = path / ".claude"
+    claude_dir = path / ".dev-agents"
 
     if claude_dir.exists():
         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")

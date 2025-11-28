@@ -151,7 +151,7 @@ This command **automatically handles everything:**
    - Checks existing setup
 
 2. **Core Infrastructure**
-   - Creates `.claude` directory
+   - Creates `.dev-agents` directory
    - Generates `agents.json` configuration
    - Copies `AGENTS.md` and `CODING_RULES.md`
    - Sets up `.gitignore` for agent files
@@ -228,7 +228,7 @@ See CODING_RULES.md for detailed protocol.
 
 ## Configuration
 
-Agents are configured via `.claude/agents.json`:
+Agents are configured via `.dev-agents/agents.json`:
 
 ```json
 {

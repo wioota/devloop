@@ -13,9 +13,9 @@ from .context import FileFindings
 
 
 class ContextReader:
-    """Reader for agent findings stored in .claude/context/."""
+    """Reader for agent findings stored in .dev-agents/context/."""
 
-    def __init__(self, base_path: Path = Path(".claude/context")):
+    def __init__(self, base_path: Path = Path(".dev-agents/context")):
         self.base_path = base_path
 
     def get_all_findings(self) -> Dict[str, List[FileFindings]]:
@@ -92,7 +92,7 @@ class ContextReader:
 
 # Convenience function for coding agents
 def read_agent_context(
-    base_path: Path = Path(".claude/context"),
+    base_path: Path = Path(".dev-agents/context"),
 ) -> Dict[str, List[FileFindings]]:
     """Read all agent findings - convenience function for coding agents."""
     reader = ContextReader(base_path)
@@ -100,7 +100,7 @@ def read_agent_context(
 
 
 def get_context_summary(
-    base_path: Path = Path(".claude/context"),
+    base_path: Path = Path(".dev-agents/context"),
 ) -> Dict[str, Dict[str, int]]:
     """Get a summary of agent findings - convenience function for coding agents."""
     reader = ContextReader(base_path)

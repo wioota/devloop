@@ -20,7 +20,7 @@ def get_feedback_api(project_dir: Path = None) -> FeedbackAPI:
     if project_dir is None:
         project_dir = Path.cwd()
 
-    storage_path = project_dir / ".claude" / "feedback"
+    storage_path = project_dir / ".dev-agents" / "feedback"
     feedback_store = FeedbackStore(storage_path)
     return FeedbackAPI(feedback_store)
 
@@ -30,7 +30,7 @@ def get_performance_monitor(project_dir: Path = None) -> PerformanceMonitor:
     if project_dir is None:
         project_dir = Path.cwd()
 
-    storage_path = project_dir / ".claude" / "performance"
+    storage_path = project_dir / ".dev-agents" / "performance"
     return PerformanceMonitor(storage_path)
 
 

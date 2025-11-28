@@ -183,7 +183,7 @@ PerformanceOptimizer
 Phase 3 uses JSON files for persistence:
 
 ```
-.claude/
+.dev-agents/
 ├── custom_agents/
 │   └── agents.json        # Custom agent definitions
 ├── learning/
@@ -229,7 +229,7 @@ Phase 3 seamlessly integrates with existing infrastructure:
 
 ✅ **Event System** - Custom agents receive same events as built-in agents  
 ✅ **Agent Manager** - Works with existing agent lifecycle  
-✅ **Storage** - Uses same `.claude/` directory structure  
+✅ **Storage** - Uses same `.dev-agents/` directory structure  
 ✅ **Configuration** - Respects existing config system  
 ✅ **Context Store** - Custom agent findings stored in context  
 ✅ **Performance Monitor** - Tracks custom agents same as built-in  
@@ -259,7 +259,7 @@ config = (
 )
 
 # Store it
-store = CustomAgentStore(Path(".claude/custom_agents"))
+store = CustomAgentStore(Path(".dev-agents/custom_agents"))
 await store.save_agent(config)
 
 # Use it
@@ -272,7 +272,7 @@ result = await template.execute({"file_path": "main.py"})
 ```python
 from dev_agents.core.learning import LearningSystem
 
-learning = LearningSystem(Path(".claude/learning"))
+learning = LearningSystem(Path(".dev-agents/learning"))
 
 # Record a pattern
 await learning.learn_pattern(
@@ -416,7 +416,7 @@ Integration:
 **Custom agents not appearing**
 ```bash
 # Check storage
-ls -la .claude/custom_agents/
+ls -la .dev-agents/custom_agents/
 # List via CLI
 dev-agents phase3 custom-list
 ```
@@ -424,9 +424,9 @@ dev-agents phase3 custom-list
 **Learning patterns not stored**
 ```bash
 # Verify directory exists
-mkdir -p .claude/learning
+mkdir -p .dev-agents/learning
 # Check files
-ls -la .claude/learning/
+ls -la .dev-agents/learning/
 ```
 
 **Performance data missing**

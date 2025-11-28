@@ -310,4 +310,4 @@ class EventStore:
 
 
 # Global instance
-event_store = EventStore(Path(".claude/events.db"))
+event_store = EventStore(Path(".dev-agents/events.db"))

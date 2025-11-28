@@ -37,11 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Files Created
 - `src/dev_agents/core/context_store.py` (530 lines) - Complete context store implementation
 - `tests/unit/core/test_context_store.py` (500+ lines) - Comprehensive test suite
-- `.claude/context/` directory structure for storing findings
+- `.dev-agents/context/` directory structure for storing findings
 
 #### Integration
 - All agents (linter, formatter, test-runner, security-scanner) integrated with context store
-- Claude Code integration via `.claude/AGENT_STATUS.md` proactive checking
+- Claude Code integration via `.dev-agents/AGENT_STATUS.md` proactive checking
 - Context reader module for querying findings
 
 #### Testing
@@ -147,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Generates performance reports
 
 #### Configuration System
-- JSON-based configuration (`.claude/agents.json`)
+- JSON-based configuration (`.dev-agents/agents.json`)
 - Per-agent enable/disable
 - Configurable triggers
 - Agent-specific configuration options

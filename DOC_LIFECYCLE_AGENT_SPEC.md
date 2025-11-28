@@ -164,7 +164,7 @@ project/
 
 ## Configuration
 
-**File:** `.claude/agents.json`
+**File:** `.dev-agents/agents.json`
 
 ```json
 {
@@ -457,7 +457,7 @@ class DocLifecycleAgent(Agent):
 ## Integration Points
 
 ### 1. Context Store
-Writes findings to `.claude/context/` for Claude Code integration:
+Writes findings to `.dev-agents/context/` for Claude Code integration:
 ```json
 {
   "agent": "doc-lifecycle",

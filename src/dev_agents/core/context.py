@@ -1,7 +1,7 @@
 """
 Context Store for Agent Findings
 
-Stores agent findings in .claude/context/ for coding agents to read and act upon.
+Stores agent findings in .dev-agents/context/ for coding agents to read and act upon.
 This enables background agents to report issues without directly modifying files.
 """
 
@@ -43,9 +43,9 @@ class FileFindings(BaseModel):
 
 
 class ContextStore:
-    """Stores agent findings in .claude/context/ directory."""
+    """Stores agent findings in .dev-agents/context/ directory."""
 
-    def __init__(self, base_path: Path = Path(".claude/context")):
+    def __init__(self, base_path: Path = Path(".dev-agents/context")):
         self.base_path = base_path
         self.base_path.mkdir(parents=True, exist_ok=True)
 

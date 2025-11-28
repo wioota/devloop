@@ -61,7 +61,7 @@ dev-agents init /path/to/your/project
 ```
 
 The `init` command automatically:
-- ✅ Sets up .claude directory and configuration
+- ✅ Sets up .dev-agents directory and configuration
 - ✅ Creates AGENTS.md and CODING_RULES.md
 - ✅ Sets up git hooks (if git repo)
 - ✅ Registers Amp integration (if in Amp)
@@ -168,7 +168,7 @@ config = (
 
 ## Configuration
 
-Configure agent behavior in `.claude/agents.json`:
+Configure agent behavior in `.dev-agents/agents.json`:
 
 ```json
 {
@@ -373,7 +373,7 @@ Dev Agents follows these core principles:
 dev-agents status
 
 # View logs
-tail -f .claude/agent.log
+tail -f .dev-agents/agent.log
 
 # Enable verbose mode
 dev-agents watch . --verbose
@@ -381,7 +381,7 @@ dev-agents watch . --verbose
 
 ### Performance issues
 
-Check `.claude/agents.json`:
+Check `.dev-agents/agents.json`:
 
 ```json
 {
@@ -402,7 +402,7 @@ Check `.claude/agents.json`:
 dev-agents phase3 custom-list
 
 # Check storage
-ls -la .claude/custom_agents/
+ls -la .dev-agents/custom_agents/
 ```
 
 [Full troubleshooting guide →](./docs/troubleshooting.md)

@@ -29,7 +29,7 @@ def list_agents(
         if project_dir is None:
             project_dir = Path.cwd()
 
-        storage_path = project_dir / ".claude" / "custom_agents"
+        storage_path = project_dir / ".dev-agents" / "custom_agents"
         store = CustomAgentStore(storage_path)
 
         agents = await store.get_all_agents()
@@ -83,7 +83,7 @@ def create(
         )
 
         # Store it
-        storage_path = project_dir / ".claude" / "custom_agents"
+        storage_path = project_dir / ".dev-agents" / "custom_agents"
         store = CustomAgentStore(storage_path)
         await store.save_agent(agent)
 
@@ -105,7 +105,7 @@ def delete(
         if project_dir is None:
             project_dir = Path.cwd()
 
-        storage_path = project_dir / ".claude" / "custom_agents"
+        storage_path = project_dir / ".dev-agents" / "custom_agents"
         store = CustomAgentStore(storage_path)
 
         await store.delete_agent(agent_id)

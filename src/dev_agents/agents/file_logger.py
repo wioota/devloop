@@ -8,11 +8,11 @@ from dev_agents.core.event import Event
 
 
 class FileLoggerAgent(Agent):
-    """Agent that logs file changes to .claude/file-changes.log"""
+    """Agent that logs file changes to .dev-agents/file-changes.log"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.log_file = Path(".claude/file-changes.log")
+        self.log_file = Path(".dev-agents/file-changes.log")
         self.log_file.parent.mkdir(exist_ok=True)
 
     async def handle(self, event: Event) -> AgentResult:

@@ -32,11 +32,11 @@ class TestInitCommand:
     """Tests for the init command."""
 
     def test_init_creates_claude_directory(self, cli_runner, temp_project_dir):
-        """Test that init creates .claude directory."""
+        """Test that init creates .dev-agents directory."""
         result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
         
         assert result.exit_code == 0
-        assert (temp_project_dir / ".claude").exists()
+        assert (temp_project_dir / ".dev-agents").exists()
         assert "[green]✓[/green] Created:" in result.stdout or "Created:" in result.stdout
 
     def test_init_creates_config_file(self, cli_runner, temp_project_dir):
@@ -44,7 +44,7 @@ class TestInitCommand:
         result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
         
         assert result.exit_code == 0
-        config_file = temp_project_dir / ".claude" / "agents.json"
+        config_file = temp_project_dir / ".dev-agents" / "agents.json"
         assert config_file.exists()
         
         # Verify it's valid JSON
@@ -57,9 +57,9 @@ class TestInitCommand:
         result = cli_runner.invoke(app, ["init", str(temp_project_dir), "--skip-config"])
         
         assert result.exit_code == 0
-        config_file = temp_project_dir / ".claude" / "agents.json"
+        config_file = temp_project_dir / ".dev-agents" / "agents.json"
         assert not config_file.exists()
-        assert (temp_project_dir / ".claude").exists()
+        assert (temp_project_dir / ".dev-agents").exists()
 
     def test_init_idempotent(self, cli_runner, temp_project_dir):
         """Test that init can be run multiple times safely."""
@@ -72,7 +72,7 @@ class TestInitCommand:
         assert result2.exit_code == 0
         
         # Directory should still exist
-        assert (temp_project_dir / ".claude").exists()
+        assert (temp_project_dir / ".dev-agents").exists()
 
     def test_init_default_path_current_directory(self, cli_runner):
         """Test that init without path argument works."""
@@ -142,8 +142,8 @@ class TestStopCommand:
 
     def test_stop_with_running_daemon(self, cli_runner, temp_project_dir):
         """Test stop with an actual PID file."""
-        # Create .claude directory and PID file
-        claude_dir = temp_project_dir / ".claude"
+        # Create .dev-agents directory and PID file
+        claude_dir = temp_project_dir / ".dev-agents"
         claude_dir.mkdir()
         
         pid_file = claude_dir / "dev-agents.pid"
@@ -256,7 +256,7 @@ class TestAmpContextCommand:
 
     def test_amp_context_with_valid_index(self, cli_runner, temp_project_dir):
         """Test amp_context with valid index file."""
-        context_dir = temp_project_dir / ".claude" / "context"
+        context_dir = temp_project_dir / ".dev-agents" / "context"
         context_dir.mkdir(parents=True, exist_ok=True)
         
         index_data = {"files": [], "metadata": {}}

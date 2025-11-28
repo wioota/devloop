@@ -67,7 +67,7 @@ Intelligent learning system that extracts patterns from agent behavior:
 ```python
 from dev_agents.core.learning import LearningSystem
 
-learning = LearningSystem(Path(".claude/learning"))
+learning = LearningSystem(Path(".dev-agents/learning"))
 
 # Learn a pattern
 await learning.learn_pattern(
@@ -328,11 +328,11 @@ config = (
 )
 
 # Store agent
-store = CustomAgentStore(Path(".claude/custom_agents"))
+store = CustomAgentStore(Path(".dev-agents/custom_agents"))
 await store.save_agent(config)
 
 # Learn from executions
-learning = LearningSystem(Path(".claude/learning"))
+learning = LearningSystem(Path(".dev-agents/learning"))
 await learning.learn_pattern(
     agent_name="todo_finder",
     pattern_name="high_todo_density",
@@ -478,7 +478,7 @@ insights = await feedback_api.get_agent_insights("linter")
 ### Custom agents not found
 ```bash
 # Check if custom agents directory exists
-ls .claude/custom_agents/
+ls .dev-agents/custom_agents/
 
 # List all custom agents
 dev-agents phase3 custom-list
@@ -487,7 +487,7 @@ dev-agents phase3 custom-list
 ### Learning patterns not stored
 ```bash
 # Check learning storage
-ls .claude/learning/
+ls .dev-agents/learning/
 
 # Verify LearningSystem initialization
 # Ensure storage path is writable

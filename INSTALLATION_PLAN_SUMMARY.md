@@ -28,7 +28,7 @@ dev-agents init /path/to/project
 
 **Automatically handles:**
 - ✅ Environment detection (Amp, git, existing setup)
-- ✅ Core setup (.claude dir, agents.json, docs)
+- ✅ Core setup (.dev-agents dir, agents.json, docs)
 - ✅ Git hooks (pre-commit, pre-push)
 - ✅ Amp registration (slash commands, hooks, prompts)
 - ✅ Verification (test everything works)
@@ -45,7 +45,7 @@ dev-agents init /path/to/project
 # Detects:
 - Is running in Amp? → AMP_WORKSPACE env var
 - Git repository? → .git exists
-- Already initialized? → .claude exists
+- Already initialized? → .dev-agents exists
 ```
 
 **Impact:** Decide what to install without user input
@@ -53,12 +53,12 @@ dev-agents init /path/to/project
 ### 2. Core Setup
 
 **Files created:**
-- `.claude/agents.json` — Agent configuration
+- `.dev-agents/agents.json` — Agent configuration
 - `AGENTS.md` — System design (copied)
 - `CODING_RULES.md` — Development rules (copied)
 - `.agents/verify-task-complete` — Verification script (copied)
 - `.agents/hooks/post-task` — Amp hook (copied)
-- `.gitignore` — Updated with .claude entries
+- `.gitignore` — Updated with .dev-agents entries
 
 **Result:** Everything needed to run agents is in place
 
@@ -100,10 +100,10 @@ dev-agents init /path/to/project
 
 ```bash
 $ dev-agents init /path/to/project
-✓ Created: /path/to/project/.claude
+✓ Created: /path/to/project/.dev-agents
 
 Next steps:
-  1. Review/edit: /path/to/project/.claude/agents.json
+  1. Review/edit: /path/to/project/.dev-agents/agents.json
   2. Run: dev-agents watch /path/to/project
   3. Read: AGENTS.md
   4. Read: CODING_RULES.md
@@ -128,7 +128,7 @@ Dev Agents Installation
   ✓ Git repository detected
 
 → Setting up core infrastructure...
-  ✓ Created .claude directory
+  ✓ Created .dev-agents directory
   ✓ Created agents.json configuration
   ✓ Copied AGENTS.md and CODING_RULES.md
 
@@ -151,7 +151,7 @@ Ready to use:
   • Post-task verification: Automatic
   • Commit discipline: Enforced
   • Start watching: dev-agents watch /path/to/project
-  • View config: cat /path/to/project/.claude/agents.json
+  • View config: cat /path/to/project/.dev-agents/agents.json
 
 Documentation:
   • AGENTS.md - System design and discipline
@@ -190,7 +190,7 @@ detect_environment()
     └─ has_claude_dir?
     ↓
 setup_core(path)
-    ├─ create .claude
+    ├─ create .dev-agents
     ├─ copy AGENTS.md, CODING_RULES.md
     ├─ generate agents.json
     └─ update .gitignore
