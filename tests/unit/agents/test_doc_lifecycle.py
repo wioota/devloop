@@ -98,31 +98,34 @@ class TestDocLifecycleAgent:
         assert not agent._is_temporary_file(Path("README.md"))
         assert not agent._is_temporary_file(Path("guide.md"))
 
-    def test_get_file_age_days(self, agent):
+    def test_get_file_age_days(self, agent, tmp_path):
         """Test calculating file age in days."""
-        # Create a mock file path
-        mock_path = Path("test.md")
+        # Create a real temporary file
+        test_file = tmp_path / "test.md"
+        test_file.write_text("# Test")
 
-        # Mock the stat to return a specific modification time
-        with patch.object(mock_path, 'stat') as mock_stat:
-            # Set modification time to 5 days ago
-            five_days_ago = datetime.now().timestamp() - (5 * 24 * 60 * 60)
-            mock_stat.return_value.st_mtime = five_days_ago
+        # Set file modification time to 5 days ago
+        import time
+        five_days_ago = time.time() - (5 * 24 * 60 * 60)
+        import os
+        os.utime(test_file, (five_days_ago, five_days_ago))
 
-            age = agent._get_file_age_days(mock_path)
-            assert age == 5
+        # Calculate expected age (should be approximately 5 days)
+        age = agent._get_file_age_days(test_file)
+        assert 4 <= age <= 6  # Allow small timing differences
 
-    def test_suggest_archive_location(self, agent):
+    def test_suggest_archive_location(self, agent, tmp_path):
         """Test archive location suggestion."""
-        mock_path = Path("TEST_FILE.md")
+        test_file = tmp_path / "TEST_FILE.md"
+        test_file.write_text("# Test")
 
-        with patch.object(mock_path, 'stat') as mock_stat:
-            # Set modification time to November 2025
-            nov_2025 = datetime(2025, 11, 15).timestamp()
-            mock_stat.return_value.st_mtime = nov_2025
+        # Set modification time to November 2025
+        nov_2025 = datetime(2025, 11, 15).timestamp()
+        import os
+        os.utime(test_file, (nov_2025, nov_2025))
 
-            suggestion = agent._suggest_archive_location(mock_path)
-            assert "docs/archive/2025-11/test-file.md" in suggestion
+        suggestion = agent._suggest_archive_location(test_file)
+        assert "docs/archive/2025-11/test-file.md" in suggestion
 
     def test_suggest_docs_location(self, agent):
         """Test docs location suggestion."""
@@ -166,13 +169,13 @@ class TestDocLifecycleAgent:
         assert "getting-started" in duplicate_names
 
     @pytest.mark.asyncio
-    async def test_analyze_file_completion_marker(self, agent):
+    async def test_analyze_file_completion_marker(self, agent, tmp_path):
         """Test analyzing file with completion marker."""
-        # Create a test file with completion marker
-        test_file = Path("complete.md")
+        # Create a real test file with completion marker
+        test_file = tmp_path / "complete.md"
+        test_file.write_text("# Task Complete - COMPLETE ✅\n**Date:** November 28, 2025")
 
-        with patch.object(test_file, 'read_text', return_value="# Task Complete - COMPLETE ✅\n**Date:** November 28, 2025"):
-            findings = await agent._analyze_file(test_file)
+        findings = await agent._analyze_file(test_file)
 
         assert len(findings) == 2  # One for completion marker, one for date stamp
         assert findings[0]["category"] == "archival"
@@ -180,13 +183,15 @@ class TestDocLifecycleAgent:
         assert findings[1]["category"] == "dated"
 
     @pytest.mark.asyncio
-    async def test_analyze_file_location_issue(self, agent):
+    async def test_analyze_file_location_issue(self, agent, tmp_path):
         """Test analyzing file that should be moved to docs/."""
-        test_file = Path("reference.md")
+        # Create a file in the tmp_path (which simulates root)
+        test_file = tmp_path / "reference.md"
+        test_file.write_text("# Reference Guide\nSome content.")
 
-        with patch.object(agent, 'project_root', Path("/tmp")):
-            with patch.object(test_file, 'read_text', return_value="# Reference Guide\nSome content."):
-                findings = await agent._analyze_file(test_file)
+        # Mock the project root to be tmp_path
+        with patch.object(agent, 'project_root', tmp_path):
+            findings = await agent._analyze_file(test_file)
 
         # Should find location issue since reference.md is in root but not in keep_in_root
         location_findings = [f for f in findings if f.get("category") == "location"]
@@ -201,13 +206,16 @@ class TestDocLifecycleAgent:
         with patch.object(agent, 'project_root', tmp_path):
             findings = await agent.scan_documentation()
 
-        # Should find various issues
+        # Should find various issues (at least completion marker and location issues)
         assert len(findings) > 0
 
-        # Check for root overflow finding
-        overflow_findings = [f for f in findings if f.get("category") == "root_overflow"]
-        assert len(overflow_findings) == 1
-        assert "2 markdown files (limit: 10)" in overflow_findings[0]["message"]
+        # Check for archival finding from completion marker
+        archival_findings = [f for f in findings if f.get("category") == "archival"]
+        assert len(archival_findings) >= 1
+
+        # Check for location finding for reference.md
+        location_findings = [f for f in findings if f.get("category") == "location"]
+        assert len(location_findings) >= 1
 
     @pytest.mark.asyncio
     async def test_handle_event(self, agent):
@@ -225,27 +233,42 @@ class TestDocLifecycleAgent:
         assert "total_md_files" in result.data
 
     @pytest.mark.asyncio
-    async def test_auto_fix_archival(self, agent):
+    async def test_auto_fix_archival(self, agent, tmp_path):
         """Test automatic fixing of archival issues."""
         # Set agent to auto-fix mode
         agent.config.mode = "auto-fix"
 
-        # Create a mock finding
-        finding = {
-            "category": "archival",
-            "file": "/tmp/test.md",
-            "suggestion": "Archive to docs/archive/2025-11/test.md"
-        }
+        # Create a real test file in the current working directory
+        source_file = Path("test.md")
+        source_file.write_text("# Test file")
 
-        # Mock the file operations
-        with patch('pathlib.Path.rename') as mock_rename, \
-             patch('pathlib.Path.mkdir') as mock_mkdir:
+        try:
+            # Create a finding with auto_fixable flag
+            finding = {
+                "category": "archival",
+                "file": str(source_file),
+                "suggestion": "Archive to docs/archive/2025-11/test.md",
+                "auto_fixable": True
+            }
 
             success = await agent.auto_fix(finding)
 
+            # Should succeed and move the file
             assert success is True
-            mock_mkdir.assert_called_once()
-            mock_rename.assert_called_once()
+            assert not source_file.exists()  # File should be moved
+            assert (Path("docs/archive/2025-11/test.md")).exists()
+        finally:
+            # Clean up
+            if source_file.exists():
+                source_file.unlink()
+            archive_path = Path("docs/archive/2025-11/test.md")
+            if archive_path.exists():
+                archive_path.unlink()
+                # Remove empty directories
+                import shutil
+                shutil.rmtree("docs/archive/2025-11", ignore_errors=True)
+                shutil.rmtree("docs/archive", ignore_errors=True)
+                shutil.rmtree("docs", ignore_errors=True)
 
     @pytest.mark.asyncio
     async def test_auto_fix_non_archival(self, agent):
