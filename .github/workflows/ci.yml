@@ -98,8 +98,8 @@ jobs:
         poetry install --with dev
 
     - name: Run mypy (type checking)
-       run: |
-         cd src && poetry run mypy dev_agents/core/ dev_agents/agents/
+      run: |
+        cd src && poetry run mypy dev_agents/core/ dev_agents/agents/
 
   security:
     runs-on: ubuntu-latest
