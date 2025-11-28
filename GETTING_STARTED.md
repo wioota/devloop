@@ -13,7 +13,7 @@ You'll need:
 
 ```bash
 # Navigate to the project
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # Create virtual environment
 python3 -m venv .venv
@@ -21,7 +21,7 @@ python3 -m venv .venv
 # Activate it
 source .venv/bin/activate
 
-# Install claude-agents
+# Install dev-agents
 pip install -e .
 
 # Install tools you want to use
@@ -32,7 +32,7 @@ npm install -g eslint prettier jest  # For JavaScript (optional)
 ### Option 2: Using Poetry
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # Install Poetry if you don't have it
 curl -sSL https://install.python-poetry.org | python3 -
@@ -54,8 +54,8 @@ pip install ruff black pytest
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
 
-# Install claude-agents
-pipx install /home/wioot/dev/claude-agents
+# Install dev-agents
+pipx install /home/wioot/dev/dev-agents
 ```
 
 ## Quick Start
@@ -64,10 +64,10 @@ pipx install /home/wioot/dev/claude-agents
 
 ```bash
 # Should show version
-claude-agents version
+dev-agents version
 
 # Should show help
-claude-agents --help
+dev-agents --help
 ```
 
 ### 2. Try on a Test Project
@@ -99,11 +99,11 @@ def test_goodbye():
     assert goodbye() == "Goodbye"
 EOF
 
-# Initialize claude-agents
-claude-agents init
+# Initialize dev-agents
+dev-agents init
 
 # Start watching
-claude-agents watch --verbose
+dev-agents watch --verbose
 ```
 
 ### 3. Edit Files and Watch
@@ -142,14 +142,14 @@ source .venv/bin/activate
 # Install tools
 pip install ruff black pytest
 
-# Install claude-agents
-pip install -e /home/wioot/dev/claude-agents
+# Install dev-agents
+pip install -e /home/wioot/dev/dev-agents
 
 # Initialize
-claude-agents init
+dev-agents init
 
 # Start watching
-claude-agents watch
+dev-agents watch
 ```
 
 **What happens:**
@@ -168,11 +168,11 @@ npm init -y
 # Install tools
 npm install --save-dev eslint prettier jest
 
-# Install claude-agents
+# Install dev-agents
 # (Use system installation or venv)
 
 # Initialize
-claude-agents init
+dev-agents init
 
 # Edit config for JS
 cat > .claude/agents.json << 'EOF'
@@ -208,7 +208,7 @@ cat > .claude/agents.json << 'EOF'
 EOF
 
 # Start watching
-claude-agents watch
+dev-agents watch
 ```
 
 ### Example 3: Mixed Python/JavaScript Project
@@ -219,10 +219,10 @@ pip install ruff black pytest
 npm install -g eslint prettier jest
 
 # Initialize
-claude-agents init
+dev-agents init
 
 # Watch - agents will handle both languages automatically
-claude-agents watch
+dev-agents watch
 ```
 
 ## Configuration
@@ -230,7 +230,7 @@ claude-agents watch
 ### View Current Config
 
 ```bash
-claude-agents status
+dev-agents status
 ```
 
 ### Customize Configuration
@@ -291,22 +291,22 @@ source .venv/bin/activate
 pip install pydantic watchdog typer rich
 ```
 
-### "ModuleNotFoundError: No module named 'claude_agents'"
+### "ModuleNotFoundError: No module named 'dev_agents'"
 
 ```bash
 # Install in development mode
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 pip install -e .
 ```
 
-### "command not found: claude-agents"
+### "command not found: dev-agents"
 
 ```bash
 # Make sure virtual environment is activated
 source .venv/bin/activate
 
 # Or reinstall
-pip install -e /home/wioot/dev/claude-agents
+pip install -e /home/wioot/dev/dev-agents
 ```
 
 ### "ruff not installed" / "black not installed"
@@ -330,14 +330,14 @@ npm install --save-dev eslint prettier jest
 
 1. Check configuration:
 ```bash
-claude-agents status
+dev-agents status
 ```
 
 2. Verify agents are enabled in `.claude/agents.json`
 
 3. Run with verbose mode:
 ```bash
-claude-agents watch --verbose
+dev-agents watch --verbose
 ```
 
 4. Check if tools are installed:
@@ -418,31 +418,31 @@ Enable auto-fix for linter to automatically fix simple issues:
 
 ```bash
 # Watch specific directory
-claude-agents watch ./src
+dev-agents watch ./src
 
 # Watch from different location
-claude-agents watch /path/to/project
+dev-agents watch /path/to/project
 ```
 
 ### Custom Config File
 
 ```bash
 # Use custom config
-claude-agents watch --config /path/to/custom-agents.json
+dev-agents watch --config /path/to/custom-agents.json
 ```
 
 ### Reset Configuration
 
 ```bash
 # Reset to defaults
-claude-agents config reset
+dev-agents config reset
 ```
 
 ### View Configuration
 
 ```bash
 # Show current config as JSON
-claude-agents config show
+dev-agents config show
 ```
 
 ## Integration with IDEs
@@ -458,7 +458,7 @@ Add to `.vscode/tasks.json`:
     {
       "label": "Watch with Claude Agents",
       "type": "shell",
-      "command": "claude-agents watch",
+      "command": "dev-agents watch",
       "isBackground": true,
       "problemMatcher": []
     }
@@ -475,7 +475,7 @@ Run task with `Cmd+Shift+P` → "Tasks: Run Task" → "Watch with Claude Agents"
 python app.py
 
 # In another pane, run agents
-claude-agents watch
+dev-agents watch
 
 # Split screen to see both!
 ```
@@ -491,26 +491,26 @@ claude-agents watch
 
 ```bash
 # Get help
-claude-agents --help
-claude-agents watch --help
+dev-agents --help
+dev-agents watch --help
 
 # Check version
-claude-agents version
+dev-agents version
 
 # View status
-claude-agents status
+dev-agents status
 ```
 
 ## Example Session
 
 ```bash
 $ cd my-project
-$ claude-agents init
+$ dev-agents init
 ✓ Created: .claude
 ✓ Created: .claude/agents.json
 ✓ Initialized!
 
-$ claude-agents watch
+$ dev-agents watch
 Claude Agents v2
 Watching: /home/user/my-project
 

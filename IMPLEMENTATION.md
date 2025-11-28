@@ -3,14 +3,14 @@
 ## Project Structure
 
 ```
-claude-agents/
+dev-agents/
 ├── pyproject.toml              # Poetry configuration
 ├── README.md                   # Project documentation
 ├── .gitignore                  # Git ignore rules
 ├── .python-version             # Python version (3.11+)
 │
 ├── src/
-│   └── claude_agents/
+│   └── dev_agents/
 │       ├── __init__.py
 │       │
 │       ├── core/               # Core framework
@@ -102,12 +102,12 @@ claude-agents/
 **Create pyproject.toml**:
 ```toml
 [tool.poetry]
-name = "claude-agents"
+name = "dev-agents"
 version = "0.1.0"
 description = "Background agents for development workflow automation"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "claude_agents", from = "src"}]
+packages = [{include = "dev_agents", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -133,7 +133,7 @@ mypy = "^1.7"
 pre-commit = "^3.6"
 
 [tool.poetry.scripts]
-claude-agents = "claude_agents.cli.main:app"
+dev-agents = "dev_agents.cli.main:app"
 
 [build-system]
 requires = ["poetry-core"]
@@ -162,7 +162,7 @@ pythonpath = ["src"]
 
 ### Step 1.2: Core Event System
 
-**src/claude_agents/core/event.py**:
+**src/dev_agents/core/event.py**:
 ```python
 """Event system core."""
 from __future__ import annotations
@@ -311,7 +311,7 @@ class EventQueue:
 
 ### Step 1.3: Base Agent Class
 
-**src/claude_agents/core/agent.py**:
+**src/dev_agents/core/agent.py**:
 ```python
 """Base agent class."""
 from __future__ import annotations
@@ -457,7 +457,7 @@ class Agent(ABC):
 
 ### Step 1.4: Agent Manager
 
-**src/claude_agents/core/manager.py**:
+**src/dev_agents/core/manager.py**:
 ```python
 """Agent manager."""
 from __future__ import annotations
@@ -597,7 +597,7 @@ class AgentManager:
 
 ### Step 1.5: Configuration Management
 
-**src/claude_agents/core/config.py**:
+**src/dev_agents/core/config.py**:
 ```python
 """Configuration management."""
 from __future__ import annotations
@@ -665,7 +665,7 @@ class Config(BaseModel):
 
 ## Step 1.6: Basic CLI
 
-**src/claude_agents/cli/main.py**:
+**src/dev_agents/cli/main.py**:
 ```python
 """CLI entry point."""
 import asyncio
@@ -705,7 +705,7 @@ def run(agent: str = typer.Argument(..., help="Agent to run")):
 
 @app.command()
 def init(path: Path = typer.Argument(Path.cwd(), help="Project path")):
-    """Initialize claude-agents in a project."""
+    """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
     claude_dir.mkdir(exist_ok=True)
 

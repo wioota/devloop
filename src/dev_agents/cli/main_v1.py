@@ -10,9 +10,9 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from claude_agents.agents import EchoAgent, FileLoggerAgent
-from claude_agents.collectors import FileSystemCollector
-from claude_agents.core import EventBus
+from dev_agents.agents import EchoAgent, FileLoggerAgent
+from dev_agents.collectors import FileSystemCollector
+from dev_agents.core import EventBus
 
 app = typer.Typer(
     help="Claude Agents - Development workflow automation (PROTOTYPE)",
@@ -135,7 +135,7 @@ def init(
         help="Project directory"
     )
 ):
-    """Initialize claude-agents in a project."""
+    """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
 
     if claude_dir.exists():
@@ -144,13 +144,13 @@ def init(
 
     claude_dir.mkdir(exist_ok=True)
     console.print(f"[green]✓[/green] Created: {claude_dir}")
-    console.print(f"\nRun [cyan]claude-agents watch {path}[/cyan] to start watching!")
+    console.print(f"\nRun [cyan]dev-agents watch {path}[/cyan] to start watching!")
 
 
 @app.command()
 def version():
     """Show version information."""
-    from claude_agents import __version__
+    from dev_agents import __version__
     console.print(f"Claude Agents v{__version__} (PROTOTYPE)")
 
 

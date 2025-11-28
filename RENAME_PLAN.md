@@ -2,7 +2,7 @@
 
 ## Proposed Name: `dev-agents`
 
-**Current:** claude-agents
+**Current:** dev-agents
 **New:** dev-agents
 **Rationale:** Not tied to specific AI, describes functionality, professional
 
@@ -17,7 +17,7 @@
 ## Renaming Checklist
 
 ### Phase 1: Preparation (5 min)
-- [ ] Stop all running agents (`pkill -f "claude-agents"`)
+- [ ] Stop all running agents (`pkill -f "dev-agents"`)
 - [ ] Commit current work
 - [ ] Create backup branch: `git checkout -b backup-before-rename`
 - [ ] Return to main: `git checkout main`
@@ -28,14 +28,14 @@
 ### Phase 2: Directory & Package Structure (10 min)
 
 **Directories to rename:**
-- [ ] `src/claude_agents/` → `src/dev_agents/`
-- [ ] Repository name (GitHub): `claude-agents` → `dev-agents`
+- [ ] `src/dev_agents/` → `src/dev_agents/`
+- [ ] Repository name (GitHub): `dev-agents` → `dev-agents`
 - [ ] Virtual environment references
 
 **Commands:**
 ```bash
 # Rename main package directory
-mv src/claude_agents src/dev_agents
+mv src/dev_agents src/dev_agents
 
 # Update git remote (after GitHub rename)
 # git remote set-url origin https://github.com/[username]/dev-agents.git
@@ -44,27 +44,27 @@ mv src/claude_agents src/dev_agents
 ### Phase 3: Code References (20 min)
 
 **Python imports to update:**
-- [ ] `from claude_agents.` → `from dev_agents.`
-- [ ] `import claude_agents` → `import dev_agents`
-- [ ] Module docstrings mentioning "claude-agents"
+- [ ] `from dev_agents.` → `from dev_agents.`
+- [ ] `import dev_agents` → `import dev_agents`
+- [ ] Module docstrings mentioning "dev-agents"
 - [ ] CLI entry points
 - [ ] Test imports
 
 **Files to check (use grep):**
 ```bash
-grep -r "claude_agents" src/ tests/ --include="*.py"
-grep -r "claude-agents" . --include="*.py" --include="*.md" --include="*.json" --include="*.toml"
+grep -r "dev_agents" src/ tests/ --include="*.py"
+grep -r "dev-agents" . --include="*.py" --include="*.md" --include="*.json" --include="*.toml"
 ```
 
 **Automated replacement:**
 ```bash
 # Python code
-find src/ tests/ -name "*.py" -type f -exec sed -i 's/claude_agents/dev_agents/g' {} +
-find src/ tests/ -name "*.py" -type f -exec sed -i 's/claude-agents/dev-agents/g' {} +
+find src/ tests/ -name "*.py" -type f -exec sed -i 's/dev_agents/dev_agents/g' {} +
+find src/ tests/ -name "*.py" -type f -exec sed -i 's/dev-agents/dev-agents/g' {} +
 
 # Configuration files
-sed -i 's/claude_agents/dev_agents/g' pyproject.toml setup.py
-sed -i 's/claude-agents/dev-agents/g' pyproject.toml setup.py
+sed -i 's/dev_agents/dev_agents/g' pyproject.toml setup.py
+sed -i 's/dev-agents/dev-agents/g' pyproject.toml setup.py
 ```
 
 ### Phase 4: Package Configuration (10 min)
@@ -103,8 +103,8 @@ sed -i 's/claude-agents/dev-agents/g' pyproject.toml setup.py
 **Update these patterns:**
 ```bash
 # Documentation
-find . -name "*.md" -type f -exec sed -i 's/claude-agents/dev-agents/g' {} +
-find . -name "*.md" -type f -exec sed -i 's/claude_agents/dev_agents/g' {} +
+find . -name "*.md" -type f -exec sed -i 's/dev-agents/dev-agents/g' {} +
+find . -name "*.md" -type f -exec sed -i 's/dev_agents/dev_agents/g' {} +
 
 # Be careful with .claude/CLAUDE.md - some references should stay
 # as they refer to Claude Code integration
@@ -113,8 +113,8 @@ find . -name "*.md" -type f -exec sed -i 's/claude_agents/dev_agents/g' {} +
 ### Phase 6: Installation & CLI (10 min)
 
 **Commands to update:**
-- [ ] `claude-agents watch` → `dev-agents watch`
-- [ ] `claude-agents --help` → `dev-agents --help`
+- [ ] `dev-agents watch` → `dev-agents watch`
+- [ ] `dev-agents --help` → `dev-agents --help`
 - [ ] All CLI commands in docs
 - [ ] Permissions in `.claude/settings.local.json`
 
@@ -140,13 +140,13 @@ find . -name "*.md" -type f -exec sed -i 's/claude_agents/dev_agents/g' {} +
 
 - [ ] Update `.gitignore` if needed
 - [ ] Create comprehensive commit message
-- [ ] Tag the rename: `git tag -a rename-to-dev-agents -m "Rename project from claude-agents to dev-agents"`
+- [ ] Tag the rename: `git tag -a rename-to-dev-agents -m "Rename project from dev-agents to dev-agents"`
 
 ### Phase 9: Testing (15 min)
 
 **Reinstall package:**
 ```bash
-pip uninstall claude-agents
+pip uninstall dev-agents
 pip install -e .
 ```
 
@@ -186,8 +186,8 @@ Create `rename_project.sh`:
 #!/bin/bash
 set -e
 
-OLD_NAME="claude-agents"
-OLD_PKG="claude_agents"
+OLD_NAME="dev-agents"
+OLD_PKG="dev_agents"
 NEW_NAME="dev-agents"
 NEW_PKG="dev_agents"
 
@@ -264,9 +264,9 @@ import warnings
 
 # Backward compatibility check
 try:
-    import claude_agents
+    import dev_agents
     warnings.warn(
-        "Package renamed from 'claude-agents' to 'dev-agents'. "
+        "Package renamed from 'dev-agents' to 'dev-agents'. "
         "Please update imports and uninstall old package.",
         DeprecationWarning
     )
@@ -277,7 +277,7 @@ except ImportError:
 ### PyPI Publishing
 If package is on PyPI:
 1. Publish new `dev-agents` package
-2. Update `claude-agents` to be a stub that redirects
+2. Update `dev-agents` to be a stub that redirects
 3. Add deprecation notice to old package
 
 ### GitHub

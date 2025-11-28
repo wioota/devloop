@@ -189,7 +189,7 @@ def assign_tier(relevance_score, finding):
         "matcher": "Edit|Write",
         "hooks": [{
           "type": "command",
-          "command": "claude-agents context check --scope modified_files"
+          "command": "dev-agents context check --scope modified_files"
         }]
       }
     ]
@@ -354,7 +354,7 @@ Each agent (linter, formatter, test-runner) needs to:
 ### Example Agent Integration
 
 ```python
-from claude_agents.core.context_store import ContextStore
+from dev_agents.core.context_store import ContextStore
 
 class LinterAgent(Agent):
     def __init__(self, ...):

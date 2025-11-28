@@ -227,15 +227,15 @@ Current state of the project:
 # See: GETTING_STARTED.md
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e /home/wioot/dev/claude-agents
+pip install -e /home/wioot/dev/dev-agents
 ```
 
 ### Basic Usage
 
 ```bash
 # See: COMMANDS.md
-claude-agents init
-claude-agents watch
+dev-agents init
+dev-agents watch
 ```
 
 ### Configuration

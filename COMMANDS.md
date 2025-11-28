@@ -4,7 +4,7 @@
 
 ```bash
 # Navigate to project
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # Install with Poetry (recommended)
 poetry install
@@ -35,20 +35,20 @@ python3 validate_prototype.py
 
 ```bash
 # Initialize .claude directory in a project
-claude-agents init [PATH]
+dev-agents init [PATH]
 
 # Watch directory for file changes
-claude-agents watch [PATH]
+dev-agents watch [PATH]
 
 # Watch with verbose logging
-claude-agents watch --verbose
-claude-agents watch -v
+dev-agents watch --verbose
+dev-agents watch -v
 
 # Show version
-claude-agents version
+dev-agents version
 
 # Help
-claude-agents --help
+dev-agents --help
 ```
 
 ## Testing Commands
@@ -61,7 +61,7 @@ pytest
 pytest -v
 
 # Run with coverage
-pytest --cov=claude_agents
+pytest --cov=dev_agents
 
 # Run specific test file
 pytest tests/test_prototype.py
@@ -84,13 +84,13 @@ mypy src/
 
 ```bash
 # Terminal 1: Start watching a test directory
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 poetry shell
 mkdir test-dir
-claude-agents watch test-dir --verbose
+dev-agents watch test-dir --verbose
 
 # Terminal 2: Make changes
-cd /home/wioot/dev/claude-agents/test-dir
+cd /home/wioot/dev/dev-agents/test-dir
 echo "hello" > test.txt
 echo "world" >> test.txt
 mv test.txt renamed.txt
@@ -110,13 +110,13 @@ cat test-dir/.claude/file-changes.log
 
 ```bash
 # Watch with verbose logging
-claude-agents watch --verbose
+dev-agents watch --verbose
 
 # Check Python version
 python3 --version
 
 # Check if modules are importable
-python3 -c "from claude_agents.core import Event; print('OK')"
+python3 -c "from dev_agents.core import Event; print('OK')"
 
 # List installed packages
 pip list | grep claude
@@ -147,7 +147,7 @@ git push -u origin main
 tree -L 3 -I __pycache__
 
 # View source code
-ls -la src/claude_agents/
+ls -la src/dev_agents/
 
 # View documentation
 ls -la *.md
@@ -162,7 +162,7 @@ cat .claude/file-changes.log
 # Test event bus
 python3 -c "
 import asyncio
-from src.claude_agents.core import Event, EventBus
+from src.dev_agents.core import Event, EventBus
 
 async def test():
     bus = EventBus()
@@ -177,7 +177,7 @@ asyncio.run(test())
 
 # Test agent import
 python3 -c "
-from src.claude_agents.agents import EchoAgent
+from src.dev_agents.agents import EchoAgent
 print('✓ EchoAgent imported successfully')
 "
 ```
@@ -201,7 +201,7 @@ poetry update
 poetry show
 
 # Run command in poetry environment
-poetry run claude-agents --help
+poetry run dev-agents --help
 
 # Open shell in poetry environment
 poetry shell
@@ -214,15 +214,15 @@ exit
 
 ```bash
 # Add these to your shell config
-alias ca='claude-agents'
-alias caw='claude-agents watch'
-alias cav='claude-agents watch --verbose'
+alias ca='dev-agents'
+alias caw='dev-agents watch'
+alias cav='dev-agents watch --verbose'
 ```
 
 ## Troubleshooting
 
 ```bash
-# If claude-agents command not found:
+# If dev-agents command not found:
 # 1. Make sure you're in the virtual environment
 poetry shell
 # or
@@ -233,7 +233,7 @@ pip install -e .
 
 # If imports fail:
 # Make sure you're in the project directory
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # If watchdog not working:
 # Install watchdog

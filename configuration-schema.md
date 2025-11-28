@@ -22,7 +22,7 @@ This document provides a complete reference for configuring the background agent
 
 ```json
 {
-  "$schema": "https://claude-agents.dev/schema/v1/agents.schema.json",
+  "$schema": "https://dev-agents.dev/schema/v1/agents.schema.json",
   "version": "1.0.0",
   "enabled": true,
   "agents": {
@@ -621,16 +621,16 @@ The configuration is validated against a JSON schema:
 
 ```bash
 # Validate configuration
-claude-agents config validate
+dev-agents config validate
 
 # Show current configuration
-claude-agents config show
+dev-agents config show
 
 # Edit configuration
-claude-agents config edit
+dev-agents config edit
 
 # Reset to defaults
-claude-agents config reset
+dev-agents config reset
 ```
 
 ## Configuration Precedence

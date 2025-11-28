@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to integrate claude-agents' context store with Claude Code, enabling intelligent, LLM-driven surfacing of background agent findings during development.
+This guide explains how to integrate dev-agents' context store with Claude Code, enabling intelligent, LLM-driven surfacing of background agent findings during development.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ This guide explains how to integrate claude-agents' context store with Claude Co
 ```bash
 # Start agents in the background
 cd /your/project
-claude-agents watch .
+dev-agents watch .
 ```
 
 ### 2. Configure Claude Code Hooks (Optional)
@@ -446,7 +446,7 @@ All checks passing - clean commit!"
 **Solution:**
 ```bash
 # Ensure agents are running
-claude-agents watch .
+dev-agents watch .
 
 # Check that context directory was created
 ls -la .claude/context/

@@ -1,1 +1,1 @@
-"""Tests for claude-agents."""
+"""Tests for dev-agents."""

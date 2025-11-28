@@ -1,4 +1,4 @@
-"""Configuration management for claude-agents."""
+"""Configuration management for dev-agents."""
 
 import json
 from pathlib import Path

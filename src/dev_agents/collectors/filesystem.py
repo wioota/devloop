@@ -7,7 +7,7 @@ from typing import List
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from claude_agents.core.event import Event, EventBus, Priority
+from dev_agents.core.event import Event, EventBus, Priority
 
 
 class FileSystemCollector(FileSystemEventHandler):

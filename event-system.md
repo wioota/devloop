@@ -861,11 +861,11 @@ Events that fail repeatedly:
 
 ```bash
 # View event stream
-claude-agents events stream
+dev-agents events stream
 
 # Replay events
-claude-agents events replay --from 2024-01-01 --to 2024-01-02
+dev-agents events replay --from 2024-01-01 --to 2024-01-02
 
 # Event statistics
-claude-agents events stats --type file:save
+dev-agents events stats --type file:save
 ```

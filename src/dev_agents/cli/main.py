@@ -10,13 +10,13 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
-from claude_agents.collectors import FileSystemCollector
-from claude_agents.core import AgentManager, Config, ConfigWrapper, EventBus
-from claude_agents.core.context_store import context_store
+from dev_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
+from dev_agents.collectors import FileSystemCollector
+from dev_agents.core import AgentManager, Config, ConfigWrapper, EventBus
+from dev_agents.core.context_store import context_store
 
 app = typer.Typer(
-    help="Claude Agents - Development workflow automation",
+    help="Dev Agents - Development workflow automation",
     add_completion=False
 )
 console = Console()
@@ -59,7 +59,7 @@ def watch(
     """
     setup_logging(verbose)
 
-    console.print(f"[bold green]Claude Agents v2[/bold green]")
+    console.print(f"[bold green]Dev Agents v2[/bold green]")
     console.print(f"Watching: [cyan]{path.absolute()}[/cyan]\n")
 
     # Run the async main loop
@@ -207,7 +207,7 @@ def init(
         help="Create default configuration file"
     )
 ):
-    """Initialize claude-agents in a project."""
+    """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
 
     if claude_dir.exists():
@@ -229,7 +229,7 @@ def init(
     console.print(f"\n[green]✓[/green] Initialized!")
     console.print(f"\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
-    console.print(f"  2. Run: [cyan]claude-agents watch {path}[/cyan]")
+    console.print(f"  2. Run: [cyan]dev-agents watch {path}[/cyan]")
 
 
 @app.command()
@@ -261,8 +261,8 @@ def status():
 @app.command()
 def version():
     """Show version information."""
-    from claude_agents import __version__
-    console.print(f"Claude Agents v{__version__}")
+    from dev_agents import __version__
+    console.print(f"Dev Agents v{__version__}")
 
 
 if __name__ == "__main__":

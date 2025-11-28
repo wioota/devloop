@@ -7,16 +7,16 @@
 ### Step 1: Start Background Agents
 
 ```bash
-cd /home/wioot/dev/claude-agents/test_context_integration
-claude-agents watch .
+cd /home/wioot/dev/dev-agents/test_context_integration
+dev-agents watch .
 ```
 
 You should see:
 ```
 Claude Agents v2
-Watching: /home/wioot/dev/claude-agents/test_context_integration
+Watching: /home/wioot/dev/dev-agents/test_context_integration
 
-Context store: /home/wioot/dev/claude-agents/test_context_integration/.claude/context
+Context store: /home/wioot/dev/dev-agents/test_context_integration/.claude/context
 ✓ Started agents:
   • linter
 
@@ -183,7 +183,7 @@ After running the agents:
 **Check:**
 ```bash
 # Is the context store initialized?
-grep -r "context_store.initialize" src/claude_agents/cli/main.py
+grep -r "context_store.initialize" src/dev_agents/cli/main.py
 ```
 
 **Solution:** The CLI should have this code (already added):

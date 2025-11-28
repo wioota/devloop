@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive testing strategy for the claude-agents background agent system, covering unit tests, integration tests, end-to-end tests, and specialized testing categories.
+Comprehensive testing strategy for the dev-agents background agent system, covering unit tests, integration tests, end-to-end tests, and specialized testing categories.
 
 ## Testing Categories
 
@@ -173,7 +173,7 @@ pytest tests/integration/ -v --tb=short
 pytest tests/e2e/ -v --tb=long
 
 # Run with coverage
-pytest --cov=src/claude_agents --cov-report=html
+pytest --cov=src/dev_agents --cov-report=html
 
 # Run performance tests
 pytest tests/performance/ -m "performance"

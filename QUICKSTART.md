@@ -5,7 +5,7 @@ If you don't have Poetry installed, you can still test the prototype with pip.
 ## Option 1: Using pip in a virtual environment
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # Create virtual environment
 python3 -m venv .venv
@@ -20,7 +20,7 @@ pip install pydantic watchdog typer rich pytest pytest-asyncio
 pip install -e .
 
 # Run the CLI
-claude-agents --help
+dev-agents --help
 ```
 
 ## Option 2: Install Poetry (Recommended)
@@ -33,15 +33,15 @@ curl -sSL https://install.python-poetry.org | python3 -
 export PATH="$HOME/.local/bin:$PATH"
 
 # Install dependencies
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 poetry install
 
 # Run with poetry
-poetry run claude-agents --help
+poetry run dev-agents --help
 
 # Or activate the shell
 poetry shell
-claude-agents --help
+dev-agents --help
 ```
 
 ## Testing the Prototype
@@ -49,26 +49,26 @@ claude-agents --help
 ### 1. Create a test directory
 
 ```bash
-mkdir ~/test-claude-agents
-cd ~/test-claude-agents
+mkdir ~/test-dev-agents
+cd ~/test-dev-agents
 ```
 
 ### 2. Initialize
 
 ```bash
-claude-agents init .
+dev-agents init .
 ```
 
 ### 3. Start watching
 
 ```bash
-claude-agents watch . --verbose
+dev-agents watch . --verbose
 ```
 
 ### 4. In another terminal, make changes
 
 ```bash
-cd ~/test-claude-agents
+cd ~/test-dev-agents
 echo "hello" > test.txt
 echo "world" >> test.txt
 mv test.txt renamed.txt

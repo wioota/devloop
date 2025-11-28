@@ -7,10 +7,10 @@
 #### 1. Fixed Threading/Async Issue ✅
 **Problem**: `RuntimeError: no running event loop` when filesystem collector tried to emit events from watchdog thread.
 
-**Solution**: Updated `src/claude_agents/collectors/filesystem.py` to use `asyncio.run_coroutine_threadsafe()` for thread-safe event emission.
+**Solution**: Updated `src/dev_agents/collectors/filesystem.py` to use `asyncio.run_coroutine_threadsafe()` for thread-safe event emission.
 
 **Files Modified**:
-- `src/claude_agents/collectors/filesystem.py` (lines 35, 109, 96-99)
+- `src/dev_agents/collectors/filesystem.py` (lines 35, 109, 96-99)
 
 **Documentation**:
 - `THREADING_FIX.md` - Technical details
@@ -30,7 +30,7 @@
   - Added `global.mode: "report-only"`
   - Added `global.contextStore` config
 
-- `src/claude_agents/agents/formatter.py` - Code updated
+- `src/dev_agents/agents/formatter.py` - Code updated
   - Added `report_only` config flag
   - Added `_check_formatter()` method
   - Added `_check_black()` - uses `black --check`
@@ -51,24 +51,24 @@
 **Solution**: Updated all agents to include `.venv/bin` in environment PATH when running subprocesses.
 
 **Files Modified**:
-- `src/claude_agents/agents/linter.py` - Updated `_run_ruff()` and `_auto_fix()`
-- `src/claude_agents/agents/formatter.py` - Updated `_run_black()`
-- `src/claude_agents/agents/test_runner.py` - Updated `_run_pytest()` and `_run_jest()`
+- `src/dev_agents/agents/linter.py` - Updated `_run_ruff()` and `_auto_fix()`
+- `src/dev_agents/agents/formatter.py` - Updated `_run_black()`
+- `src/dev_agents/agents/test_runner.py` - Updated `_run_pytest()` and `_run_jest()`
 
 #### 4. Set Up on PATH ✅
-**Solution**: Created symlink so `claude-agents` command works globally.
+**Solution**: Created symlink so `dev-agents` command works globally.
 
 ```bash
-~/.local/bin/claude-agents -> /home/wioot/dev/claude-agents/.venv/bin/claude-agents
+~/.local/bin/dev-agents -> /home/wioot/dev/dev-agents/.venv/bin/dev-agents
 ```
 
 **Verification**: ✅ Works from any directory
-- `claude-agents --help` ✓
-- `claude-agents version` → v0.1.0 ✓
-- `claude-agents watch .` ✓
+- `dev-agents --help` ✓
+- `dev-agents version` → v0.1.0 ✓
+- `dev-agents watch .` ✓
 
 #### 5. Git Repository Set Up ✅
-**Repository**: https://github.com/wioota/claude-agents (Private)
+**Repository**: https://github.com/wioota/dev-agents (Private)
 
 **Initial Commit**: 9b876b9
 - 50 files
@@ -84,7 +84,7 @@
 ## Current Working State
 
 ### Agents Running
-Start with: `claude-agents watch .`
+Start with: `dev-agents watch .`
 
 **Output Example**:
 ```
@@ -108,7 +108,7 @@ INFO ✓ test-runner: No tests found for file.py (0.00s)
 - ✅ black (25.9.0) - Python formatter
 - ✅ pytest (8.4.2) - Python test runner
 - ✅ rich (13.7.1) - Terminal UI
-- ✅ claude-agents (0.1.0) - This project
+- ✅ dev-agents (0.1.0) - This project
 
 ### Test Files Created
 - `demo_agent_test.py` - Formatted by agents before report-only mode
@@ -170,22 +170,22 @@ From `CLAUDE.md` - 20+ planned agents:
 - `INDEX.md` - Documentation index
 
 ### Code
-- `src/claude_agents/core/` - Framework
+- `src/dev_agents/core/` - Framework
   - `event.py` - Event system
   - `agent.py` - Base agent class
   - `manager.py` - Agent lifecycle
   - `config.py` - Configuration
 
-- `src/claude_agents/agents/` - Production agents
+- `src/dev_agents/agents/` - Production agents
   - `linter.py` - Multi-language linting
   - `formatter.py` - Code formatting (with report-only)
   - `test_runner.py` - Test execution
   - `echo.py`, `file_logger.py` - Prototype agents
 
-- `src/claude_agents/collectors/` - Event sources
+- `src/dev_agents/collectors/` - Event sources
   - `filesystem.py` - Watchdog integration (threading fix)
 
-- `src/claude_agents/cli/` - CLI
+- `src/dev_agents/cli/` - CLI
   - `main.py` - Typer-based CLI
 
 ### Configuration
@@ -204,17 +204,17 @@ From `CLAUDE.md` - 20+ planned agents:
 
 ### Start Watching
 ```bash
-claude-agents watch .
+dev-agents watch .
 ```
 
 ### Check Status
 ```bash
-claude-agents status
+dev-agents status
 ```
 
 ### Check Version
 ```bash
-claude-agents version
+dev-agents version
 ```
 
 ### Run Tests

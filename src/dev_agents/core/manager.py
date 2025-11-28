@@ -5,9 +5,9 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from claude_agents.core.agent import Agent
-from claude_agents.core.context_store import context_store
-from claude_agents.core.event import Event, EventBus
+from dev_agents.core.agent import Agent
+from dev_agents.core.context_store import context_store
+from dev_agents.core.event import Event, EventBus
 
 
 class AgentManager:

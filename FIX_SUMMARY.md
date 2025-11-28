@@ -6,13 +6,13 @@ Hi! I've successfully fixed the threading/async issue you identified. Here's wha
 
 ## The Problem You Found
 
-You were absolutely correct! There was a `RuntimeError: no running event loop` when the filesystem collector tried to emit events. The issue was in `src/claude_agents/collectors/filesystem.py` at line 96.
+You were absolutely correct! There was a `RuntimeError: no running event loop` when the filesystem collector tried to emit events. The issue was in `src/dev_agents/collectors/filesystem.py` at line 96.
 
 ## What I Fixed
 
 ### Changed Files
 
-**`src/claude_agents/collectors/filesystem.py`** - 3 modifications:
+**`src/dev_agents/collectors/filesystem.py`** - 3 modifications:
 
 1. **Line 35**: Added `self._loop = None` to store event loop reference
 2. **Line 109**: Capture event loop in `start()` with `self._loop = asyncio.get_running_loop()`
@@ -63,7 +63,7 @@ The system is fully functional! You can now:
 ### 1. Watch Mode Works
 ```bash
 source .venv/bin/activate
-claude-agents watch .
+dev-agents watch .
 # Edit files and see agents respond!
 ```
 

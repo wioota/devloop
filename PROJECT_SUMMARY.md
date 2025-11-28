@@ -5,7 +5,7 @@
 **Claude Agents** is a background agent system that automates development workflow tasks. It watches your codebase and automatically lints, formats, and tests your code as you work - all without interrupting your flow.
 
 **Status**: Phase 2 Complete ✅
-**Location**: `/home/wioot/dev/claude-agents/`
+**Location**: `/home/wioot/dev/dev-agents/`
 **Started**: October 25, 2024
 **Duration**: 1 session
 
@@ -74,20 +74,20 @@ Built minimal working prototype:
 
 Implemented three production-ready agents:
 
-**1. LinterAgent** (`src/claude_agents/agents/linter.py`)
+**1. LinterAgent** (`src/dev_agents/agents/linter.py`)
 - Multi-language support (Python/ruff, JavaScript/TypeScript/eslint)
 - JSON output parsing
 - Auto-fix capability
 - Intelligent file detection
 - **~300 lines**
 
-**2. FormatterAgent** (`src/claude_agents/agents/formatter.py`)
+**2. FormatterAgent** (`src/dev_agents/agents/formatter.py`)
 - Multi-language formatting (Python/black, JS-TS/prettier)
 - Format-on-save
 - Graceful error handling
 - **~200 lines**
 
-**3. TestRunnerAgent** (`src/claude_agents/agents/test_runner.py`)
+**3. TestRunnerAgent** (`src/dev_agents/agents/test_runner.py`)
 - Intelligent test detection
 - Related-tests-only mode
 - Multi-framework (pytest, jest)
@@ -96,17 +96,17 @@ Implemented three production-ready agents:
 
 **Supporting Systems**:
 
-4. **Configuration System** (`src/claude_agents/core/config.py`)
+4. **Configuration System** (`src/dev_agents/core/config.py`)
    - Pydantic validation
    - Default config generation
    - Multi-location support
 
-5. **Agent Manager** (`src/claude_agents/core/manager.py`)
+5. **Agent Manager** (`src/dev_agents/core/manager.py`)
    - Centralized agent control
    - Start/stop/enable/disable
    - Pause/resume for coding agent integration
 
-6. **Enhanced CLI** (`src/claude_agents/cli/main.py`)
+6. **Enhanced CLI** (`src/dev_agents/cli/main.py`)
    - `watch` - Watch with real agents
    - `init` - Initialize with config
    - `status` - Show configuration
@@ -117,8 +117,8 @@ Implemented three production-ready agents:
 ## 📁 Project Structure
 
 ```
-claude-agents/
-├── src/claude_agents/           # Source code
+dev-agents/
+├── src/dev_agents/           # Source code
 │   ├── core/                    # Framework (400 lines)
 │   │   ├── event.py            # Event system
 │   │   ├── agent.py            # Base agent
@@ -366,7 +366,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # Install
-pip install -e /home/wioot/dev/claude-agents
+pip install -e /home/wioot/dev/dev-agents
 
 # Install tools
 pip install ruff black pytest
@@ -377,10 +377,10 @@ pip install ruff black pytest
 ```bash
 # Initialize project
 cd /path/to/your/project
-claude-agents init
+dev-agents init
 
 # Start watching
-claude-agents watch
+dev-agents watch
 
 # Edit files and watch agents work!
 ```

@@ -3,10 +3,10 @@
 import logging
 from typing import Dict, Any
 
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.auto_fix import auto_fix
-from claude_agents.core.context_store import context_store
-from claude_agents.core.event import Event
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.auto_fix import auto_fix
+from dev_agents.core.context_store import context_store
+from dev_agents.core.event import Event
 
 
 logger = logging.getLogger(__name__)

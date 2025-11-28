@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "claude-agents"
+name = "dev-agents"
 version = "0.1.0"
 description = "Background agents for development workflow automation"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "claude_agents", from = "src"}]
+packages = [{include = "dev_agents", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -23,7 +23,7 @@ bandit = "^1.7"
 radon = "^6.0"
 
 [tool.poetry.scripts]
-claude-agents = "claude_agents.cli.main:app"
+dev-agents = "dev_agents.cli.main:app"
 
 [build-system]
 requires = ["poetry-core"]

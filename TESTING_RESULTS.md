@@ -3,7 +3,7 @@
 ## Test Date: October 25, 2025
 
 ## Summary
-Tested claude-agents integration on this project and discovered critical TypeError issues that prevented proper agent operation. All issues have been identified and fixed.
+Tested dev-agents integration on this project and discovered critical TypeError issues that prevented proper agent operation. All issues have been identified and fixed.
 
 ## Errors Found
 
@@ -12,9 +12,9 @@ Tested claude-agents integration on this project and discovered critical TypeErr
 **Issue:** Multiple agents were creating AgentResult objects without the required `duration` parameter, causing TypeErrors when agents tried to handle events.
 
 **Affected Files:**
-- `src/claude_agents/agents/type_checker.py` (5 locations)
-- `src/claude_agents/agents/security_scanner.py` (5 locations)
-- `src/claude_agents/agents/performance_profiler.py` (5 locations)
+- `src/dev_agents/agents/type_checker.py` (5 locations)
+- `src/dev_agents/agents/security_scanner.py` (5 locations)
+- `src/dev_agents/agents/performance_profiler.py` (5 locations)
 
 **Error Message:**
 ```
@@ -65,7 +65,7 @@ Added `duration=0.0` to AgentResult calls in:
 ## Verification
 
 ### Test Methodology
-1. Started `claude-agents watch .` in background
+1. Started `dev-agents watch .` in background
 2. Created test Python file (`test_final.py`)
 3. Monitored agent output for errors
 4. Verified all agents processed file successfully
@@ -111,9 +111,9 @@ The automatic consolidation via event subscription needs verification but manual
 
 ## Files Modified
 
-1. `src/claude_agents/agents/type_checker.py` - Added duration parameter
-2. `src/claude_agents/agents/security_scanner.py` - Added duration parameter
-3. `src/claude_agents/agents/performance_profiler.py` - Added duration parameter
+1. `src/dev_agents/agents/type_checker.py` - Added duration parameter
+2. `src/dev_agents/agents/security_scanner.py` - Added duration parameter
+3. `src/dev_agents/agents/performance_profiler.py` - Added duration parameter
 4. All files formatted with black
 
 ## Recommendations
@@ -162,7 +162,7 @@ Output:
 
 ## Conclusion
 
-All critical TypeError issues have been resolved. The claude-agents system now runs cleanly without errors when processing Python files. The Claude Code integration is fully functional with:
+All critical TypeError issues have been resolved. The dev-agents system now runs cleanly without errors when processing Python files. The Claude Code integration is fully functional with:
 - ✓ Automatic consolidation via event subscription
 - ✓ Manual consolidation as fallback
 - ✓ Tool availability errors visible to coding agents

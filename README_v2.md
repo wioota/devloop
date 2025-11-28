@@ -19,7 +19,7 @@ Automatically lint, format, and test your code as you work. No configuration nee
 ### 1. Install
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 pip install -e .
 ```
 
@@ -37,7 +37,7 @@ npm install -g eslint prettier jest
 
 ```bash
 cd /path/to/your/project
-claude-agents init
+dev-agents init
 ```
 
 This creates `.claude/agents.json` with sensible defaults.
@@ -45,7 +45,7 @@ This creates `.claude/agents.json` with sensible defaults.
 ### 4. Start Watching
 
 ```bash
-claude-agents watch
+dev-agents watch
 ```
 
 ### 5. Edit Files and Watch the Magic! ✨
@@ -70,35 +70,35 @@ def hello():
 
 ```bash
 # Watch current directory
-claude-agents watch
+dev-agents watch
 
 # Watch specific directory
-claude-agents watch /path/to/project
+dev-agents watch /path/to/project
 
 # Verbose mode
-claude-agents watch --verbose
+dev-agents watch --verbose
 
 # Use custom config
-claude-agents watch --config /path/to/agents.json
+dev-agents watch --config /path/to/agents.json
 ```
 
 ### Other Commands
 
 ```bash
 # Initialize project
-claude-agents init
+dev-agents init
 
 # Show agent status
-claude-agents status
+dev-agents status
 
 # Show configuration
-claude-agents config show
+dev-agents config show
 
 # Reset configuration
-claude-agents config reset
+dev-agents config reset
 
 # Show version
-claude-agents version
+dev-agents version
 ```
 
 ## ⚙️ Configuration
@@ -230,8 +230,8 @@ All without blocking your workflow!
 pip install ruff black pytest
 
 # Init and watch
-claude-agents init
-claude-agents watch
+dev-agents init
+dev-agents watch
 ```
 
 Now edit `app.py` and `test_app.py` - agents will run automatically!
@@ -243,8 +243,8 @@ Now edit `app.py` and `test_app.py` - agents will run automatically!
 npm install -g eslint prettier jest
 
 # Init and watch
-claude-agents init
-claude-agents watch
+dev-agents init
+dev-agents watch
 ```
 
 Edit your `.js` files and watch agents work!
@@ -257,7 +257,7 @@ Claude Agents handles multiple languages automatically. Just install the tools y
 pip install ruff black pytest
 npm install -g eslint prettier jest
 
-claude-agents watch
+dev-agents watch
 ```
 
 ## 📊 Agent Details
@@ -310,7 +310,7 @@ claude-agents watch
 ### Project Structure
 
 ```
-src/claude_agents/
+src/dev_agents/
 ├── core/               # Framework
 │   ├── event.py       # Event bus
 │   ├── agent.py       # Base agent
@@ -328,11 +328,11 @@ src/claude_agents/
 
 ### Adding a New Agent
 
-1. Create `src/claude_agents/agents/my_agent.py`:
+1. Create `src/dev_agents/agents/my_agent.py`:
 
 ```python
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.event import Event
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.event import Event
 
 class MyAgent(Agent):
     async def handle(self, event: Event) -> AgentResult:

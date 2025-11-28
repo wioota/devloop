@@ -24,7 +24,7 @@
 ### 2. Core Implementation ✅
 
 **Files Created/Modified:**
-- `src/claude_agents/core/context_store.py` (530 lines) - Complete rewrite
+- `src/dev_agents/core/context_store.py` (530 lines) - Complete rewrite
   - Finding dataclass with validation
   - ContextStore with async operations
   - Relevance scoring algorithm
@@ -32,11 +32,11 @@
   - Atomic file writes
   - Index generation for LLM
 
-- `src/claude_agents/cli/main.py` - Added context store initialization
+- `src/dev_agents/cli/main.py` - Added context store initialization
   - Creates `.claude/context/` directory on startup
   - Initializes before agents start
 
-- `src/claude_agents/agents/linter.py` - Integrated with context store
+- `src/dev_agents/agents/linter.py` - Integrated with context store
   - Converts linter issues to Finding objects
   - Writes to context store asynchronously
   - Proper severity mapping (ruff + eslint)
@@ -174,7 +174,7 @@ cat test_context_integration/.claude/context/index.json | python3 -m json.tool
 See `CLAUDE_CODE_TEST_GUIDE.md` for step-by-step instructions.
 
 **Quick test:**
-1. Start agents: `claude-agents watch test_context_integration`
+1. Start agents: `dev-agents watch test_context_integration`
 2. In Claude Code: "Read .claude/context/index.json and tell me what issues are there"
 3. Claude should list the 4 linting errors
 
@@ -186,7 +186,7 @@ See `CLAUDE_CODE_TEST_GUIDE.md` for step-by-step instructions.
 - [ ] **Add configuration schema** to `.claude/agents.json`
 
 ### Medium Priority
-- [ ] Add CLI commands (`claude-agents context show`, `claude-agents context clear`)
+- [ ] Add CLI commands (`dev-agents context show`, `dev-agents context clear`)
 - [ ] Add status command to show context summary
 - [ ] Document configuration options
 
@@ -225,9 +225,9 @@ Current benchmarks from integration test:
 
 ```
 Modified:
-  src/claude_agents/core/context_store.py (REPLACED, 530 lines)
-  src/claude_agents/cli/main.py (added initialization)
-  src/claude_agents/agents/linter.py (added context integration)
+  src/dev_agents/core/context_store.py (REPLACED, 530 lines)
+  src/dev_agents/cli/main.py (added initialization)
+  src/dev_agents/agents/linter.py (added context integration)
 
 Created:
   docs/CONTEXT_STORE_DESIGN.md (350 lines)

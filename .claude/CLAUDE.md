@@ -74,7 +74,7 @@ Claude Code can read this file to access current status and findings.
 **IMPORTANT**: Be much less verbose in work summaries. Keep responses concise and to the point. Focus on what was accomplished and next steps only.
 
 ### Coding Rules Integration
-**MANDATORY**: When using claude-agents, automatically follow the coding rules in `CODING_RULES.md`. Learn from every failure pattern and update your coding approach:
+**MANDATORY**: When using dev-agents, automatically follow the coding rules in `CODING_RULES.md`. Learn from every failure pattern and update your coding approach:
 
 - **Pattern Recognition**: Identify recurring issues (tool availability, configuration errors, path handling, async patterns)
 - **Rule Application**: Apply the 10 core patterns from CODING_RULES.md to all code you generate
@@ -93,7 +93,7 @@ Claude Code can read this file to access current status and findings.
 8. Use structured logging consistently
 
 **Test Setup Requirements**
-**MANDATORY**: When initializing projects with claude-agents, ensure proper test framework setup:
+**MANDATORY**: When initializing projects with dev-agents, ensure proper test framework setup:
 
 - **Auto-detect test frameworks** in the project (pytest, unittest, jest, etc.)
 - **Create basic test structure** if none exists (tests/ directory, basic test files)

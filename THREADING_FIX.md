@@ -12,7 +12,7 @@ This is a classic threading/asyncio integration issue.
 
 ## Root Cause
 
-**File**: `src/claude_agents/collectors/filesystem.py`
+**File**: `src/dev_agents/collectors/filesystem.py`
 **Line**: 96 (before fix)
 
 ```python
@@ -151,7 +151,7 @@ The threading/async bridge is now working correctly. You can:
 
 1. **Test with real projects**:
    ```bash
-   claude-agents watch /path/to/project
+   dev-agents watch /path/to/project
    ```
 
 2. **Try the production agents**:
@@ -186,7 +186,7 @@ The chosen approach is the cleanest and most idiomatic solution.
 **Date**: October 25, 2024
 **Status**: ✅ RESOLVED and TESTED
 **Files Modified**:
-- `src/claude_agents/collectors/filesystem.py` (3 changes)
+- `src/dev_agents/collectors/filesystem.py` (3 changes)
 
 **Files Created**:
 - `test_filesystem_fix.py` (unit test)

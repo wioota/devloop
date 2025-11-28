@@ -1,7 +1,7 @@
 """Unit tests for AgentResult dataclass."""
 
 import pytest
-from claude_agents.core.agent import AgentResult
+from dev_agents.core.agent import AgentResult
 
 
 class TestAgentResultValidCreation:

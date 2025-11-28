@@ -1,6 +1,6 @@
 # Agent Development Guide
 
-Complete guide for developing new agents in the claude-agents system.
+Complete guide for developing new agents in the dev-agents system.
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@ Complete guide for developing new agents in the claude-agents system.
 
 ## Overview
 
-Agents in claude-agents are autonomous background processes that monitor filesystem events and perform automated code quality checks. Each agent:
+Agents in dev-agents are autonomous background processes that monitor filesystem events and perform automated code quality checks. Each agent:
 
 - Responds to specific event triggers (file:modified, file:created, etc.)
 - Executes asynchronously without blocking development workflow
@@ -46,9 +46,9 @@ Agents in claude-agents are autonomous background processes that monitor filesys
 ### Step 1: Define Agent Structure
 
 ```python
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.event import Event
-from claude_agents.core.context_store import context_store
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.event import Event
+from dev_agents.core.context_store import context_store
 from dataclasses import dataclass
 from typing import Dict, Any, List
 
@@ -140,11 +140,11 @@ async def handle(self, event: Event) -> AgentResult:
 
 ### Step 3: Register Agent
 
-Add your agent to `src/claude_agents/core/config.py`:
+Add your agent to `src/dev_agents/core/config.py`:
 
 ```python
 AGENT_REGISTRY = {
-    "my-agent": "claude_agents.agents.my_agent.MyAgent",
+    "my-agent": "dev_agents.agents.my_agent.MyAgent",
     # ... other agents
 }
 
@@ -295,8 +295,8 @@ Create tests in `tests/unit/agents/test_my_agent.py`:
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from claude_agents.agents.my_agent import MyAgent, MyAgentConfig
-from claude_agents.core.event import Event
+from dev_agents.agents.my_agent import MyAgent, MyAgentConfig
+from dev_agents.core.event import Event
 
 
 class TestMyAgentConfig:
@@ -377,7 +377,7 @@ pytest
 pytest tests/unit/agents/test_my_agent.py
 
 # Run with coverage
-pytest --cov=src/claude_agents/agents/my_agent
+pytest --cov=src/dev_agents/agents/my_agent
 
 # Run with verbose output
 pytest -v
@@ -390,7 +390,7 @@ pytest -v
 **MANDATORY**: Write findings to context store:
 
 ```python
-from claude_agents.core.context_store import context_store
+from dev_agents.core.context_store import context_store
 
 # After creating AgentResult
 agent_result = AgentResult(...)
@@ -653,7 +653,7 @@ async def handle(self, event: Event) -> AgentResult:
 
 ### Complete Agent Example
 
-See `src/claude_agents/agents/linter.py` for a complete, production-ready example that demonstrates:
+See `src/dev_agents/agents/linter.py` for a complete, production-ready example that demonstrates:
 
 - Configuration with validation
 - Tool availability checking
@@ -666,9 +666,9 @@ See `src/claude_agents/agents/linter.py` for a complete, production-ready exampl
 ```python
 """Minimal agent template."""
 
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.event import Event
-from claude_agents.core.context_store import context_store
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.event import Event
+from dev_agents.core.context_store import context_store
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Any
@@ -753,4 +753,4 @@ When creating a new agent, ensure:
 - [ ] Agent is registered in `config.py`
 - [ ] Agent config is added to `AGENT_CONFIGS`
 
-Following these guidelines will ensure your agent integrates seamlessly with the claude-agents system and provides reliable, helpful results to Claude Code users.
+Following these guidelines will ensure your agent integrates seamlessly with the dev-agents system and provides reliable, helpful results to Claude Code users.

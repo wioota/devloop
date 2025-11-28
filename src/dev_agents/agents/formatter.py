@@ -5,14 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.context_store import (
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.context_store import (
     context_store,
     Finding,
     Severity,
     ScopeType,
 )
-from claude_agents.core.event import Event
+from dev_agents.core.event import Event
 
 
 class FormatterConfig:

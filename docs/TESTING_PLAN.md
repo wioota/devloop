@@ -10,7 +10,7 @@ This document outlines the testing approach for the Context Store feature. We'll
 
 ```bash
 # Ensure you're in the project directory
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 
 # Activate virtual environment
 source .venv/bin/activate
@@ -62,7 +62,7 @@ EOF
 #### Test 1.1: Basic Writing
 ```bash
 # Start agents in watch mode
-claude-agents watch test_context_store/
+dev-agents watch test_context_store/
 
 # In another terminal, trigger events
 touch test_context_store/src/sample.py
@@ -356,14 +356,14 @@ du -sh test_context_store/.claude/context/
 
 ## Self-Hosting Test (Dogfooding)
 
-**Objective**: Run claude-agents on itself during development.
+**Objective**: Run dev-agents on itself during development.
 
 ### Setup
 
 ```bash
 # Start agents watching this project
-cd /home/wioot/dev/claude-agents
-claude-agents watch .
+cd /home/wioot/dev/dev-agents
+dev-agents watch .
 ```
 
 ### Monitor During Development
@@ -380,7 +380,7 @@ If issues arise:
 
 ```bash
 # Disable agents
-pkill -f claude-agents
+pkill -f dev-agents
 
 # Log the issue
 echo "$(date): [ISSUE] Description of what went wrong" >> CONTEXT_STORE_ISSUES.log
@@ -452,7 +452,7 @@ echo "" >> CONTEXT_STORE_ISSUES.log
 - [ ] Test 6.3: Storage Usage
 
 ### Dogfooding
-- [ ] Agents running on claude-agents project
+- [ ] Agents running on dev-agents project
 - [ ] Monitored during development
 - [ ] Issues logged if encountered
 - [ ] Performance acceptable
@@ -490,7 +490,7 @@ If critical issues are found:
 }
 
 # Or stop agents entirely
-pkill -f claude-agents
+pkill -f dev-agents
 
 # Document issues for debugging session
 git checkout -b debug/context-store-issues

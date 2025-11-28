@@ -10,7 +10,7 @@ The enhanced Claude Agents system provides seamless integration between backgrou
 
 **One-liner installation:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wioota/claude-agents/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wioota/dev-agents/main/install.sh | bash
 ```
 
 **Features:**
@@ -104,7 +104,7 @@ Result: "Successfully rolled back 3 changes to their previous state."
 
 **Installation:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wioota/claude-agents/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wioota/dev-agents/main/install.sh | bash
 cd my-project
 ca start
 ```
@@ -207,6 +207,6 @@ For issues or questions:
 1. Check the change log: `.claude/context/change-log.json`
 2. Use rollback tools: `./rollback.sh help`
 3. Review agent results: `.claude/context/agent-results.json`
-4. Check installation logs: `~/.claude-agents/install.log`
+4. Check installation logs: `~/.dev-agents/install.log`
 
 The enhanced system provides a seamless, safe, and powerful development workflow enhancement that Amp can fully leverage.

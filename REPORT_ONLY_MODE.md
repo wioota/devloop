@@ -93,7 +93,7 @@ Linter  Formatter    TestRunner    (Future Agents)
 
 ## What Changed in Code
 
-### `src/claude_agents/agents/formatter.py`
+### `src/dev_agents/agents/formatter.py`
 
 1. Added `report_only` to `FormatterConfig`
 2. Updated `handle()` to check `report_only` flag

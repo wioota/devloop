@@ -3,8 +3,8 @@ import asyncio
 
 import pytest
 
-from claude_agents.agents import EchoAgent
-from claude_agents.core import Event, EventBus, Priority
+from dev_agents.agents import EchoAgent
+from dev_agents.core import Event, EventBus, Priority
 
 
 @pytest.mark.asyncio

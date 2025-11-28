@@ -1,6 +1,6 @@
 """Echo agent - simply logs received events (for testing)."""
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.event import Event
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.event import Event
 
 
 class EchoAgent(Agent):

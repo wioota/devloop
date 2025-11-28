@@ -7,7 +7,7 @@ A **minimal working prototype** has been successfully implemented and validated.
 ## 📁 Project Location
 
 ```
-/home/wioot/dev/claude-agents/
+/home/wioot/dev/dev-agents/
 ```
 
 ## 📊 Project Stats
@@ -43,7 +43,7 @@ A **minimal working prototype** has been successfully implemented and validated.
 ### Validate the Prototype
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 python3 validate_prototype.py
 ```
 
@@ -74,14 +74,14 @@ poetry install              # With Poetry
 python3 -m venv .venv && source .venv/bin/activate && pip install -e .
 
 # Watch a directory for changes
-claude-agents watch /path/to/directory
+dev-agents watch /path/to/directory
 
 # In another terminal, make file changes and watch the agents react!
 ```
 
 ## 📚 Documentation
 
-All documentation is in `/home/wioot/dev/claude-agents/`:
+All documentation is in `/home/wioot/dev/dev-agents/`:
 
 1. **README.md** - User-facing documentation
 2. **QUICKSTART.md** - Installation and setup guide
@@ -126,7 +126,7 @@ Filesystem → FileSystemCollector → EventBus → Agents → Results
 Adding a new agent is as simple as:
 
 ```python
-from claude_agents.core.agent import Agent, AgentResult
+from dev_agents.core.agent import Agent, AgentResult
 
 class MyAgent(Agent):
     async def handle(self, event: Event) -> AgentResult:
@@ -208,7 +208,7 @@ Documentation (8 files):
 └── PROTOTYPE_STATUS.md    - Current status
 
 Source Code (13 files):
-├── src/claude_agents/
+├── src/dev_agents/
 │   ├── core/              - Event system & agent framework (3 files)
 │   ├── agents/            - Example agents (3 files)
 │   ├── collectors/        - Filesystem watcher (2 files)

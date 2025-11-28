@@ -8,7 +8,7 @@ import shutil
 
 import pytest
 
-from claude_agents.core.context_store import (
+from dev_agents.core.context_store import (
     ContextStore,
     Finding,
     Severity,

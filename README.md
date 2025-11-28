@@ -20,7 +20,7 @@ Background agents for development workflow automation.
 curl -sSL https://install.python-poetry.org | python3 -
 
 # Install dependencies
-cd claude-agents
+cd dev-agents
 poetry install
 
 # Activate virtual environment
@@ -32,7 +32,7 @@ poetry shell
 ### 1. Initialize in a project
 
 ```bash
-claude-agents init /path/to/your/project
+dev-agents init /path/to/your/project
 ```
 
 This creates a `.claude/` directory.
@@ -61,7 +61,7 @@ Safety levels:
 
 ```bash
 cd /path/to/your/project
-claude-agents watch .
+dev-agents watch .
 ```
 
 ### 4. Make some file changes
@@ -130,7 +130,7 @@ Once this prototype is validated, we'll build:
 poetry run pytest
 
 # Run tests with coverage
-poetry run pytest --cov=claude_agents
+poetry run pytest --cov=dev_agents
 
 # Run tests verbosely
 poetry run pytest -v
@@ -141,7 +141,7 @@ poetry run pytest -v
 The codebase is organized as:
 
 ```
-src/claude_agents/
+src/dev_agents/
 ├── core/           # Event system, base agent class
 ├── collectors/     # Event collectors (filesystem, git, etc.)
 ├── agents/         # Built-in agents
@@ -150,11 +150,11 @@ src/claude_agents/
 
 ### Adding a New Agent
 
-Create a new file in `src/claude_agents/agents/`:
+Create a new file in `src/dev_agents/agents/`:
 
 ```python
-from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.event import Event
+from dev_agents.core.agent import Agent, AgentResult
+from dev_agents.core.event import Event
 
 
 class MyAgent(Agent):
@@ -183,16 +183,16 @@ await my_agent.start()
 
 ```bash
 # Watch a directory
-claude-agents watch [PATH]
+dev-agents watch [PATH]
 
 # Watch with verbose logging
-claude-agents watch --verbose
+dev-agents watch --verbose
 
 # Initialize .claude directory
-claude-agents init [PATH]
+dev-agents init [PATH]
 
 # Show version
-claude-agents version
+dev-agents version
 ```
 
 ## Architecture

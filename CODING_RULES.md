@@ -2,7 +2,7 @@
 
 ## Overview
 
-Documented patterns, rules, and lessons learned from claude-agents development to prevent recurring issues and ensure consistent code quality.
+Documented patterns, rules, and lessons learned from dev-agents development to prevent recurring issues and ensure consistent code quality.
 
 ## Core Patterns
 
@@ -455,7 +455,7 @@ class FileModifyingAgent(Agent):
 # tests/test_agents/test_security_scanner.py
 import pytest
 from unittest.mock import AsyncMock, patch
-from claude_agents.agents.security_scanner import SecurityScannerAgent
+from dev_agents.agents.security_scanner import SecurityScannerAgent
 
 @pytest.fixture
 def security_agent():

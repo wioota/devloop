@@ -3,9 +3,9 @@
 import asyncio
 from typing import Dict
 
-from claude_agents.core.auto_fix import apply_safe_fixes
-from claude_agents.core.config import config
-from claude_agents.core.context_store import context_store
+from dev_agents.core.auto_fix import apply_safe_fixes
+from dev_agents.core.config import config
+from dev_agents.core.context_store import context_store
 
 
 async def check_agent_findings():

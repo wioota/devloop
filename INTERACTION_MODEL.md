@@ -124,32 +124,32 @@ Direct control over agents via CLI.
 
 ```bash
 # Agent status and control
-claude-agents status                    # Show all agent status
-claude-agents enable linter             # Enable specific agent
-claude-agents disable test-runner       # Disable specific agent
-claude-agents restart formatter         # Restart agent
+dev-agents status                    # Show all agent status
+dev-agents enable linter             # Enable specific agent
+dev-agents disable test-runner       # Disable specific agent
+dev-agents restart formatter         # Restart agent
 
 # Manual triggers
-claude-agents run linter                # Run linter manually
-claude-agents run linter --file src/    # Run on specific path
-claude-agents run all                   # Run all agents
+dev-agents run linter                # Run linter manually
+dev-agents run linter --file src/    # Run on specific path
+dev-agents run all                   # Run all agents
 
 # Results and history
-claude-agents results                   # Show recent results
-claude-agents results linter            # Show linter results
-claude-agents history                   # Event history
-claude-agents history --type git:commit # Filter by event type
+dev-agents results                   # Show recent results
+dev-agents results linter            # Show linter results
+dev-agents history                   # Event history
+dev-agents history --type git:commit # Filter by event type
 
 # Configuration
-claude-agents config show               # Show current config
-claude-agents config edit               # Edit configuration
-claude-agents config validate           # Validate config
+dev-agents config show               # Show current config
+dev-agents config edit               # Edit configuration
+dev-agents config validate           # Validate config
 
 # Debugging
-claude-agents logs                      # View logs
-claude-agents logs --follow             # Tail logs
-claude-agents events stream             # Stream events in real-time
-claude-agents debug linter              # Debug specific agent
+dev-agents logs                      # View logs
+dev-agents logs --follow             # Tail logs
+dev-agents events stream             # Stream events in real-time
+dev-agents debug linter              # Debug specific agent
 ```
 
 ---
@@ -788,7 +788,7 @@ Claude Code:
   "type": "diagnostic",
   "severity": "warning",
   "message": "Linter: Line too long (92 > 88)",
-  "source": "claude-agents:linter",
+  "source": "dev-agents:linter",
   "quickFixes": ["Format line", "Disable rule"]
 }
 ```

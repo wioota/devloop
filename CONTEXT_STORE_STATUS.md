@@ -97,8 +97,8 @@
 
 ### Files Modified
 ```
-src/claude_agents/core/context_store.py    [REPLACED - 530 lines]
-src/claude_agents/agents/linter.py         [UPDATED - added context integration]
+src/dev_agents/core/context_store.py    [REPLACED - 530 lines]
+src/dev_agents/agents/linter.py         [UPDATED - added context integration]
 docs/CONTEXT_STORE_DESIGN.md               [NEW - 350 lines]
 docs/CLAUDE_CODE_INTEGRATION.md            [NEW - 550 lines]
 docs/TESTING_PLAN.md                       [NEW - 400 lines]
@@ -118,8 +118,8 @@ docs/TESTING_PLAN.md                       [NEW - 400 lines]
 
 1. **Add Context Store Initialization**
    ```python
-   # In src/claude_agents/cli/main.py or manager.py
-   from claude_agents.core.context_store import context_store
+   # In src/dev_agents/cli/main.py or manager.py
+   from dev_agents.core.context_store import context_store
 
    async def start_agents():
        await context_store.initialize()  # Create .claude/context/
@@ -159,7 +159,7 @@ docs/TESTING_PLAN.md                       [NEW - 400 lines]
 
 2. **Start Agents**
    ```bash
-   claude-agents watch test_context_store/
+   dev-agents watch test_context_store/
    ```
 
 3. **Verify Context Files Created**
@@ -221,7 +221,7 @@ Even with incomplete integration, you can test the core functionality:
 # test_context_manual.py
 import asyncio
 from pathlib import Path
-from claude_agents.core.context_store import (
+from dev_agents.core.context_store import (
     context_store,
     Finding,
     Severity,
@@ -275,7 +275,7 @@ def hello(x):  # missing type annotation
 EOF
 
 # Run linter agent (once CLI initialization is added)
-claude-agents watch .
+dev-agents watch .
 
 # Check context
 cat .claude/context/index.json

@@ -2,7 +2,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="claude-agents",
+    name="dev-agents",
     version="0.1.0",
     description="Background agents for development workflow automation",
     author="Your Name",
@@ -26,7 +26,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "claude-agents=claude_agents.cli.main:app",
+            "dev-agents=dev_agents.cli.main:app",
         ],
     },
 )

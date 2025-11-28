@@ -6,20 +6,20 @@ The minimal working prototype is **COMPLETE and VALIDATED**.
 
 ### Core Components Implemented
 
-1. **Event System** (`src/claude_agents/core/event.py`)
+1. **Event System** (`src/dev_agents/core/event.py`)
    - Event class with priority support
    - EventBus with pub/sub pattern
    - Event logging for debugging
    - ✅ Tested and working
 
-2. **Agent Framework** (`src/claude_agents/core/agent.py`)
+2. **Agent Framework** (`src/dev_agents/core/agent.py`)
    - Base Agent class with lifecycle management
    - Async event processing loop
    - Result publishing
    - Start/stop functionality
    - ✅ Tested and working
 
-3. **Filesystem Collector** (`src/claude_agents/collectors/filesystem.py`)
+3. **Filesystem Collector** (`src/dev_agents/collectors/filesystem.py`)
    - Watchdog integration
    - File create/modify/delete/move events
    - Ignore patterns (git, node_modules, etc.)
@@ -30,7 +30,7 @@ The minimal working prototype is **COMPLETE and VALIDATED**.
    - FileLoggerAgent - writes file changes to log
    - ✅ Working
 
-5. **CLI** (`src/claude_agents/cli/main.py`)
+5. **CLI** (`src/dev_agents/cli/main.py`)
    - `watch` command - watch directory for changes
    - `init` command - initialize .claude directory
    - `version` command
@@ -71,8 +71,8 @@ The prototype proves that:
 ## Project Structure
 
 ```
-claude-agents/
-├── src/claude_agents/
+dev-agents/
+├── src/dev_agents/
 │   ├── core/               ✅ Event system and agent framework
 │   ├── collectors/         ✅ Filesystem watcher
 │   ├── agents/             ✅ Example agents
@@ -89,7 +89,7 @@ claude-agents/
 ### Option 1: Quick Test (without installation)
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 python3 validate_prototype.py
 ```
 
@@ -102,11 +102,11 @@ source .venv/bin/activate
 pip install -e .
 
 # Watch a directory
-claude-agents watch /path/to/directory
+dev-agents watch /path/to/directory
 
 # Or install with poetry
 poetry install
-poetry run claude-agents watch .
+poetry run dev-agents watch .
 ```
 
 ## Known Limitations (By Design for Prototype)

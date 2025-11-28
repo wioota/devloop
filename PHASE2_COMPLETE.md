@@ -6,7 +6,7 @@ We've successfully implemented **three production-ready agents** with full confi
 
 ### 1. LinterAgent ✅
 
-**File**: `src/claude_agents/agents/linter.py`
+**File**: `src/dev_agents/agents/linter.py`
 
 **Features**:
 - Multi-language support (Python/ruff, JavaScript/TypeScript/eslint)
@@ -45,7 +45,7 @@ We've successfully implemented **three production-ready agents** with full confi
 
 ### 2. FormatterAgent ✅
 
-**File**: `src/claude_agents/agents/formatter.py`
+**File**: `src/dev_agents/agents/formatter.py`
 
 **Features**:
 - Multi-language formatting (Python/black, JS/TS/prettier)
@@ -84,7 +84,7 @@ We've successfully implemented **three production-ready agents** with full confi
 
 ### 3. TestRunnerAgent ✅
 
-**File**: `src/claude_agents/agents/test_runner.py`
+**File**: `src/dev_agents/agents/test_runner.py`
 
 **Features**:
 - Intelligent test detection
@@ -127,7 +127,7 @@ We've successfully implemented **three production-ready agents** with full confi
 
 ## Configuration System ✅
 
-**File**: `src/claude_agents/core/config.py`
+**File**: `src/dev_agents/core/config.py`
 
 **Features**:
 - Pydantic-based validation
@@ -153,7 +153,7 @@ We've successfully implemented **three production-ready agents** with full confi
 
 ## Agent Manager ✅
 
-**File**: `src/claude_agents/core/manager.py`
+**File**: `src/dev_agents/core/manager.py`
 
 **Features**:
 - Centralized agent registration
@@ -180,49 +180,49 @@ await manager.resume_agents()
 
 ## Enhanced CLI ✅
 
-**File**: `src/claude_agents/cli/main_v2.py`
+**File**: `src/dev_agents/cli/main_v2.py`
 
 **Commands**:
 
-### `claude-agents watch [PATH]`
+### `dev-agents watch [PATH]`
 Watch directory and run agents on file changes.
 
 ```bash
 # Watch current directory
-claude-agents watch
+dev-agents watch
 
 # Watch with custom config
-claude-agents watch --config /path/to/agents.json
+dev-agents watch --config /path/to/agents.json
 
 # Verbose mode
-claude-agents watch --verbose
+dev-agents watch --verbose
 ```
 
-### `claude-agents init [PATH]`
+### `dev-agents init [PATH]`
 Initialize project with .claude directory and default config.
 
 ```bash
-claude-agents init
-claude-agents init /path/to/project
+dev-agents init
+dev-agents init /path/to/project
 ```
 
-### `claude-agents status`
+### `dev-agents status`
 Show current configuration and agent status.
 
 ```bash
-claude-agents status
-claude-agents status --config /path/to/agents.json
+dev-agents status
+dev-agents status --config /path/to/agents.json
 ```
 
-### `claude-agents config <action>`
+### `dev-agents config <action>`
 Manage configuration (show, reset).
 
 ```bash
 # Show current config
-claude-agents config show
+dev-agents config show
 
 # Reset to defaults
-claude-agents config reset
+dev-agents config reset
 ```
 
 ---
@@ -293,7 +293,7 @@ npm install -g eslint prettier jest
 ### Install Claude Agents
 
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 pip install -e .
 ```
 
@@ -301,7 +301,7 @@ pip install -e .
 
 ```bash
 cd /path/to/your/project
-claude-agents init
+dev-agents init
 ```
 
 This creates `.claude/agents.json` with default configuration.
@@ -309,7 +309,7 @@ This creates `.claude/agents.json` with default configuration.
 ### Start Watching
 
 ```bash
-claude-agents watch
+dev-agents watch
 ```
 
 Now edit your files and watch the agents work!
@@ -403,7 +403,7 @@ Agents gracefully handle missing tools:
 ## Files Added
 
 ```
-src/claude_agents/
+src/dev_agents/
 ├── agents/
 │   ├── linter.py           ✅ NEW - 300+ lines
 │   ├── formatter.py        ✅ NEW - 200+ lines
@@ -438,10 +438,10 @@ We now have a **fully functional development agent system** with:
 
 Try it now:
 ```bash
-cd /home/wioot/dev/claude-agents
+cd /home/wioot/dev/dev-agents
 pip install -e .
-claude-agents init
-claude-agents watch
+dev-agents init
+dev-agents watch
 ```
 
 Then edit some Python files and watch it work! 🚀

@@ -5,8 +5,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from claude_agents.core.config import config
-from claude_agents.core.context_store import context_store
+from dev_agents.core.config import config
+from dev_agents.core.context_store import context_store
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ class AutoFix:
         formatter = data.get("formatter", "black")
 
         # Import the formatter agent logic
-        from claude_agents.agents.formatter import FormatterAgent
+        from dev_agents.agents.formatter import FormatterAgent
 
         # Create a temporary formatter instance to run the fix
         agent = FormatterAgent(
