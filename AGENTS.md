@@ -135,21 +135,93 @@ A powerful command-line interface and Amp slash command that provides intelligen
 - Resource usage analytics
 - Custom agent creation framework
 
+## Automated Installation & Setup
+
+### One-Command Project Initialization
+
+```bash
+dev-agents init /path/to/project
+```
+
+This command **automatically handles everything:**
+
+1. **Environment Detection**
+   - Detects Amp workspace (if applicable)
+   - Detects git repository
+   - Checks existing setup
+
+2. **Core Infrastructure**
+   - Creates `.claude` directory
+   - Generates `agents.json` configuration
+   - Copies `AGENTS.md` and `CODING_RULES.md`
+   - Sets up `.gitignore` for agent files
+
+3. **Git Integration** (if applicable)
+   - Creates `pre-commit` hook for verification
+   - Creates `pre-push` hook for verification
+   - Enables commit discipline enforcement at git level
+
+4. **Amp Integration** (if in Amp workspace)
+   - Automatically registers slash commands (`/agent-summary`, `/agent-status`)
+   - Registers post-task hook (`.agents/hooks/post-task`)
+   - Injects commit discipline instructions into Claude system prompt
+   - Creates workspace configuration
+
+5. **Verification**
+   - Tests all setup components
+   - Shows installation status
+   - Provides next steps
+
+### What You Get
+
+After `dev-agents init`:
+
+- ✅ All agents configured and enabled
+- ✅ Commit/push discipline automatically enforced
+- ✅ Git hooks monitoring your workflow
+- ✅ Amp integration ready (if in Amp)
+- ✅ Verification system active
+- ✅ Ready to start: `dev-agents watch .`
+
+**Zero manual configuration required.** The system is production-ready immediately after `dev-agents init`.
+
+### Advanced Options
+
+```bash
+# Skip Amp auto-configuration
+dev-agents init /path/to/project --skip-amp
+
+# Skip git hooks
+dev-agents init /path/to/project --skip-git-hooks
+
+# Non-interactive (no prompts)
+dev-agents init /path/to/project --non-interactive
+
+# Show detailed setup logs
+dev-agents init /path/to/project --verbose
+```
+
+See [INSTALLATION_AUTOMATION.md](./INSTALLATION_AUTOMATION.md) for complete technical details.
+
+---
+
 ## Development Discipline
 
 ### Commit & Push After Every Task
 
 **MANDATORY:** Every completed task must end with `git add`, `git commit`, and `git push origin main`.
 
+This is **automatically enforced** by:
+1. Git hooks (pre-commit, pre-push)
+2. Amp post-task verification hook
+3. `.agents/verify-task-complete` script
+
 See CODING_RULES.md for detailed protocol.
 
-**Before moving to the next task, verify:**
+**Verification command:**
 ```bash
-git status
-# Output should be:
-# On branch main
-# Your branch is up to date with 'origin/main'.
-# nothing to commit, working tree clean
+.agents/verify-task-complete
+# Should show: ✅ PASS: All checks successful
 ```
 
 ---

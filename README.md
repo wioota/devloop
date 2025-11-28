@@ -53,21 +53,33 @@ poetry install
 poetry shell
 ```
 
-### Initialize & Run
+### Initialize & Run (Fully Automated)
 
 ```bash
-# 1. Initialize in your project
+# 1. Initialize in your project (handles everything automatically)
 dev-agents init /path/to/your/project
+```
 
-# 2. (Optional) Configure behavior in .claude/agents.json
-# 3. Start watching for changes
+The `init` command automatically:
+- ✅ Sets up .claude directory and configuration
+- ✅ Creates AGENTS.md and CODING_RULES.md
+- ✅ Sets up git hooks (if git repo)
+- ✅ Registers Amp integration (if in Amp)
+- ✅ Configures commit/push discipline enforcement
+- ✅ Verifies everything works
+
+Then just:
+```bash
+# 2. Start watching for changes
 cd /path/to/your/project
 dev-agents watch .
 
-# 4. Make code changes and watch agents respond
+# 3. Make code changes and watch agents respond
 ```
 
-**That's it!** Dev Agents will now monitor your project and run agents on file changes.
+**That's it!** No manual configuration needed. Dev Agents will automatically monitor your project, run agents on file changes, and enforce commit discipline.
+
+[View the installation automation details →](./INSTALLATION_AUTOMATION.md)
 
 ### Common Commands
 
