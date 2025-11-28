@@ -314,7 +314,7 @@ async def watch_async(path: Path, config_path: Path | None):
 @app.command()
 def init(
     path: Path = typer.Argument(Path.cwd(), help="Project directory"),
-    create_config: bool = typer.Option(True, help="Create default configuration file"),
+    skip_config: bool = typer.Option(False, "--skip-config", help="Skip creating configuration file"),
 ):
     """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
@@ -324,9 +324,8 @@ def init(
     else:
         claude_dir.mkdir(exist_ok=True)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
-    #
     # Create default configuration
-    if create_config:
+    if not skip_config:
         config_file = claude_dir / "agents.json"
         if config_file.exists():
             console.print(
@@ -336,7 +335,7 @@ def init(
             config = Config.default_config()
             config.save(config_file)
             console.print(f"[green]✓[/green] Created: {config_file}")
-    #
+
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")

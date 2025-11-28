@@ -10,7 +10,7 @@ packages = [{include = "dev_agents", from = "src"}]
 python = "^3.11"
 pydantic = "^2.5"
 watchdog = "^3.0"
-typer = "^0.9"
+typer = ">=0.15,<1.0"
 rich = "^13.7"
 aiofiles = "^23.2"
 psutil = "^5.9"
