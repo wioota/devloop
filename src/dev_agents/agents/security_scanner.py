@@ -237,11 +237,11 @@ class SecurityScannerAgent(Agent):
         """Run Bandit security scanner."""
         try:
             # Check if bandit is available
-            import subprocess
+            import subprocess  # nosec B404 - Required for running security analysis tools
 
             result = subprocess.run(
-                [sys.executable, "-c", "import bandit"], capture_output=True, text=True
-            )
+            [sys.executable, "-c", "import bandit"], capture_output=True, text=True
+            )  # nosec B603 - Running trusted system Python with safe arguments
             if result.returncode != 0:
                 return SecurityResult(
                     "bandit", [], ["Bandit not installed - run: pip install bandit"]

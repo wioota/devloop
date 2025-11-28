@@ -357,7 +357,9 @@ class AgentFactory:
         module = importlib.util.module_from_spec(spec)
 
         # Execute the template code in the module
-        exec(template.template_code, module.__dict__)
+        # SECURITY: exec() is used for dynamic agent loading from trusted templates
+        # This is an intentional design decision for the agent framework
+        exec(template.template_code, module.__dict__)  # nosec B102
 
         # Find the agent class (assume it's the first Agent subclass)
         agent_class = None

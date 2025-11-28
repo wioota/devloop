@@ -3,7 +3,7 @@
 
 import asyncio
 import json
-import subprocess
+import subprocess  # nosec B404 - Required for running performance analysis tools
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -207,8 +207,8 @@ class PerformanceProfilerAgent(Agent):
         try:
             # Check if radon is available
             result = subprocess.run(
-                [sys.executable, "-c", "import radon"], capture_output=True, text=True
-            )
+            [sys.executable, "-c", "import radon"], capture_output=True, text=True
+            )  # nosec B603 - Running trusted system Python with safe arguments
             if result.returncode != 0:
                 return PerformanceResult(
                     "radon", [], ["Radon not installed - run: pip install radon"]
