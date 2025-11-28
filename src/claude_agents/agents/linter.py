@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.context_store import context_store
+from claude_agents.core.context_store import (
+    context_store,
+    Finding,
+    Severity,
+    ScopeType,
+)
 from claude_agents.core.event import Event
 
 
@@ -125,8 +130,8 @@ class LinterAgent(Agent):
             }
         )
 
-        # Write to context store for Claude Code integration
-        context_store.write_finding(agent_result)
+        # Write findings to context store for Claude Code integration
+        await self._write_findings_to_context(path, result, linter)
 
         return agent_result
 
@@ -323,3 +328,81 @@ class LinterAgent(Agent):
 
         except Exception as e:
             return LinterResult(success=False, error=str(e))
+
+    async def _write_findings_to_context(
+        self, path: Path, result: LinterResult, linter: str
+    ) -> None:
+        """Write linter findings to context store."""
+        if not result.success or not result.has_issues:
+            return
+
+        from datetime import datetime
+
+        # Convert each linter issue to a Finding
+        for idx, issue in enumerate(result.issues):
+            # Extract issue details (format varies by linter)
+            if linter == "ruff":
+                line = issue.get("location", {}).get("row", 0)
+                column = issue.get("location", {}).get("column", 0)
+                code = issue.get("code", "unknown")
+                message_text = issue.get("message", "")
+                fixable = issue.get("fix", None) is not None
+                severity_map = {
+                    "E": Severity.ERROR,
+                    "W": Severity.WARNING,
+                    "F": Severity.ERROR,  # Fatal
+                }
+                # Get severity from code prefix (E, W, F, etc.)
+                severity = severity_map.get(code[0], Severity.WARNING) if code else Severity.WARNING
+                category = f"lint_{code}" if code else "lint_error"
+            elif linter == "eslint":
+                line = issue.get("line", 0)
+                column = issue.get("column", 0)
+                code = issue.get("ruleId", "unknown")
+                message_text = issue.get("message", "")
+                fixable = issue.get("fix", None) is not None
+                # eslint severity: 1 = warning, 2 = error
+                eslint_severity = issue.get("severity", 1)
+                severity = Severity.ERROR if eslint_severity == 2 else Severity.WARNING
+                category = f"lint_{code}" if code else "lint_error"
+            else:
+                # Generic format
+                line = None
+                column = None
+                code = "unknown"
+                message_text = str(issue)
+                fixable = False
+                severity = Severity.WARNING
+                category = "lint_error"
+
+            # Create Finding
+            finding = Finding(
+                id=f"lint_{path.name}_{line}_{idx}",
+                agent="linter",
+                timestamp=datetime.utcnow().isoformat() + "Z",
+                file=str(path),
+                line=line,
+                column=column,
+                severity=severity,
+                blocking=severity == Severity.ERROR,
+                category=category,
+                message=message_text,
+                detail=f"{linter} found issue: {message_text}",
+                suggestion=f"Fix {code}" if code != "unknown" else "",
+                auto_fixable=fixable and self.config.auto_fix,
+                fix_command=f"{linter} --fix {path}" if fixable else None,
+                scope_type=ScopeType.CURRENT_FILE,
+                caused_by_recent_change=True,  # Assume recent since we just linted
+                is_new=True,
+                context={
+                    "linter": linter,
+                    "code": code,
+                    "fixable": fixable,
+                },
+            )
+
+            # Add to context store
+            try:
+                await context_store.add_finding(finding)
+            except Exception as e:
+                self.logger.error(f"Failed to write finding to context: {e}")

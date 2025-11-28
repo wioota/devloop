@@ -6,12 +6,18 @@ import json
 import logging
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
-from ..core.context_store import context_store
+from ..core.context_store import (
+    context_store,
+    Finding,
+    Severity,
+    ScopeType,
+)
 from ..core.event import Event
 
 
@@ -140,7 +146,7 @@ class SecurityScannerAgent(Agent):
             )
 
             # Write to context store for Claude Code integration
-            context_store.write_finding(agent_result)
+            await self._write_findings_to_context(path, filtered_issues)
 
             return agent_result
         except Exception as e:
@@ -155,6 +161,40 @@ class SecurityScannerAgent(Agent):
                 message=f"Security scan failed: {str(e)}",
                 error=str(e),
             )
+
+    async def _write_findings_to_context(
+        self, path: Path, issues: List[Dict[str, Any]]
+    ) -> None:
+        """Write security issues to the context store."""
+        # Map bandit severity to our Severity enum
+        severity_map = {
+            "high": Severity.ERROR,
+            "medium": Severity.WARNING,
+            "low": Severity.INFO,
+        }
+
+        for idx, issue in enumerate(issues):
+            issue_severity = issue.get("severity", "medium").lower()
+            severity = severity_map.get(issue_severity, Severity.WARNING)
+
+            # Security issues are always blocking if high severity
+            blocking = issue_severity == "high"
+
+            finding = Finding(
+                id=f"security_{path.name}_{issue.get('line_number', 0)}_{idx}",
+                agent="security-scanner",
+                timestamp=datetime.utcnow().isoformat() + "Z",
+                file=str(path),
+                line=issue.get("line_number"),
+                severity=severity,
+                blocking=blocking,
+                category=f"security_{issue.get('test_id', 'unknown')}",
+                message=issue.get("text", "Security issue detected"),
+                scope_type=ScopeType.CURRENT_FILE,
+                caused_by_recent_change=True,
+                is_new=True,
+            )
+            await context_store.add_finding(finding)
 
     def _should_exclude_file(self, file_path: str) -> bool:
         """Check if file should be excluded from scanning."""

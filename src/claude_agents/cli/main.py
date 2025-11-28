@@ -13,6 +13,7 @@ from rich.table import Table
 from claude_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
 from claude_agents.collectors import FileSystemCollector
 from claude_agents.core import AgentManager, Config, ConfigWrapper, EventBus
+from claude_agents.core.context_store import context_store
 
 app = typer.Typer(
     help="Claude Agents - Development workflow automation",
@@ -80,6 +81,11 @@ async def watch_async(path: Path, config_path: Path | None):
 
     # Create event bus
     event_bus = EventBus()
+
+    # Initialize context store
+    context_store.context_dir = path / ".claude" / "context"
+    await context_store.initialize()
+    console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
 
     # Create agent manager
     agent_manager = AgentManager(event_bus)

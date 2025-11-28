@@ -2,11 +2,17 @@
 import asyncio
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.context_store import context_store
+from claude_agents.core.context_store import (
+    context_store,
+    Finding,
+    Severity,
+    ScopeType,
+)
 from claude_agents.core.event import Event
 
 
@@ -232,9 +238,46 @@ class TestRunnerAgent(Agent):
         )
 
         # Write to context store for Claude Code integration
-        context_store.write_finding(agent_result)
+        await self._write_findings_to_context(path, result, framework)
 
         return agent_result
+
+    async def _write_findings_to_context(
+        self, path: Path, test_result: TestResult, framework: str
+    ) -> None:
+        """Write test failures to the context store."""
+        if test_result.failed > 0:
+            # Create a finding for test failures
+            finding = Finding(
+                id=f"test_{path.name}_{framework}_{datetime.utcnow().timestamp()}",
+                agent="test-runner",
+                timestamp=datetime.utcnow().isoformat() + "Z",
+                file=str(path),
+                severity=Severity.ERROR,
+                blocking=True,
+                category=f"test_{framework}",
+                message=f"{test_result.failed} test(s) failed in {framework}",
+                scope_type=ScopeType.CURRENT_FILE,
+                caused_by_recent_change=True,
+                is_new=True,
+            )
+            await context_store.add_finding(finding)
+        elif test_result.error:
+            # Create a finding for test errors
+            finding = Finding(
+                id=f"test_error_{path.name}_{framework}_{datetime.utcnow().timestamp()}",
+                agent="test-runner",
+                timestamp=datetime.utcnow().isoformat() + "Z",
+                file=str(path),
+                severity=Severity.ERROR,
+                blocking=True,
+                category=f"test_error_{framework}",
+                message=f"Test error: {test_result.error}",
+                scope_type=ScopeType.CURRENT_FILE,
+                caused_by_recent_change=True,
+                is_new=True,
+            )
+            await context_store.add_finding(finding)
 
     def _is_test_file(self, path: Path) -> bool:
         """Check if file is a test file."""

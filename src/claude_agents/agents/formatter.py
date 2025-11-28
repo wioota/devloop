@@ -1,11 +1,17 @@
 """Formatter agent - auto-formats code on save."""
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from claude_agents.core.agent import Agent, AgentResult
-from claude_agents.core.context_store import context_store
+from claude_agents.core.context_store import (
+    context_store,
+    Finding,
+    Severity,
+    ScopeType,
+)
 from claude_agents.core.event import Event
 
 
@@ -75,6 +81,13 @@ class FormatterAgent(Agent):
 
         # Loop prevention: Check for formatting loops
         if self._detect_formatting_loop(path):
+            await self._write_finding_to_context(
+                path=path,
+                formatter="loop_detector",
+                severity=Severity.WARNING,
+                message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
+                blocking=True,
+            )
             result = AgentResult(
                 agent_name=self.name,
                 success=False,
@@ -82,7 +95,6 @@ class FormatterAgent(Agent):
                 message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
                 error="FORMATTING_LOOP_DETECTED"
             )
-            context_store.write_finding(result)
             return result
 
         # Check if file should be formatted
@@ -93,7 +105,6 @@ class FormatterAgent(Agent):
                 duration=0,
                 message=f"Skipped {path.name} (not in patterns)",
             )
-            context_store.write_finding(result)
             return result
 
         # Get appropriate formatter
@@ -105,13 +116,19 @@ class FormatterAgent(Agent):
                 duration=0,
                 message=f"No formatter configured for {path.suffix}",
             )
-            context_store.write_finding(result)
             return result
 
         # Idempotency check: Only format if file actually needs formatting
         if self.config.format_on_save and not self.config.report_only:
             needs_formatting, check_error = await self._check_formatter(formatter, path)
             if check_error:
+                await self._write_finding_to_context(
+                    path=path,
+                    formatter=formatter,
+                    severity=Severity.ERROR,
+                    message=f"Failed to check if {path.name} needs formatting: {check_error}",
+                    blocking=True,
+                )
                 result = AgentResult(
                     agent_name=self.name,
                     success=False,
@@ -119,7 +136,6 @@ class FormatterAgent(Agent):
                     message=f"Failed to check if {path.name} needs formatting: {check_error}",
                     error=check_error
                 )
-                context_store.write_finding(result)
                 return result
             if not needs_formatting:
                 result = AgentResult(
@@ -128,7 +144,6 @@ class FormatterAgent(Agent):
                     duration=0,
                     message=f"{path.name} is already formatted",
                 )
-                context_store.write_finding(result)
                 return result
 
         # Run formatter
@@ -138,11 +153,25 @@ class FormatterAgent(Agent):
             if error:
                 message = f"Check failed for {path.name}: {error}"
                 success = False
+                await self._write_finding_to_context(
+                    path=path,
+                    formatter=formatter,
+                    severity=Severity.ERROR,
+                    message=message,
+                    blocking=True,
+                )
             elif needs_formatting:
                 message = (
                     f"Would format {path.name} with {formatter} (report-only mode)"
                 )
                 success = True
+                await self._write_finding_to_context(
+                    path=path,
+                    formatter=formatter,
+                    severity=Severity.INFO,
+                    message=f"{path.name} needs formatting with {formatter}",
+                    auto_fixable=True,
+                )
             else:
                 message = f"No formatting needed for {path.name}"
                 success = True
@@ -160,7 +189,6 @@ class FormatterAgent(Agent):
                 },
                 error=error,
             )
-            context_store.write_finding(result)
             return result
         else:
             # Format mode: actually modify the file
@@ -172,6 +200,13 @@ class FormatterAgent(Agent):
                 message = f"Formatted {path.name} with {formatter}"
             else:
                 message = f"Failed to format {path.name}: {error}"
+                await self._write_finding_to_context(
+                    path=path,
+                    formatter=formatter,
+                    severity=Severity.ERROR,
+                    message=message,
+                    blocking=True,
+                )
 
             result = AgentResult(
                 agent_name=self.name,
@@ -181,7 +216,6 @@ class FormatterAgent(Agent):
                 data={"file": str(path), "formatter": formatter, "formatted": success},
                 error=error if not success else None,
             )
-            context_store.write_finding(result)
             return result
 
     def _should_format(self, path: Path) -> bool:
@@ -255,6 +289,32 @@ class FormatterAgent(Agent):
         if file_key not in self._recent_formats:
             self._recent_formats[file_key] = []
         self._recent_formats[file_key].append(time.time())
+
+    async def _write_finding_to_context(
+        self,
+        path: Path,
+        formatter: str,
+        severity: Severity,
+        message: str,
+        blocking: bool = False,
+        auto_fixable: bool = False,
+    ) -> None:
+        """Write a formatting finding to the context store."""
+        finding = Finding(
+            id=f"format_{path.name}_{formatter}_{datetime.utcnow().timestamp()}",
+            agent="formatter",
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            file=str(path),
+            severity=severity,
+            blocking=blocking,
+            category=f"format_{formatter}",
+            message=message,
+            auto_fixable=auto_fixable,
+            scope_type=ScopeType.CURRENT_FILE,
+            caused_by_recent_change=True,
+            is_new=True,
+        )
+        await context_store.add_finding(finding)
 
     async def _run_formatter(
         self, formatter: str, path: Path

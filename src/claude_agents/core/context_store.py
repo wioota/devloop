@@ -1,282 +1,528 @@
-"""Context store for agent findings and coding agent integration."""
+"""Context store for sharing agent findings with coding agents (Claude Code)."""
 
+from __future__ import annotations
+
+import asyncio
 import json
-import os
+import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from claude_agents.core.agent import AgentResult
+logger = logging.getLogger(__name__)
+
+
+class Severity(str, Enum):
+    """Finding severity levels."""
+
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+    STYLE = "style"
+
+
+class ScopeType(str, Enum):
+    """Finding scope types."""
+
+    CURRENT_FILE = "current_file"
+    RELATED_FILES = "related_files"
+    PROJECT_WIDE = "project_wide"
+
+
+class Tier(str, Enum):
+    """Context tier for progressive disclosure."""
+
+    IMMEDIATE = "immediate"  # Show now, blocking issues
+    RELEVANT = "relevant"  # Mention at task completion
+    BACKGROUND = "background"  # Show only on request
+    AUTO_FIXED = "auto_fixed"  # Already fixed silently
+
+
+@dataclass
+class Finding:
+    """A single finding from an agent."""
+
+    id: str
+    agent: str
+    timestamp: str
+    file: str
+    line: int | None = None
+    column: int | None = None
+
+    severity: Severity = Severity.INFO
+    blocking: bool = False
+    category: str = "general"
+
+    message: str = ""
+    detail: str = ""
+    suggestion: str = ""
+
+    auto_fixable: bool = False
+    fix_command: str | None = None
+
+    scope_type: ScopeType = ScopeType.CURRENT_FILE
+    caused_by_recent_change: bool = False
+    is_new: bool = True
+
+    relevance_score: float = 0.5
+    disclosure_level: int = 0
+    seen_by_user: bool = False
+
+    workflow_hints: Dict[str, bool] = field(default_factory=dict)
+    context: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        """Validate Finding parameters."""
+        if not isinstance(self.id, str) or not self.id:
+            raise ValueError("id must be a non-empty string")
+
+        if not isinstance(self.agent, str) or not self.agent:
+            raise ValueError("agent must be a non-empty string")
+
+        if not isinstance(self.file, str) or not self.file:
+            raise ValueError("file must be a non-empty string")
+
+        # Convert string enums to proper enums
+        if isinstance(self.severity, str):
+            self.severity = Severity(self.severity)
+
+        if isinstance(self.scope_type, str):
+            self.scope_type = ScopeType(self.scope_type)
+
+        # Validate numeric ranges
+        if self.line is not None and self.line < 0:
+            raise ValueError(f"line must be non-negative, got {self.line}")
+
+        if self.column is not None and self.column < 0:
+            raise ValueError(f"column must be non-negative, got {self.column}")
+
+        if not 0.0 <= self.relevance_score <= 1.0:
+            raise ValueError(
+                f"relevance_score must be between 0.0 and 1.0, got {self.relevance_score}"
+            )
+
+        if self.disclosure_level < 0:
+            raise ValueError(
+                f"disclosure_level must be non-negative, got {self.disclosure_level}"
+            )
+
+
+@dataclass
+class UserContext:
+    """Context about user's current development state."""
+
+    currently_editing: List[str] = field(default_factory=list)
+    recently_modified: List[str] = field(default_factory=list)
+    related_files: List[str] = field(default_factory=list)
+    phase: Literal["active_coding", "pre_commit", "reviewing"] = "active_coding"
+    explicit_request: str | None = None
+
+    def matches_request(self, category: str) -> bool:
+        """Check if category matches user's explicit request."""
+        if not self.explicit_request:
+            return False
+        return category.lower() in self.explicit_request.lower()
+
+
+@dataclass
+class ContextIndex:
+    """Summary index for quick LLM consumption."""
+
+    last_updated: str
+    check_now: Dict[str, Any]
+    mention_if_relevant: Dict[str, Any]
+    deferred: Dict[str, Any]
+    auto_fixed: Dict[str, Any] = field(default_factory=dict)
 
 
 class ContextStore:
-    """Manages agent findings for coding agent integration."""
+    """
+    Manages context storage for agent findings.
 
-    def __init__(self, base_path: str = ".claude/context"):
-        self.base_path = Path(base_path)
-        self.base_path.mkdir(parents=True, exist_ok=True)
+    Organizes findings into tiers for progressive disclosure:
+    - immediate: Blocking issues, show immediately
+    - relevant: Mention at task completion
+    - background: Show only on explicit request
+    - auto_fixed: Log of silent fixes
+    """
 
-    def write_finding(
-        self, result: AgentResult, metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """Write an agent finding to the context store."""
-        if not result.success and not result.message:
-            return  # Skip failed operations with no message
+    def __init__(self, context_dir: Path | str | None = None):
+        """
+        Initialize context store.
 
-        finding = {
-            "agent_name": result.agent_name,
-            "timestamp": datetime.now().isoformat(),
-            "success": result.success,
-            "message": result.message,
-            "error": result.error,
-            "data": result.data or {},
-            "metadata": metadata or {},
+        Args:
+            context_dir: Directory for context files. Defaults to .claude/context
+        """
+        if context_dir is None:
+            context_dir = Path.cwd() / ".claude" / "context"
+        self.context_dir = Path(context_dir)
+        self._lock = asyncio.Lock()
+        self._findings: Dict[Tier, List[Finding]] = {
+            Tier.IMMEDIATE: [],
+            Tier.RELEVANT: [],
+            Tier.BACKGROUND: [],
+            Tier.AUTO_FIXED: [],
         }
+        logger.info(f"Context store initialized at {self.context_dir}")
 
-        # Determine file based on agent type
-        agent_type = self._get_agent_type(result.agent_name)
-        findings_file = self.base_path / f"{agent_type}.json"
+    async def initialize(self) -> None:
+        """Create context directory structure if it doesn't exist."""
+        try:
+            self.context_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Context directory ready: {self.context_dir}")
+        except Exception as e:
+            logger.error(f"Failed to create context directory: {e}")
+            raise
 
-        # Read existing findings
-        existing = self._read_findings(findings_file)
+    async def add_finding(
+        self,
+        finding: Finding | Dict[str, Any],
+        user_context: UserContext | None = None,
+    ) -> None:
+        """
+        Add a finding to the context store.
 
-        # Add new finding
-        existing.append(finding)
+        Args:
+            finding: Finding object or dict with finding data
+            user_context: Optional user context for relevance scoring
+        """
+        # Convert dict to Finding if needed
+        if isinstance(finding, dict):
+            finding = Finding(**finding)
 
-        # Keep only recent findings (last 100 per agent type)
-        existing = existing[-100:]
+        # Compute relevance score
+        if user_context:
+            finding.relevance_score = self.compute_relevance(finding, user_context)
 
-        # Write back
-        with open(findings_file, "w") as f:
-            json.dump(existing, f, indent=2)
+        # Assign to tier
+        tier = self.assign_tier(finding)
 
-    def get_findings(self, agent_type: Optional[str] = None) -> Dict[str, List[Dict]]:
-        """Get all findings, optionally filtered by agent type."""
-        findings = {}
+        async with self._lock:
+            self._findings[tier].append(finding)
+            await self._write_tier(tier)
+            await self._update_index()
 
-        if agent_type:
-            findings_file = self.base_path / f"{agent_type}.json"
-            findings[agent_type] = self._read_findings(findings_file)
+        logger.debug(
+            f"Added finding {finding.id} to {tier.value} (relevance: {finding.relevance_score:.2f})"
+        )
+
+    def compute_relevance(
+        self, finding: Finding, user_context: UserContext
+    ) -> float:
+        """
+        Compute relevance score for a finding.
+
+        Returns score between 0.0 and 1.0:
+        - 0.0 - 0.3: background
+        - 0.4 - 0.7: relevant
+        - 0.8 - 1.0: immediate
+        """
+        score = 0.0
+
+        # File scope (max 0.5)
+        if finding.file in user_context.currently_editing:
+            score += 0.5
+        elif finding.file in user_context.recently_modified:
+            score += 0.3
+        elif finding.file in user_context.related_files:
+            score += 0.2
+
+        # Severity (max 0.4)
+        if finding.blocking:
+            score += 0.4
+        elif finding.severity == Severity.ERROR:
+            score += 0.3
+        elif finding.severity == Severity.WARNING:
+            score += 0.15
+        elif finding.severity == Severity.INFO:
+            score += 0.05
+
+        # Freshness (max 0.3)
+        if finding.is_new and finding.caused_by_recent_change:
+            score += 0.3
+        elif finding.is_new:
+            score += 0.15
+
+        # User intent (max 0.5, can override)
+        if user_context.matches_request(finding.category):
+            score += 0.5
+
+        # Workflow phase adjustments
+        if user_context.phase == "pre_commit":
+            score += 0.2
+        elif user_context.phase == "active_coding":
+            score -= 0.2
+
+        return min(score, 1.0)
+
+    def assign_tier(self, finding: Finding) -> Tier:
+        """
+        Assign finding to a tier based on relevance and properties.
+
+        Args:
+            finding: Finding to assign
+
+        Returns:
+            Tier assignment
+        """
+        # Blockers always immediate
+        if finding.blocking:
+            return Tier.IMMEDIATE
+
+        # Auto-fixable style issues
+        if (
+            finding.auto_fixable
+            and finding.severity == Severity.STYLE
+            and finding.relevance_score < 0.5
+        ):
+            return Tier.AUTO_FIXED
+
+        # Score-based assignment
+        if finding.relevance_score >= 0.8:
+            return Tier.IMMEDIATE
+        elif finding.relevance_score >= 0.4:
+            return Tier.RELEVANT
         else:
-            # Get all agent types
-            for file_path in self.base_path.glob("*.json"):
-                agent_type = file_path.stem
-                findings[agent_type] = self._read_findings(file_path)
+            return Tier.BACKGROUND
 
-        return findings
+    async def get_findings(
+        self, tier: Tier | None = None, file_filter: str | None = None
+    ) -> List[Finding]:
+        """
+        Get findings from the store.
 
-    def clear_findings(self, agent_type: Optional[str] = None) -> None:
-        """Clear findings, optionally for specific agent type."""
-        if agent_type:
-            findings_file = self.base_path / f"{agent_type}.json"
-            if findings_file.exists():
-                findings_file.unlink()
-        else:
-            for file_path in self.base_path.glob("*.json"):
-                file_path.unlink()
+        Args:
+            tier: Optional tier filter
+            file_filter: Optional file path filter
 
-    def get_actionable_findings(self) -> Dict[str, List[Dict]]:
-        """Get findings that can be automatically acted upon."""
-        all_findings = self.get_findings()
-        actionable = {}
+        Returns:
+            List of findings matching filters
+        """
+        async with self._lock:
+            if tier:
+                findings = self._findings[tier].copy()
+            else:
+                findings = []
+                for tier_findings in self._findings.values():
+                    findings.extend(tier_findings)
 
-        for agent_type, findings in all_findings.items():
-            actionable_findings = []
-            for finding in findings:
-                if self._is_actionable(finding):
-                    actionable_findings.append(finding)
+            if file_filter:
+                findings = [f for f in findings if f.file == file_filter]
 
-            if actionable_findings:
-                actionable[agent_type] = actionable_findings
+            return findings
 
-        return actionable
+    async def clear_findings(
+        self, tier: Tier | None = None, file_filter: str | None = None
+    ) -> int:
+        """
+        Clear findings from the store.
 
-    def _read_findings(self, file_path: Path) -> List[Dict]:
-        """Read findings from a file."""
-        if not file_path.exists():
-            return []
+        Args:
+            tier: Optional tier filter
+            file_filter: Optional file path filter
+
+        Returns:
+            Number of findings cleared
+        """
+        count = 0
+        async with self._lock:
+            if tier:
+                tiers_to_clear = [tier]
+            else:
+                tiers_to_clear = list(Tier)
+
+            for t in tiers_to_clear:
+                if file_filter:
+                    original_count = len(self._findings[t])
+                    self._findings[t] = [
+                        f for f in self._findings[t] if f.file != file_filter
+                    ]
+                    count += original_count - len(self._findings[t])
+                else:
+                    count += len(self._findings[t])
+                    self._findings[t] = []
+
+                await self._write_tier(t)
+
+            await self._update_index()
+
+        logger.info(f"Cleared {count} finding(s)")
+        return count
+
+    async def _write_tier(self, tier: Tier) -> None:
+        """Write a tier's findings to disk."""
+        tier_file = self.context_dir / f"{tier.value}.json"
 
         try:
-            with open(file_path, "r") as f:
-                data = json.load(f)
-                # Only return if it's a list of findings (our expected format)
-                if isinstance(data, list) and data and isinstance(data[0], dict):
-                    return data
-                else:
-                    # Not our format, skip
-                    return []
-        except (json.JSONDecodeError, IOError, IndexError):
-            return []
-
-    def _get_agent_type(self, agent_name: str) -> str:
-        """Map agent name to type."""
-        # Extract base type from agent name (e.g., "linter" from "linter-1")
-        base_name = agent_name.split("-")[0]
-        return base_name
-
-    def write_consolidated_results(self) -> None:
-        """Write consolidated agent results for Claude Code integration."""
-        all_findings = self.get_findings()
-
-        # Build consolidated results
-        consolidated = {"timestamp": datetime.now().isoformat(), "agents": {}}
-
-        for agent_type, findings in all_findings.items():
-            if not findings:
-                continue
-
-            # Get most recent finding for each agent
-            latest = findings[-1]
-
-            # Extract results summary from agent data
-            agent_data = latest.get("data", {})
-
-            consolidated["agents"][agent_type] = {
-                "status": "success" if latest.get("success") else "failed",
-                "timestamp": latest.get("timestamp"),
-                "message": latest.get("message", ""),
-                "results": self._extract_results_summary(
-                    agent_type, agent_data, latest
-                ),
+            # Convert findings to dict
+            findings_data = {
+                "tier": tier.value,
+                "count": len(self._findings[tier]),
+                "findings": [
+                    {
+                        **asdict(f),
+                        "severity": f.severity.value,
+                        "scope_type": f.scope_type.value,
+                    }
+                    for f in self._findings[tier]
+                ],
             }
 
-        # Write consolidated file
-        results_file = self.base_path / "agent-results.json"
-        with open(results_file, "w") as f:
-            json.dump(consolidated, f, indent=2)
+            # Write atomically (write to temp, then rename)
+            temp_file = tier_file.with_suffix(".tmp")
+            temp_file.write_text(json.dumps(findings_data, indent=2))
+            temp_file.replace(tier_file)
 
-    def _extract_results_summary(
-        self, agent_type: str, data: Dict, finding: Dict
-    ) -> Dict[str, Any]:
-        """Extract results summary from agent data."""
-        summary = {}
+            logger.debug(f"Wrote {len(self._findings[tier])} findings to {tier_file}")
 
-        if agent_type == "linter":
-            summary["issues_found"] = len(data.get("issues", []))
-            summary["auto_fixable"] = sum(
-                1 for issue in data.get("issues", []) if issue.get("fixable", False)
-            )
-            summary["files_checked"] = 1 if data.get("file") else 0
+        except Exception as e:
+            logger.error(f"Failed to write tier {tier.value}: {e}")
+            raise
 
-        elif agent_type == "test-runner":
-            summary["passed"] = data.get("passed", 0)
-            summary["failed"] = data.get("failed", 0)
-            summary["total"] = data.get("total", 0)
-            summary["duration"] = data.get("duration", 0)
+    async def _update_index(self) -> None:
+        """Update the index file for quick LLM consumption."""
+        index_file = self.context_dir / "index.json"
 
-        elif agent_type == "formatter":
-            summary["needs_formatting"] = data.get("needs_formatting", False)
-            summary["files_formatted"] = 1 if data.get("needs_formatting") else 0
-            summary["formatter_used"] = data.get("formatter", "")
+        try:
+            # Gather summaries
+            immediate = self._findings[Tier.IMMEDIATE]
+            relevant = self._findings[Tier.RELEVANT]
+            background = self._findings[Tier.BACKGROUND]
+            auto_fixed = self._findings[Tier.AUTO_FIXED]
 
-        elif agent_type == "security-scanner" or agent_type == "security":
-            summary["vulnerabilities_found"] = len(data.get("issues", []))
-            summary["high_severity"] = sum(
-                1 for issue in data.get("issues", []) if issue.get("severity") == "high"
-            )
-            summary["medium_severity"] = sum(
-                1
-                for issue in data.get("issues", [])
-                if issue.get("severity") == "medium"
-            )
+            # Build index
+            index = {
+                "last_updated": datetime.utcnow().isoformat() + "Z",
+                "check_now": {
+                    "count": len(immediate),
+                    "severity_breakdown": self._severity_breakdown(immediate),
+                    "files": list(set(f.file for f in immediate)),
+                    "preview": self._generate_preview(immediate),
+                },
+                "mention_if_relevant": {
+                    "count": len(relevant),
+                    "categories": self._category_breakdown(relevant),
+                    "summary": self._generate_summary(relevant),
+                },
+                "deferred": {
+                    "count": len(background),
+                    "summary": f"{len(background)} background items",
+                },
+                "auto_fixed": {
+                    "count": len(auto_fixed),
+                    "summary": f"{len(auto_fixed)} items auto-fixed",
+                },
+            }
 
-        elif agent_type == "type-checker" or agent_type == "type":
-            summary["issues_found"] = len(data.get("issues", []))
-            summary["errors"] = sum(
-                1
-                for issue in data.get("issues", [])
-                if issue.get("severity") == "error"
-            )
-            summary["warnings"] = sum(
-                1
-                for issue in data.get("issues", [])
-                if issue.get("severity") == "warning"
-            )
+            # Write atomically
+            temp_file = index_file.with_suffix(".tmp")
+            temp_file.write_text(json.dumps(index, indent=2))
+            temp_file.replace(index_file)
 
-        elif agent_type == "performance-profiler" or agent_type == "performance":
-            summary["functions_analyzed"] = data.get("functions_analyzed", 0)
-            summary["high_complexity"] = len(data.get("high_complexity_functions", []))
-            complexity_summary = data.get("complexity_summary", {})
-            summary["average_complexity"] = complexity_summary.get(
-                "average_complexity", 0
-            )
+            logger.debug(f"Updated index: {index_file}")
 
-        else:
-            # Generic summary for unknown agent types
-            summary["message"] = finding.get("message", "")
-            summary["success"] = finding.get("success", False)
+        except Exception as e:
+            logger.error(f"Failed to update index: {e}")
+            raise
 
-        return summary
+    def _severity_breakdown(self, findings: List[Finding]) -> Dict[str, int]:
+        """Count findings by severity."""
+        breakdown = {}
+        for f in findings:
+            severity = f.severity.value
+            breakdown[severity] = breakdown.get(severity, 0) + 1
+        return breakdown
 
-    def _is_actionable(self, finding: Dict) -> bool:
-        """Determine if a finding can be automatically acted upon."""
-        agent_name = finding.get("agent_name", "")
-        message = finding.get("message", "").lower()
-        error = finding.get("error", "").lower()
-        success = finding.get("success", False)
+    def _category_breakdown(self, findings: List[Finding]) -> Dict[str, int]:
+        """Count findings by category."""
+        breakdown = {}
+        for f in findings:
+            breakdown[f.category] = breakdown.get(f.category, 0) + 1
+        return breakdown
 
-        # Check successful findings first
-        if success:
-            # Linter: Auto-fix safe issues
-            if agent_name.startswith("linter"):
-                # Auto-fix import sorting, unused imports, etc.
-                return any(
-                    keyword in message
-                    for keyword in [
-                        "unused import",
-                        "import sort",
-                        "whitespace",
-                        "indentation",
-                    ]
-                )
+    def _generate_preview(self, findings: List[Finding]) -> str:
+        """Generate a brief preview of findings."""
+        if not findings:
+            return "No immediate issues"
 
-            # Formatter: Auto-format if needed
-            elif agent_name.startswith("formatter"):
-                return "would format" in message or "needs formatting" in message
+        if len(findings) == 1:
+            f = findings[0]
+            return f"{f.severity.value.title()} in {f.file}:{f.line or '?'}"
 
-            # Test runner: Not typically auto-actionable
-            elif agent_name.startswith("test-runner"):
-                return False
+        # Multiple findings
+        severity_counts = self._severity_breakdown(findings)
+        parts = [f"{count} {sev}" for sev, count in severity_counts.items()]
+        return ", ".join(parts)
 
-            return False
+    def _generate_summary(self, findings: List[Finding]) -> str:
+        """Generate a summary of findings."""
+        if not findings:
+            return "No relevant issues"
 
-        # Check failed findings for error messages that indicate fixable code issues
-        else:
-            # Linter errors that indicate syntax or import issues
-            if agent_name.startswith("linter"):
-                # Syntax errors, import errors, etc.
-                return any(
-                    keyword in error
-                    for keyword in [
-                        "syntax",
-                        "import",
-                        "indentation",
-                        "undefined",
-                        "unexpected",
-                        "invalid syntax",
-                        "nameerror",
-                    ]
-                )
+        category_counts = self._category_breakdown(findings)
+        parts = [
+            f"{count} {cat.replace('_', ' ')}" for cat, count in category_counts.items()
+        ]
+        return ", ".join(parts)
 
-            # Formatter errors (usually configuration issues, not code issues)
-            elif agent_name.startswith("formatter"):
-                return False  # Formatter errors are usually config-related
+    async def read_index(self) -> Dict[str, Any]:
+        """
+        Read the index file.
 
-            # Type checker errors that indicate real code issues
-            elif agent_name.startswith("type-checker"):
-                return any(
-                    keyword in error
-                    for keyword in ["type", "annotation", "mypy", "attribute", "module"]
-                )
+        Returns:
+            Index data as dict
+        """
+        index_file = self.context_dir / "index.json"
 
-            # Test runner errors that might indicate code issues
-            elif agent_name.startswith("test-runner"):
-                return any(
-                    keyword in error
-                    for keyword in ["syntax", "import", "attribute", "module"]
-                )
+        try:
+            if not index_file.exists():
+                return {
+                    "last_updated": datetime.utcnow().isoformat() + "Z",
+                    "check_now": {"count": 0, "preview": "No immediate issues"},
+                    "mention_if_relevant": {"count": 0, "summary": "No relevant issues"},
+                    "deferred": {"count": 0, "summary": "No background items"},
+                    "auto_fixed": {"count": 0, "summary": "No auto-fixed items"},
+                }
 
-            return False
+            data = json.loads(index_file.read_text())
+            return data
+
+        except Exception as e:
+            logger.error(f"Failed to read index: {e}")
+            raise
+
+    async def load_from_disk(self) -> None:
+        """Load all findings from disk into memory."""
+        async with self._lock:
+            for tier in Tier:
+                tier_file = self.context_dir / f"{tier.value}.json"
+
+                if not tier_file.exists():
+                    continue
+
+                try:
+                    data = json.loads(tier_file.read_text())
+                    findings = []
+
+                    for f_data in data.get("findings", []):
+                        # Convert severity and scope_type back to enums
+                        if "severity" in f_data:
+                            f_data["severity"] = Severity(f_data["severity"])
+                        if "scope_type" in f_data:
+                            f_data["scope_type"] = ScopeType(f_data["scope_type"])
+
+                        findings.append(Finding(**f_data))
+
+                    self._findings[tier] = findings
+                    logger.info(
+                        f"Loaded {len(findings)} findings from {tier.value}.json"
+                    )
+
+                except Exception as e:
+                    logger.error(f"Failed to load {tier_file}: {e}")
+                    # Continue with other tiers
 
 
 # Global instance
