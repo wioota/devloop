@@ -1,4 +1,4 @@
-"""Base agent class - simplified for prototype."""
+"""Base agent class with performance monitoring and feedback support."""
 
 from __future__ import annotations
 
@@ -7,9 +7,11 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .event import Event, EventBus
+from .feedback import FeedbackAPI
+from .performance import PerformanceMonitor
 
 
 @dataclass
@@ -68,12 +70,21 @@ class AgentResult:
 
 
 class Agent(ABC):
-    """Base agent class."""
+    """Base agent class with performance monitoring and feedback."""
 
-    def __init__(self, name: str, triggers: List[str], event_bus: EventBus):
+    def __init__(
+        self,
+        name: str,
+        triggers: List[str],
+        event_bus: EventBus,
+        feedback_api: Optional[FeedbackAPI] = None,
+        performance_monitor: Optional[PerformanceMonitor] = None
+    ):
         self.name = name
         self.triggers = triggers
         self.event_bus = event_bus
+        self.feedback_api = feedback_api
+        self.performance_monitor = performance_monitor
         self.enabled = True
         self.logger = logging.getLogger(f"agent.{name}")
         self._running = False
@@ -113,7 +124,7 @@ class Agent(ABC):
         self.logger.info(f"Agent {self.name} stopped")
 
     async def _process_events(self) -> None:
-        """Process events from the queue."""
+        """Process events from the queue with performance monitoring."""
         while self._running:
             try:
                 # Wait for event with timeout to allow checking _running
@@ -124,11 +135,34 @@ class Agent(ABC):
             if not self.enabled:
                 continue
 
-            # Execute handler
+            # Execute handler with performance monitoring
             try:
-                start_time = time.time()
-                result = await self.handle(event)
-                result.duration = time.time() - start_time
+                operation_name = f"agent.{self.name}.handle"
+
+                if self.performance_monitor:
+                    async with self.performance_monitor.monitor_operation(
+                        operation_name,
+                        metadata={
+                            "event_type": event.type,
+                            "agent_name": self.name
+                        }
+                    ) as metrics:
+                        result = await self.handle(event)
+                        metrics.complete(result.success, result.error)
+
+                        # Update result duration from metrics
+                        if metrics.duration:
+                            result.duration = metrics.duration
+                else:
+                    start_time = time.time()
+                    result = await self.handle(event)
+                    result.duration = time.time() - start_time
+
+                # Update performance store if available
+                if self.feedback_api:
+                    await self.feedback_api.feedback_store.update_performance(
+                        self.name, result.success, result.duration
+                    )
 
                 # Publish result
                 await self._publish_result(result)
@@ -141,14 +175,21 @@ class Agent(ABC):
 
             except Exception as e:
                 self.logger.error(f"Error in {self.name}: {e}", exc_info=True)
-                await self._publish_result(
-                    AgentResult(
-                        agent_name=self.name,
-                        success=False,
-                        duration=time.time() - start_time,
-                        error=str(e),
-                    )
+
+                error_result = AgentResult(
+                    agent_name=self.name,
+                    success=False,
+                    duration=0.1,  # Default duration for errors
+                    error=str(e),
                 )
+
+                # Update performance store for failed operations
+                if self.feedback_api:
+                    await self.feedback_api.feedback_store.update_performance(
+                        self.name, False, error_result.duration
+                    )
+
+                await self._publish_result(error_result)
 
     async def _publish_result(self, result: AgentResult) -> None:
         """Publish agent result as an event."""

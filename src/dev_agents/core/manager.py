@@ -1,4 +1,4 @@
-"""Agent manager for centralized control."""
+"""Agent manager for centralized control with feedback and performance."""
 
 import asyncio
 import logging
@@ -8,21 +8,71 @@ from typing import Dict, List, Optional
 from dev_agents.core.agent import Agent
 from dev_agents.core.context_store import context_store
 from dev_agents.core.event import Event, EventBus
+from dev_agents.core.feedback import FeedbackAPI, FeedbackStore
+from dev_agents.core.performance import PerformanceMonitor
 
 
 class AgentManager:
-    """Manages agent lifecycle and coordination."""
+    """Manages agent lifecycle and coordination with feedback and performance."""
 
-    def __init__(self, event_bus: EventBus):
+    def __init__(
+        self,
+        event_bus: EventBus,
+        project_dir: Optional[Path] = None,
+        enable_feedback: bool = True,
+        enable_performance: bool = True
+    ):
         self.event_bus = event_bus
         self.agents: Dict[str, Agent] = {}
         self.logger = logging.getLogger("agent_manager")
         self._paused_agents: set[str] = set()
 
+        # Initialize feedback and performance systems
+        self.project_dir = project_dir or Path.cwd()
+        self.feedback_api = None
+        self.performance_monitor = None
+
+        if enable_feedback:
+            feedback_storage = self.project_dir / ".claude" / "feedback"
+            feedback_store = FeedbackStore(feedback_storage)
+            self.feedback_api = FeedbackAPI(feedback_store)
+
+        if enable_performance:
+            performance_storage = self.project_dir / ".claude" / "performance"
+            self.performance_monitor = PerformanceMonitor(performance_storage)
+
     def register(self, agent: Agent) -> None:
         """Register an agent."""
+        # Inject feedback and performance systems if not already set
+        if hasattr(agent, 'feedback_api') and agent.feedback_api is None:
+            agent.feedback_api = self.feedback_api
+        if hasattr(agent, 'performance_monitor') and agent.performance_monitor is None:
+            agent.performance_monitor = self.performance_monitor
+
         self.agents[agent.name] = agent
         self.logger.info(f"Registered agent: {agent.name}")
+
+    def create_agent(self, agent_class, name: str, triggers: List[str], **kwargs) -> Agent:
+        """Create and register an agent with feedback/performance systems."""
+        # Build kwargs for agent constructor
+        agent_kwargs = {
+            "name": name,
+            "triggers": triggers,
+            "event_bus": self.event_bus,
+            **kwargs
+        }
+
+        # Add optional feedback/performance parameters if the agent class supports them
+        import inspect
+        sig = inspect.signature(agent_class.__init__)
+        if 'feedback_api' in sig.parameters:
+            agent_kwargs['feedback_api'] = self.feedback_api
+        if 'performance_monitor' in sig.parameters:
+            agent_kwargs['performance_monitor'] = self.performance_monitor
+
+        agent = agent_class(**agent_kwargs)
+        self.register(agent)
+        return agent
 
     async def start_all(self) -> None:
         """Start all registered agents."""
@@ -106,6 +156,31 @@ class AgentManager:
             }
             for name, agent in self.agents.items()
         }
+
+    async def get_agent_insights(self, agent_name: str) -> Optional[Dict[str, any]]:
+        """Get insights for a specific agent."""
+        if not self.feedback_api:
+            return None
+        return await self.feedback_api.get_agent_insights(agent_name)
+
+    async def get_system_health(self) -> Optional[Dict[str, any]]:
+        """Get current system health metrics."""
+        if not self.performance_monitor:
+            return None
+        return await self.performance_monitor.get_system_health()
+
+    async def submit_feedback(self, agent_name: str, feedback_type, value, event_type=None, comment=None, context=None):
+        """Submit feedback for an agent."""
+        if not self.feedback_api:
+            return None
+        return await self.feedback_api.submit_feedback(
+            agent_name=agent_name,
+            event_type=event_type or "manual",
+            feedback_type=feedback_type,
+            value=value,
+            comment=comment,
+            context=context
+        )
 
     def get_agent(self, name: str) -> Optional[Agent]:
         """Get an agent by name."""

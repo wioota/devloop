@@ -22,7 +22,14 @@ class TestBaseCollector:
         event_bus = EventBus()
         config = {"test": "value"}
 
-        collector = BaseCollector("test", event_bus, config)
+        # Create a concrete subclass for testing
+        class TestCollector(BaseCollector):
+            async def start(self):
+                pass
+            async def stop(self):
+                pass
+
+        collector = TestCollector("test", event_bus, config)
 
         assert collector.name == "test"
         assert collector.event_bus == event_bus
@@ -33,7 +40,15 @@ class TestBaseCollector:
     async def test_emit_event(self):
         """Test event emission."""
         event_bus = EventBus()
-        collector = BaseCollector("test", event_bus)
+
+        # Create a concrete subclass for testing
+        class TestCollector(BaseCollector):
+            async def start(self):
+                pass
+            async def stop(self):
+                pass
+
+        collector = TestCollector("test", event_bus)
 
         # Mock the event bus emit method
         event_bus.emit = AsyncMock()
@@ -83,7 +98,7 @@ class TestFileSystemCollector:
         event_bus = EventBus()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            collector = FileSystemCollector(event_bus, watch_paths=[temp_dir])
+            collector = FileSystemCollector(event_bus, config={"watch_paths": [temp_dir]})
 
             # Start the collector
             await collector.start()
@@ -237,7 +252,7 @@ class TestCollectorManager:
         manager = CollectorManager(event_bus)
 
         assert manager.event_bus == event_bus
-        assert len(manager._collector_classes) == 3  # filesystem, git, process
+        assert len(manager._collector_classes) == 4  # filesystem, git, process, system
         assert not manager._running
 
     def test_register_collector_class(self):
@@ -319,7 +334,7 @@ class TestCollectorManager:
 
         # Available collectors
         available = manager.list_available_collectors()
-        assert len(available) == 3
+        assert len(available) == 4
         assert "filesystem" in available
 
         # Create a collector

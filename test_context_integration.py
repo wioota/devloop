@@ -1,141 +1,80 @@
 #!/usr/bin/env python3
-"""Integration test for context store with linter agent."""
+"""Integration test for context store with real agents."""
+
 import asyncio
-import json
-import sys
+import tempfile
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from dev_agents.agents.linter import LinterAgent
-from dev_agents.core.context_store import context_store
-from dev_agents.core.event import Event, EventBus
+from src.dev_agents.agents.linter import LinterAgent
+from src.dev_agents.core.context_reader import ContextReader
+from src.dev_agents.core.event import Event
 
 
-async def test_linter_context_integration():
-    """Test that linter agent writes findings to context store."""
+async def test_agent_context_integration():
+    """Test that agents write findings to context store."""
+    # Create a test file with linting issues
+    test_file_content = '''
+import os
+x = 1  # unused variable
+print("hello")
+'''
 
-    print("=" * 70)
-    print("Integration Test: Linter Agent → Context Store")
-    print("=" * 70)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        test_file = Path(temp_dir) / "test.py"
+        test_file.write_text(test_file_content)
 
-    # Setup
-    test_dir = Path("test_context_integration")
-    context_dir = test_dir / ".claude" / "context"
+        # Create context directory
+        context_dir = Path(temp_dir) / ".claude" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize context store
-    context_store.context_dir = context_dir
-    await context_store.initialize()
-    print(f"✓ Context store initialized: {context_dir}")
+        # Create linter agent with context store path
+        from src.dev_agents.core.context import context_store
+        # Temporarily change context store path
+        original_path = context_store.base_path
+        context_store.base_path = context_dir
 
-    # Clear any existing findings
-    await context_store.clear_findings()
-    print("✓ Cleared existing findings")
+        try:
+            # Create and run linter agent
+            agent = LinterAgent(
+                name="linter",
+                triggers=["file:modified"],
+                event_bus=None,  # Not needed for this test
+            )
 
-    # Create event bus
-    event_bus = EventBus()
+            # Create a mock event
+            event = Event(
+                type="file:modified",
+                payload={"path": str(test_file)},
+            )
 
-    # Create linter agent
-    linter = LinterAgent(
-        name="linter",
-        triggers=["file:modified"],
-        event_bus=event_bus,
-        config={
-            "enabled": True,
-            "autoFix": False,
-            "filePatterns": ["**/*.py"]
-        }
-    )
-    print("✓ Created linter agent")
+            # Run the agent
+            result = await agent.handle(event)
 
-    # Create test file event
-    test_file = test_dir / "src" / "sample.py"
-    event = Event(
-        type="file:modified",
-        payload={"path": str(test_file)},
-        source="test"
-    )
-    print(f"✓ Created event for: {test_file}")
+            # Check that findings were stored
+            reader = ContextReader(context_dir)
+            findings = reader.get_agent_findings("linter")
 
-    # Run linter
-    print("\nRunning linter...")
-    result = await linter.handle(event)
-    print(f"  Agent result: {result.message}")
-    print(f"  Success: {result.success}")
-    if result.data:
-        print(f"  Issues found: {result.data.get('issue_count', 0)}")
+            # Should have found some issues
+            total_findings = sum(len(ff.findings) for ff in findings)
+            assert total_findings > 0, "Should have found linting issues"
 
-    # Check context store
-    print("\nChecking context store...")
+            # Verify the finding details
+            assert len(findings) == 1
+            assert findings[0].file_path == str(test_file)
+            assert len(findings[0].findings) == 1
+            finding = findings[0].findings[0]
+            assert finding.severity == "error"
+            assert "unused" in finding.message.lower()
+            assert finding.rule_id == "F401"
 
-    # Read index
-    index = await context_store.read_index()
-    print(f"\nIndex summary:")
-    print(f"  Immediate issues: {index['check_now']['count']}")
-    print(f"  Relevant issues: {index['mention_if_relevant']['count']}")
-    print(f"  Background issues: {index['deferred']['count']}")
-    print(f"  Auto-fixed: {index['auto_fixed']['count']}")
+            print("✅ Agent context integration test passed")
 
-    # Check immediate findings
-    from dev_agents.core.context_store import Tier
-    immediate_findings = await context_store.get_findings(tier=Tier.IMMEDIATE)
-    if immediate_findings:
-        print(f"\nImmediate findings ({len(immediate_findings)}):")
-        for f in immediate_findings[:3]:  # Show first 3
-            print(f"  - {f.severity.value}: {f.message} ({f.file}:{f.line})")
-
-    # Check relevant findings
-    relevant_findings = await context_store.get_findings(tier=Tier.RELEVANT)
-    if relevant_findings:
-        print(f"\nRelevant findings ({len(relevant_findings)}):")
-        for f in relevant_findings[:3]:  # Show first 3
-            print(f"  - {f.severity.value}: {f.message} ({f.file}:{f.line})")
-
-    # Verify files exist
-    print("\nVerifying context files...")
-    files_to_check = [
-        "index.json",
-        "immediate.json",
-        "relevant.json",
-        "background.json",
-        "auto_fixed.json"
-    ]
-
-    for filename in files_to_check:
-        filepath = context_dir / filename
-        if filepath.exists():
-            size = filepath.stat().st_size
-            print(f"  ✓ {filename} ({size} bytes)")
-        else:
-            print(f"  ✗ {filename} (missing)")
-
-    # Success criteria
-    print("\n" + "=" * 70)
-    print("Test Results:")
-    print("=" * 70)
-
-    total_findings = len(immediate_findings) + len(relevant_findings)
-
-    success = True
-    if not (context_dir / "index.json").exists():
-        print("✗ FAIL: index.json not created")
-        success = False
-    elif total_findings == 0:
-        print("✗ FAIL: No findings written to context store")
-        success = False
-    else:
-        print(f"✓ PASS: {total_findings} findings written to context store")
-        print(f"✓ PASS: Context files created successfully")
-
-    if success:
-        print("\n🎉 Integration test PASSED!")
-        return 0
-    else:
-        print("\n❌ Integration test FAILED!")
-        return 1
+        finally:
+            # Restore original path
+            context_store.base_path = original_path
 
 
 if __name__ == "__main__":
-    exit_code = asyncio.run(test_linter_context_integration())
-    sys.exit(exit_code)
+    print("🧪 Testing Agent Context Integration")
+    asyncio.run(test_agent_context_integration())
+    print("✅ All integration tests passed!")

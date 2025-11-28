@@ -17,7 +17,7 @@ class TestSecurityConfig:
         assert config.enabled_tools == ["bandit"]
         assert config.severity_threshold == "medium"
         assert config.confidence_threshold == "medium"
-        assert config.exclude_patterns == ["test_*", "*_test.py", "*/tests/*"]
+        assert config.exclude_patterns == ["test*", "*_test.py", "*/tests/*"]
         assert config.max_issues == 50
 
     def test_custom_config(self):

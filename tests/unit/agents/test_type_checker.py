@@ -17,7 +17,7 @@ class TestTypeCheckerConfig:
         assert config.enabled_tools == ["mypy"]
         assert config.strict_mode is False
         assert config.show_error_codes is True
-        assert config.exclude_patterns == ["test_*", "*_test.py", "*/tests/*"]
+        assert config.exclude_patterns == ["test*", "*_test.py", "*/tests/*"]
         assert config.max_issues == 50
 
     def test_custom_config(self):
