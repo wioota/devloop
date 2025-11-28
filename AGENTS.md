@@ -135,6 +135,25 @@ A powerful command-line interface and Amp slash command that provides intelligen
 - Resource usage analytics
 - Custom agent creation framework
 
+## Development Discipline
+
+### Commit & Push After Every Task
+
+**MANDATORY:** Every completed task must end with `git add`, `git commit`, and `git push origin main`.
+
+See CODING_RULES.md for detailed protocol.
+
+**Before moving to the next task, verify:**
+```bash
+git status
+# Output should be:
+# On branch main
+# Your branch is up to date with 'origin/main'.
+# nothing to commit, working tree clean
+```
+
+---
+
 ## Configuration
 
 Agents are configured via `.claude/agents.json`:

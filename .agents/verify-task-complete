@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+# Task completion verification script
+# Ensures all changes are committed and pushed before moving to next task
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+
+echo "═══════════════════════════════════════════════════════════════"
+echo "Task Completion Verification"
+echo "═══════════════════════════════════════════════════════════════"
+echo ""
+
+# Check if there are uncommitted changes
+if ! git diff --quiet HEAD; then
+    echo "❌ FAIL: Uncommitted changes detected"
+    echo ""
+    echo "Changes not staged:"
+    git diff --name-only HEAD
+    echo ""
+    echo "Please run:"
+    echo "  git add <files>"
+    echo "  git commit -m 'description'"
+    echo ""
+    exit 1
+fi
+
+# Check if there are untracked files
+UNTRACKED=$(git ls-files --others --exclude-standard)
+if [ -n "$UNTRACKED" ]; then
+    echo "❌ FAIL: Untracked files detected"
+    echo ""
+    echo "Untracked files:"
+    echo "$UNTRACKED" | sed 's/^/  /'
+    echo ""
+    echo "Please add or remove these files before committing"
+    exit 1
+fi
+
+# Check if there are unpushed commits
+if git rev-parse @{u} >/dev/null 2>&1; then
+    AHEAD=$(git rev-list --count @{u}..HEAD)
+    if [ "$AHEAD" -gt 0 ]; then
+        echo "❌ FAIL: Unpushed commits detected"
+        echo ""
+        echo "You have $AHEAD local commit(s) not pushed to origin/main"
+        echo ""
+        echo "Please run:"
+        echo "  git push origin main"
+        echo ""
+        exit 1
+    fi
+else
+    # Upstream doesn't exist, suggest creating it
+    echo "⚠️  WARNING: Upstream branch not set"
+    echo "Run: git push -u origin main"
+fi
+
+echo "✅ PASS: All checks successful"
+echo ""
+echo "Status:"
+echo "  • Working tree: clean"
+echo "  • Staged changes: none"
+echo "  • Untracked files: none"
+echo "  • Unpushed commits: none"
+echo "  • Branch: $(git rev-parse --abbrev-ref HEAD)"
+echo "  • Latest commit: $(git log -1 --pretty=format:"%h - %s")"
+echo ""
+echo "Ready to move to next task ✨"
+echo ""

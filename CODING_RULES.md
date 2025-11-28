@@ -1,8 +1,64 @@
-# Claude Agents Coding Rules & Patterns
+# Dev Agents Coding Rules & Patterns
 
 ## Overview
 
 Documented patterns, rules, and lessons learned from dev-agents development to prevent recurring issues and ensure consistent code quality.
+
+---
+
+## CRITICAL: Commit & Push Protocol
+
+**This is a MANDATORY DISCIPLINE. Every task completion requires a commit and push.**
+
+### Rule: Every Task Must End with Git Commit + Push
+
+1. **After completing any task**, you MUST:
+   - Stage changed files: `git add <files>`
+   - Create descriptive commit message
+   - Commit: `git commit -m "..."`
+   - Push: `git push origin main`
+
+2. **Commit Message Format:**
+   - Start with type: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
+   - Keep subject line <72 characters
+   - Add body explaining WHAT and WHY (if needed)
+   - Example:
+     ```
+     docs: update README with Dev Agents branding and improve developer experience
+     
+     - Rename project from Claude Agents to Dev Agents throughout
+     - Add quick start section with installation steps
+     - Add feature summary with emoji badges
+     - Follow open source README best practices
+     ```
+
+3. **What counts as "completed task":**
+   - File modifications (even single files)
+   - New features implemented
+   - Bug fixes
+   - Documentation updates
+   - Test additions
+   - Configuration changes
+
+4. **What does NOT require commit:**
+   - Temporary exploration or investigation
+   - Failed experiments (unless worth preserving)
+   - Debugging output
+
+### Enforcement Mechanism
+
+**For Amp:** Add a checklist item at the end of task context reminding to commit/push
+
+**For Claude:** This rule is highlighted here and in AGENTS.md system prompt
+
+### Verification
+
+Always check before moving to next task:
+```bash
+git status  # Should show: "working tree clean" and "branch is even with origin"
+```
+
+---
 
 ## Core Patterns
 
