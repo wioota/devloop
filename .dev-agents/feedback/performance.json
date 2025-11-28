@@ -1,14 +1,12 @@
 {
-  "type-checker": {
+  "performance-profiler": {
     "total_executions": 1,
     "successful_executions": 0,
-    "average_duration": 0.00011539459228515625,
+    "average_duration": 0.0003783702850341797,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764327893.2914438
-  }
-}44
+    "last_updated": 1764363493.1816673
   }
 }
