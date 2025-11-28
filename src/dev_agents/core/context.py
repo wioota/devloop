@@ -6,7 +6,6 @@ This enables background agents to report issues without directly modifying files
 """
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -20,13 +19,19 @@ class Finding(BaseModel):
     agent_name: str = Field(..., description="Name of the agent that made this finding")
     file_path: str = Field(..., description="Relative path to the file")
     line_number: Optional[int] = Field(None, description="Line number if applicable")
-    column_number: Optional[int] = Field(None, description="Column number if applicable")
+    column_number: Optional[int] = Field(
+        None, description="Column number if applicable"
+    )
     severity: str = Field(..., description="Severity level: 'error', 'warning', 'info'")
     message: str = Field(..., description="Human-readable message")
     rule_id: Optional[str] = Field(None, description="Rule or error code identifier")
     suggestion: Optional[str] = Field(None, description="Suggested fix or action")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional agent-specific data")
-    timestamp: datetime = Field(default_factory=datetime.now, description="When the finding was made")
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional agent-specific data"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="When the finding was made"
+    )
 
 
 class FileFindings(BaseModel):
@@ -80,10 +85,13 @@ class ContextStore:
 
             # Remove any existing identical findings (by message and location)
             file_findings[file_path_rel].findings = [
-                f for f in file_findings[file_path_rel].findings
-                if not (f.message == finding.message and
-                       f.line_number == finding.line_number and
-                       f.agent_name == finding.agent_name)
+                f
+                for f in file_findings[file_path_rel].findings
+                if not (
+                    f.message == finding.message
+                    and f.line_number == finding.line_number
+                    and f.agent_name == finding.agent_name
+                )
             ]
 
             # Add the new finding
@@ -94,7 +102,7 @@ class ContextStore:
         data = {
             "agent_name": agent_name,
             "last_updated": datetime.now().isoformat(),
-            "files": [ff.dict() for ff in file_findings.values()]
+            "files": [ff.dict() for ff in file_findings.values()],
         }
 
         file_path.write_text(json.dumps(data, indent=2, default=str))
@@ -121,17 +129,18 @@ class ContextStore:
             # Clear findings for specific file
             all_findings = self.get_findings(agent_name)
             remaining_findings = [
-                ff for ff in all_findings
-                if ff.file_path != file_path
+                ff for ff in all_findings if ff.file_path != file_path
             ]
 
             if remaining_findings:
                 data = {
                     "agent_name": agent_name,
                     "last_updated": datetime.now().isoformat(),
-                    "files": [ff.dict() for ff in remaining_findings]
+                    "files": [ff.dict() for ff in remaining_findings],
                 }
-                self._get_file_path(agent_name).write_text(json.dumps(data, indent=2, default=str))
+                self._get_file_path(agent_name).write_text(
+                    json.dumps(data, indent=2, default=str)
+                )
             else:
                 # No findings left, remove the file
                 self._get_file_path(agent_name).unlink(missing_ok=True)

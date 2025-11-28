@@ -1,7 +1,6 @@
 """Formatter agent - auto-formats code on save."""
 
 import asyncio
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -77,18 +76,18 @@ class FormatterAgent(Agent):
         # Loop prevention: Check for formatting loops
         if self._detect_formatting_loop(path):
             await self._write_finding_to_context(
-            path=path,
-            formatter="loop_detector",
-            severity="warning",
-            message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
-            blocking=True,
+                path=path,
+                formatter="loop_detector",
+                severity="warning",
+                message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
+                blocking=True,
             )
             result = AgentResult(
                 agent_name=self.name,
                 success=False,
                 duration=0,
                 message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
-                error="FORMATTING_LOOP_DETECTED"
+                error="FORMATTING_LOOP_DETECTED",
             )
             return result
 
@@ -129,7 +128,7 @@ class FormatterAgent(Agent):
                     success=False,
                     duration=0,
                     message=f"Failed to check if {path.name} needs formatting: {check_error}",
-                    error=check_error
+                    error=check_error,
                 )
                 return result
             if not needs_formatting:
@@ -258,7 +257,8 @@ class FormatterAgent(Agent):
         # Clean up old entries (older than detection window)
         for k in list(self._recent_formats.keys()):
             self._recent_formats[k] = [
-                ts for ts in self._recent_formats[k]
+                ts
+                for ts in self._recent_formats[k]
                 if now - ts < self._loop_detection_window
             ]
             if not self._recent_formats[k]:
@@ -280,6 +280,7 @@ class FormatterAgent(Agent):
     def _record_formatting_operation(self, path: Path) -> None:
         """Record that we just formatted this file."""
         import time
+
         file_key = str(path.resolve())
         if file_key not in self._recent_formats:
             self._recent_formats[file_key] = []
@@ -308,7 +309,7 @@ class FormatterAgent(Agent):
                 "formatter": formatter,
                 "auto_fixable": auto_fixable,
                 "blocking": blocking,
-            }
+            },
         )
         context_store.store_findings(self.name, [finding])
 
@@ -322,14 +323,12 @@ class FormatterAgent(Agent):
 
             if formatter == "black":
                 result = await asyncio.wait_for(
-                    self._run_black(path),
-                    timeout=self._format_timeout
+                    self._run_black(path), timeout=self._format_timeout
                 )
                 return result
             elif formatter == "prettier":
                 result = await asyncio.wait_for(
-                    self._run_prettier(path),
-                    timeout=self._format_timeout
+                    self._run_prettier(path), timeout=self._format_timeout
                 )
                 return result
             else:

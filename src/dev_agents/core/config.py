@@ -85,7 +85,7 @@ class Config:
         )
 
     @staticmethod
-    def default_config() -> 'Config':
+    def default_config() -> "Config":
         """Get default configuration instance."""
         config = Config()
         config._config = config._get_default_config()

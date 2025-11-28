@@ -1,8 +1,5 @@
 """Integration commands for Amp/Claude Code."""
 
-import asyncio
-from typing import Dict
-
 from dev_agents.core.auto_fix import apply_safe_fixes
 from dev_agents.core.config import config
 from dev_agents.core.context_store import context_store
@@ -18,20 +15,22 @@ async def check_agent_findings():
         agent = finding.agent
         if agent not in findings_by_agent:
             findings_by_agent[agent] = []
-        findings_by_agent[agent].append({
-            "id": finding.id,
-            "file": finding.file,
-            "severity": finding.severity.value,
-            "message": finding.message,
-            "blocking": finding.blocking,
-            "auto_fixable": finding.auto_fixable
-        })
+        findings_by_agent[agent].append(
+            {
+                "id": finding.id,
+                "file": finding.file,
+                "severity": finding.severity.value,
+                "message": finding.message,
+                "blocking": finding.blocking,
+                "auto_fixable": finding.auto_fixable,
+            }
+        )
 
     summary = {
         "total_findings": len(findings),
         "findings_by_agent": {k: len(v) for k, v in findings_by_agent.items()},
         "blockers": len([f for f in findings if f.blocking]),
-        "auto_fixable": len([f for f in findings if f.auto_fixable])
+        "auto_fixable": len([f for f in findings if f.auto_fixable]),
     }
 
     return {
@@ -51,8 +50,8 @@ async def apply_autonomous_fixes():
             "total_applied": 0,
             "config_status": {
                 "enabled": False,
-                "safety_level": global_config.autonomous_fixes.safety_level
-            }
+                "safety_level": global_config.autonomous_fixes.safety_level,
+            },
         }
 
     results = await apply_safe_fixes()
@@ -74,8 +73,8 @@ async def apply_autonomous_fixes():
         "total_applied": total_applied,
         "config_status": {
             "enabled": True,
-            "safety_level": global_config.autonomous_fixes.safety_level
-        }
+            "safety_level": global_config.autonomous_fixes.safety_level,
+        },
     }
 
 
@@ -105,7 +104,7 @@ async def show_agent_status():
                 "last_active": latest.timestamp,
                 "last_message": latest.message,
                 "total_findings": len(agent_findings),
-                "blocking_issues": len([f for f in agent_findings if f.blocking])
+                "blocking_issues": len([f for f in agent_findings if f.blocking]),
             }
 
     # Show recent findings (last 3 per agent)
@@ -117,7 +116,7 @@ async def show_agent_status():
                 "timestamp": f.timestamp,
                 "message": f.message,
                 "severity": f.severity.value,
-                "blocking": f.blocking
+                "blocking": f.blocking,
             }
             for f in recent
         ]

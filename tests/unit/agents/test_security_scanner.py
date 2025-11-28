@@ -27,7 +27,7 @@ class TestSecurityConfig:
             "severity_threshold": "high",
             "confidence_threshold": "high",
             "exclude_patterns": ["custom_*"],
-            "max_issues": 100
+            "max_issues": 100,
         }
         config = SecurityConfig(**custom_config)
 
@@ -47,7 +47,7 @@ class TestSecurityScannerAgent:
         config = {
             "enabled_tools": ["bandit"],
             "severity_threshold": "medium",
-            "confidence_threshold": "medium"
+            "confidence_threshold": "medium",
         }
         return SecurityScannerAgent(config, MagicMock())
 
@@ -69,11 +69,13 @@ class TestSecurityScannerAgent:
             Path("test_file.py"),
             Path("my_test.py"),
             Path("tests/test_example.py"),
-            Path("src/tests/security_test.py")
+            Path("src/tests/security_test.py"),
         ]
 
         for test_file in test_files:
-            assert agent._should_exclude_file(str(test_file)), f"Should exclude {test_file}"
+            assert agent._should_exclude_file(
+                str(test_file)
+            ), f"Should exclude {test_file}"
 
     def test_non_test_file_inclusion(self, agent):
         """Test that non-test files are not excluded."""
@@ -81,11 +83,13 @@ class TestSecurityScannerAgent:
             Path("main.py"),
             Path("security.py"),
             Path("src/utils/helpers.py"),
-            Path("lib/security/crypto.py")
+            Path("lib/security/crypto.py"),
         ]
 
         for regular_file in regular_files:
-            assert not agent._should_exclude_file(str(regular_file)), f"Should not exclude {regular_file}"
+            assert not agent._should_exclude_file(
+                str(regular_file)
+            ), f"Should not exclude {regular_file}"
 
     @pytest.mark.asyncio
     async def test_handle_non_python_file(self, agent):
@@ -96,9 +100,7 @@ class TestSecurityScannerAgent:
 
         try:
             event = Event(
-                type="file:modified",
-                payload={"path": str(non_py_file)},
-                source="test"
+                type="file:modified", payload={"path": str(non_py_file)}, source="test"
             )
 
             result = await agent.handle(event)
@@ -114,9 +116,7 @@ class TestSecurityScannerAgent:
     async def test_handle_missing_file(self, agent):
         """Test handling of missing files."""
         event = Event(
-            type="file:modified",
-            payload={"path": "nonexistent.py"},
-            source="test"
+            type="file:modified", payload={"path": "nonexistent.py"}, source="test"
         )
 
         result = await agent.handle(event)
@@ -133,9 +133,7 @@ class TestSecurityScannerAgent:
 
         try:
             event = Event(
-                type="file:modified",
-                payload={"path": str(test_file)},
-                source="test"
+                type="file:modified", payload={"path": str(test_file)}, source="test"
             )
 
             result = await agent.handle(event)
@@ -147,7 +145,7 @@ class TestSecurityScannerAgent:
             test_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
-    @patch('dev_agents.agents.security_scanner.SecurityScannerAgent._run_security_scan')
+    @patch("dev_agents.agents.security_scanner.SecurityScannerAgent._run_security_scan")
     async def test_handle_python_file(self, mock_scan, agent):
         """Test handling of Python files."""
         # Create a temporary Python file
@@ -160,14 +158,20 @@ class TestSecurityScannerAgent:
             mock_result.issues = []
             mock_result.errors = []
             mock_result.tool = "bandit"
-            mock_result._get_severity_breakdown.return_value = {"low": 0, "medium": 0, "high": 0}
-            mock_result._get_confidence_breakdown.return_value = {"low": 0, "medium": 0, "high": 0}
+            mock_result._get_severity_breakdown.return_value = {
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+            }
+            mock_result._get_confidence_breakdown.return_value = {
+                "low": 0,
+                "medium": 0,
+                "high": 0,
+            }
             mock_scan.return_value = mock_result
 
             event = Event(
-                type="file:modified",
-                payload={"path": str(py_file)},
-                source="test"
+                type="file:modified", payload={"path": str(py_file)}, source="test"
             )
 
             result = await agent.handle(event)
@@ -229,7 +233,7 @@ class TestSecurityScannerAgent:
     @pytest.mark.asyncio
     async def test_bandit_tool_check(self, agent):
         """Test bandit tool availability checking."""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             # Test when bandit is available
             mock_run.return_value = MagicMock(returncode=0)
             result = await agent._run_bandit(Path("test.py"))

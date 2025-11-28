@@ -1,4 +1,5 @@
 """Tests for event collectors."""
+
 import asyncio
 import tempfile
 from pathlib import Path
@@ -26,6 +27,7 @@ class TestBaseCollector:
         class TestCollector(BaseCollector):
             async def start(self):
                 pass
+
             async def stop(self):
                 pass
 
@@ -45,6 +47,7 @@ class TestBaseCollector:
         class TestCollector(BaseCollector):
             async def start(self):
                 pass
+
             async def stop(self):
                 pass
 
@@ -53,7 +56,9 @@ class TestBaseCollector:
         # Mock the event bus emit method
         event_bus.emit = AsyncMock()
 
-        await collector._emit_event("test:event", {"key": "value"}, "high", "test_source")
+        await collector._emit_event(
+            "test:event", {"key": "value"}, "high", "test_source"
+        )
 
         # Check that emit was called
         assert event_bus.emit.called
@@ -98,7 +103,9 @@ class TestFileSystemCollector:
         event_bus = EventBus()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            collector = FileSystemCollector(event_bus, config={"watch_paths": [temp_dir]})
+            collector = FileSystemCollector(
+                event_bus, config={"watch_paths": [temp_dir]}
+            )
 
             # Start the collector
             await collector.start()
@@ -137,10 +144,8 @@ class TestGitCollector:
         assert not collector._is_git_repo()
 
     @patch("subprocess.run")
-    @patch("dev_agents.collectors.git.sys")
-    def test_install_hook(self, mock_sys, mock_run):
+    def test_install_hook(self, mock_run):
         """Test hook installation."""
-        mock_sys.executable = "/usr/bin/python3"
 
         event_bus = EventBus()
         collector = GitCollector(event_bus)

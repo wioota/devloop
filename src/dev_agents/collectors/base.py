@@ -1,7 +1,7 @@
 """Base collector class."""
+
 from __future__ import annotations
 
-import asyncio
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
@@ -13,10 +13,7 @@ class BaseCollector(ABC):
     """Base class for all event collectors."""
 
     def __init__(
-        self,
-        name: str,
-        event_bus: EventBus,
-        config: Optional[Dict[str, Any]] = None
+        self, name: str, event_bus: EventBus, config: Optional[Dict[str, Any]] = None
     ):
         self.name = name
         self.event_bus = event_bus
@@ -48,14 +45,11 @@ class BaseCollector(ABC):
         event_type: str,
         payload: Dict[str, Any],
         priority: str = "normal",
-        source: Optional[str] = None
+        source: Optional[str] = None,
     ) -> None:
         """Emit an event to the event bus."""
         prio = Priority.NORMAL if priority == "normal" else Priority.HIGH
         event = Event(
-            type=event_type,
-            payload=payload,
-            source=source or self.name,
-            priority=prio
+            type=event_type, payload=payload, source=source or self.name, priority=prio
         )
         await self.event_bus.emit(event)

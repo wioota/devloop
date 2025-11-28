@@ -1,12 +1,12 @@
 """Event store for persistent event logging using SQLite."""
+
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import sqlite3
-from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -35,7 +35,8 @@ class EventStore:
     def _init_db(self) -> None:
         """Initialize database schema (runs in thread pool)."""
         self._connection = sqlite3.connect(str(self.db_path))
-        self._connection.execute("""
+        self._connection.execute(
+            """
         CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -45,18 +46,25 @@ class EventStore:
         priority INTEGER NOT NULL,
         created_at REAL NOT NULL
         )
-        """)
+        """
+        )
 
         # Create indexes for efficient queries
-        self._connection.execute("""
+        self._connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)
-        """)
-        self._connection.execute("""
+        """
+        )
+        self._connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)
-        """)
-        self._connection.execute("""
+        """
+        )
+        self._connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_events_source ON events(source)
-        """)
+        """
+        )
 
         self._connection.commit()
         logger.info(f"Event store initialized at {self.db_path}")
@@ -76,28 +84,35 @@ class EventStore:
         try:
             # Convert event to dict for JSON storage
             event_dict = {
-                'id': event.id,
-                'type': event.type,
-                'timestamp': event.timestamp,
-                'source': event.source,
-                'payload': event.payload,
-                'priority': event.priority.value if hasattr(event.priority, 'value') else event.priority,
-                'created_at': datetime.utcnow().timestamp()
+                "id": event.id,
+                "type": event.type,
+                "timestamp": event.timestamp,
+                "source": event.source,
+                "payload": event.payload,
+                "priority": (
+                    event.priority.value
+                    if hasattr(event.priority, "value")
+                    else event.priority
+                ),
+                "created_at": datetime.now(UTC).timestamp(),
             }
 
-            self._connection.execute("""
+            self._connection.execute(
+                """
                 INSERT OR REPLACE INTO events
                 (id, type, timestamp, source, payload, priority, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                event_dict['id'],
-                event_dict['type'],
-                event_dict['timestamp'],
-                event_dict['source'],
-                json.dumps(event_dict['payload']),
-                event_dict['priority'],
-                event_dict['created_at']
-            ))
+            """,
+                (
+                    event_dict["id"],
+                    event_dict["type"],
+                    event_dict["timestamp"],
+                    event_dict["source"],
+                    json.dumps(event_dict["payload"]),
+                    event_dict["priority"],
+                    event_dict["created_at"],
+                ),
+            )
 
             self._connection.commit()
 
@@ -110,7 +125,7 @@ class EventStore:
         source: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
-        since: Optional[float] = None
+        since: Optional[float] = None,
     ) -> List[Event]:
         """Retrieve events from the database."""
         async with self._lock:
@@ -128,7 +143,7 @@ class EventStore:
         source: Optional[str],
         limit: int,
         offset: int,
-        since: Optional[float]
+        since: Optional[float],
     ) -> List[Event]:
         """Retrieve events synchronously."""
         try:
@@ -167,7 +182,7 @@ class EventStore:
                     id=event_id,
                     timestamp=timestamp,
                     source=source,
-                    priority=priority
+                    priority=priority,
                 )
 
                 events.append(event)
@@ -195,38 +210,46 @@ class EventStore:
             total_events = cursor.fetchone()[0]
 
             # Events by type
-            cursor = self._connection.execute("""
+            cursor = self._connection.execute(
+                """
                 SELECT type, COUNT(*) as count
                 FROM events
                 GROUP BY type
                 ORDER BY count DESC
-            """)
+            """
+            )
             events_by_type = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Events by source
-            cursor = self._connection.execute("""
+            cursor = self._connection.execute(
+                """
                 SELECT source, COUNT(*) as count
                 FROM events
                 GROUP BY source
                 ORDER BY count DESC
-            """)
+            """
+            )
             events_by_source = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Time range
-            cursor = self._connection.execute("""
+            cursor = self._connection.execute(
+                """
                 SELECT MIN(timestamp), MAX(timestamp) FROM events
-            """)
+            """
+            )
             time_range = cursor.fetchone()
             oldest_timestamp = time_range[0] if time_range[0] else None
             newest_timestamp = time_range[1] if time_range[1] else None
 
             return {
-                'total_events': total_events,
-                'events_by_type': events_by_type,
-                'events_by_source': events_by_source,
-                'oldest_timestamp': oldest_timestamp,
-                'newest_timestamp': newest_timestamp,
-                'database_size': self.db_path.stat().st_size if self.db_path.exists() else 0
+                "total_events": total_events,
+                "events_by_type": events_by_type,
+                "events_by_source": events_by_source,
+                "oldest_timestamp": oldest_timestamp,
+                "newest_timestamp": newest_timestamp,
+                "database_size": (
+                    self.db_path.stat().st_size if self.db_path.exists() else 0
+                ),
             }
 
         except Exception as e:
@@ -239,23 +262,30 @@ class EventStore:
             if not self._connection:
                 return 0
 
-            cutoff_timestamp = datetime.utcnow().timestamp() - (days_to_keep * 24 * 60 * 60)
+            cutoff_timestamp = datetime.now(UTC).timestamp() - (
+                days_to_keep * 24 * 60 * 60
+            )
 
             loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(None, self._cleanup_old_events_sync, cutoff_timestamp)
+            return await loop.run_in_executor(
+                None, self._cleanup_old_events_sync, cutoff_timestamp
+            )
 
-    def _cleanup_old_events_sync(self, cutoff_timestamp: float) -> int:
+    def _cleanup_old_events_sync(
+        self, cutoff_timestamp: float, days_to_keep: int
+    ) -> int:
         """Clean up old events synchronously."""
         try:
             cursor = self._connection.execute(
-                "DELETE FROM events WHERE timestamp < ?",
-                (cutoff_timestamp,)
+                "DELETE FROM events WHERE timestamp < ?", (cutoff_timestamp,)
             )
             deleted_count = cursor.rowcount
             self._connection.commit()
 
             if deleted_count > 0:
-                logger.info(f"Cleaned up {deleted_count} events older than {days_to_keep} days")
+                logger.info(
+                    f"Cleaned up {deleted_count} events older than {days_to_keep} days"
+                )
 
             return deleted_count
 

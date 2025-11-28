@@ -32,11 +32,7 @@ class FeedbackPrompt:
 class ProactiveFeedbackManager:
     """Manages proactive feedback prompts at natural development breakpoints."""
 
-    def __init__(
-        self,
-        event_bus: EventBus,
-        feedback_api: FeedbackAPI
-    ):
+    def __init__(self, event_bus: EventBus, feedback_api: FeedbackAPI):
         self.event_bus = event_bus
         self.feedback_api = feedback_api
 
@@ -45,19 +41,19 @@ class ProactiveFeedbackManager:
 
         # Prompt timing configuration
         self.prompt_delays = {
-            "after_agent_success": 5,    # 5 seconds after successful agent action
-            "after_agent_failure": 2,    # 2 seconds after failed agent action
-            "after_file_save": 3,        # 3 seconds after file save
-            "after_build_success": 10,   # 10 seconds after successful build
-            "after_build_failure": 5,    # 5 seconds after build failure
-            "idle_period": 300,          # 5 minutes of inactivity
+            "after_agent_success": 5,  # 5 seconds after successful agent action
+            "after_agent_failure": 2,  # 2 seconds after failed agent action
+            "after_file_save": 3,  # 3 seconds after file save
+            "after_build_success": 10,  # 10 seconds after successful build
+            "after_build_failure": 5,  # 5 seconds after build failure
+            "idle_period": 300,  # 5 minutes of inactivity
         }
 
         # Prompt expiration times
         self.prompt_lifetimes = {
-            "quick_rating": 60,      # 1 minute for quick ratings
-            "thumbs_only": 120,      # 2 minutes for thumbs up/down
-            "detailed_feedback": 300, # 5 minutes for detailed feedback
+            "quick_rating": 60,  # 1 minute for quick ratings
+            "thumbs_only": 120,  # 2 minutes for thumbs up/down
+            "detailed_feedback": 300,  # 5 minutes for detailed feedback
         }
 
         self._setup_event_listeners()
@@ -65,15 +61,23 @@ class ProactiveFeedbackManager:
     def _setup_event_listeners(self):
         """Set up listeners for development events that trigger feedback prompts."""
         # Agent completion events
-        asyncio.create_task(self.event_bus.subscribe("agent:*:completed", self._on_agent_completed))
+        asyncio.create_task(
+            self.event_bus.subscribe("agent:*:completed", self._on_agent_completed)
+        )
 
         # File system events
         asyncio.create_task(self.event_bus.subscribe("file:saved", self._on_file_saved))
-        asyncio.create_task(self.event_bus.subscribe("file:modified", self._on_file_modified))
+        asyncio.create_task(
+            self.event_bus.subscribe("file:modified", self._on_file_modified)
+        )
 
         # Build/test events (could be extended)
-        asyncio.create_task(self.event_bus.subscribe("build:success", self._on_build_success))
-        asyncio.create_task(self.event_bus.subscribe("build:failure", self._on_build_failure))
+        asyncio.create_task(
+            self.event_bus.subscribe("build:success", self._on_build_success)
+        )
+        asyncio.create_task(
+            self.event_bus.subscribe("build:failure", self._on_build_failure)
+        )
 
         # Git events
         asyncio.create_task(self.event_bus.subscribe("git:commit", self._on_git_commit))
@@ -90,7 +94,7 @@ class ProactiveFeedbackManager:
                 prompt_type="quick_rating",
                 message=f"How was the {agent_name} agent's recent action?",
                 context=event.payload,
-                delay_seconds=self.prompt_delays["after_agent_success"]
+                delay_seconds=self.prompt_delays["after_agent_success"],
             )
         else:
             # For failures, ask for feedback more urgently
@@ -100,7 +104,7 @@ class ProactiveFeedbackManager:
                 prompt_type="thumbs_only",
                 message=f"{agent_name} encountered an issue. Was this expected?",
                 context=event.payload,
-                delay_seconds=self.prompt_delays["after_agent_failure"]
+                delay_seconds=self.prompt_delays["after_agent_failure"],
             )
 
     async def _on_file_saved(self, event: Event) -> None:
@@ -113,7 +117,7 @@ class ProactiveFeedbackManager:
                 prompt_type="thumbs_only",
                 message="How are you finding the file monitoring features?",
                 context=event.payload,
-                delay_seconds=self.prompt_delays["after_file_save"]
+                delay_seconds=self.prompt_delays["after_file_save"],
             )
 
     async def _on_file_modified(self, event: Event) -> None:
@@ -129,7 +133,7 @@ class ProactiveFeedbackManager:
             prompt_type="quick_rating",
             message="Build completed successfully! How did the automated checks perform?",
             context=event.payload,
-            delay_seconds=self.prompt_delays["after_build_success"]
+            delay_seconds=self.prompt_delays["after_build_success"],
         )
 
     async def _on_build_failure(self, event: Event) -> None:
@@ -140,7 +144,7 @@ class ProactiveFeedbackManager:
             prompt_type="detailed_feedback",
             message="Build failed. How can we improve the error detection and reporting?",
             context=event.payload,
-            delay_seconds=self.prompt_delays["after_build_failure"]
+            delay_seconds=self.prompt_delays["after_build_failure"],
         )
 
     async def _on_git_commit(self, event: Event) -> None:
@@ -153,7 +157,7 @@ class ProactiveFeedbackManager:
                 prompt_type="quick_rating",
                 message="How is your development workflow going?",
                 context=event.payload,
-                delay_seconds=1  # Immediate for commits
+                delay_seconds=1,  # Immediate for commits
             )
 
     async def _schedule_prompt(
@@ -163,7 +167,7 @@ class ProactiveFeedbackManager:
         prompt_type: str,
         message: str,
         context: Dict[str, any],
-        delay_seconds: int
+        delay_seconds: int,
     ) -> None:
         """Schedule a feedback prompt to be shown after a delay."""
         prompt_id = f"{agent_name}_{event_type}_{int(time.time())}"
@@ -179,7 +183,7 @@ class ProactiveFeedbackManager:
             message=message,
             context=context,
             timestamp=time.time() + delay_seconds,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
         self.active_prompts[prompt_id] = prompt
@@ -187,7 +191,9 @@ class ProactiveFeedbackManager:
         # Schedule the prompt display
         asyncio.create_task(self._show_prompt_after_delay(prompt, delay_seconds))
 
-    async def _show_prompt_after_delay(self, prompt: FeedbackPrompt, delay: int) -> None:
+    async def _show_prompt_after_delay(
+        self, prompt: FeedbackPrompt, delay: int
+    ) -> None:
         """Show the feedback prompt after the specified delay."""
         await asyncio.sleep(delay)
 
@@ -200,18 +206,20 @@ class ProactiveFeedbackManager:
         # In a real implementation, this would integrate with the IDE or terminal UI
         # For now, we'll emit an event that can be caught by UI components
 
-        await self.event_bus.emit(Event(
-            type="feedback:prompt",
-            payload={
-                "prompt_id": prompt.id,
-                "agent_name": prompt.agent_name,
-                "prompt_type": prompt.prompt_type,
-                "message": prompt.message,
-                "context": prompt.context,
-                "expires_at": prompt.expires_at
-            },
-            source="proactive_feedback"
-        ))
+        await self.event_bus.emit(
+            Event(
+                type="feedback:prompt",
+                payload={
+                    "prompt_id": prompt.id,
+                    "agent_name": prompt.agent_name,
+                    "prompt_type": prompt.prompt_type,
+                    "message": prompt.message,
+                    "context": prompt.context,
+                    "expires_at": prompt.expires_at,
+                },
+                source="proactive_feedback",
+            )
+        )
 
         # Set up a timeout to auto-dismiss the prompt
         asyncio.create_task(self._auto_dismiss_prompt(prompt.id, prompt.expires_at))
@@ -230,7 +238,7 @@ class ProactiveFeedbackManager:
         prompt_id: str,
         feedback_type: FeedbackType,
         value: any,
-        comment: Optional[str] = None
+        comment: Optional[str] = None,
     ) -> bool:
         """Submit feedback for a proactive prompt."""
         if prompt_id not in self.active_prompts:
@@ -248,8 +256,8 @@ class ProactiveFeedbackManager:
             context={
                 "prompt_id": prompt_id,
                 "original_context": prompt.context,
-                "feedback_source": "proactive_prompt"
-            }
+                "feedback_source": "proactive_prompt",
+            },
         )
 
         # Remove the prompt
@@ -263,13 +271,15 @@ class ProactiveFeedbackManager:
 
         for prompt in self.active_prompts.values():
             if not prompt.is_expired():
-                active.append({
-                    "id": prompt.id,
-                    "agent_name": prompt.agent_name,
-                    "message": prompt.message,
-                    "prompt_type": prompt.prompt_type,
-                    "time_remaining": max(0, prompt.expires_at - current_time)
-                })
+                active.append(
+                    {
+                        "id": prompt.id,
+                        "agent_name": prompt.agent_name,
+                        "message": prompt.message,
+                        "prompt_type": prompt.prompt_type,
+                        "time_remaining": max(0, prompt.expires_at - current_time),
+                    }
+                )
 
         return active
 
@@ -282,10 +292,8 @@ class ProactiveFeedbackManager:
 
     def cleanup_expired_prompts(self) -> int:
         """Clean up expired prompts and return count removed."""
-        current_time = time.time()
         expired_ids = [
-            pid for pid, prompt in self.active_prompts.items()
-            if prompt.is_expired()
+            pid for pid, prompt in self.active_prompts.items() if prompt.is_expired()
         ]
 
         for pid in expired_ids:

@@ -13,5 +13,5 @@ __all__ = [
     "GitCollector",
     "ProcessCollector",
     "SystemCollector",
-    "CollectorManager"
+    "CollectorManager",
 ]

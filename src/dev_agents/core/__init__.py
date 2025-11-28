@@ -8,12 +8,12 @@ from .event_store import event_store
 from .manager import AgentManager
 
 __all__ = [
-"Agent",
-"AgentResult",
-"Config",
-"ConfigWrapper",
-"context_store",
-"Event",
+    "Agent",
+    "AgentResult",
+    "Config",
+    "ConfigWrapper",
+    "context_store",
+    "Event",
     "EventBus",
     "event_store",
     "Priority",

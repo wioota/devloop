@@ -1,13 +1,14 @@
 """System event collector using psutil for resource monitoring."""
+
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
 from typing import Any, Dict, Optional
 
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -22,7 +23,7 @@ class SystemCollector(BaseCollector):
     def __init__(
         self,
         event_bus: Any,  # EventBus type (avoiding circular import)
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__("system", event_bus, config)
 
@@ -52,13 +53,15 @@ class SystemCollector(BaseCollector):
 
         try:
             return {
-                'cpu_percent': psutil.cpu_percent(interval=1),
-                'memory_percent': psutil.virtual_memory().percent,
-                'memory_used': psutil.virtual_memory().used,
-                'memory_total': psutil.virtual_memory().total,
-                'disk_usage': psutil.disk_usage('/').percent,
-                'load_average': psutil.getloadavg() if hasattr(psutil, 'getloadavg') else None,
-                'timestamp': time.time()
+                "cpu_percent": psutil.cpu_percent(interval=1),
+                "memory_percent": psutil.virtual_memory().percent,
+                "memory_used": psutil.virtual_memory().used,
+                "memory_total": psutil.virtual_memory().total,
+                "disk_usage": psutil.disk_usage("/").percent,
+                "load_average": (
+                    psutil.getloadavg() if hasattr(psutil, "getloadavg") else None
+                ),
+                "timestamp": time.time(),
             }
         except Exception as e:
             self.logger.error(f"Error getting system stats: {e}")
@@ -74,26 +77,42 @@ class SystemCollector(BaseCollector):
             return
 
         # Check CPU usage
-        cpu_percent = stats['cpu_percent']
-        if cpu_percent > self.cpu_threshold and self._last_cpu_percent <= self.cpu_threshold:
-            await self._emit_event("system:high_cpu", {
-                'cpu_percent': cpu_percent,
-                'threshold': self.cpu_threshold,
-                'timestamp': stats['timestamp']
-            }, "high", "system")
+        cpu_percent = stats["cpu_percent"]
+        if (
+            cpu_percent > self.cpu_threshold
+            and self._last_cpu_percent <= self.cpu_threshold
+        ):
+            await self._emit_event(
+                "system:high_cpu",
+                {
+                    "cpu_percent": cpu_percent,
+                    "threshold": self.cpu_threshold,
+                    "timestamp": stats["timestamp"],
+                },
+                "high",
+                "system",
+            )
 
         self._last_cpu_percent = cpu_percent
 
         # Check memory usage
-        memory_percent = stats['memory_percent']
-        if memory_percent > self.memory_threshold and self._last_memory_percent <= self.memory_threshold:
-            await self._emit_event("system:low_memory", {
-                'memory_percent': memory_percent,
-                'memory_used': stats['memory_used'],
-                'memory_total': stats['memory_total'],
-                'threshold': self.memory_threshold,
-                'timestamp': stats['timestamp']
-            }, "critical", "system")
+        memory_percent = stats["memory_percent"]
+        if (
+            memory_percent > self.memory_threshold
+            and self._last_memory_percent <= self.memory_threshold
+        ):
+            await self._emit_event(
+                "system:low_memory",
+                {
+                    "memory_percent": memory_percent,
+                    "memory_used": stats["memory_used"],
+                    "memory_total": stats["memory_total"],
+                    "threshold": self.memory_threshold,
+                    "timestamp": stats["timestamp"],
+                },
+                "critical",
+                "system",
+            )
 
         self._last_memory_percent = memory_percent
 
@@ -104,22 +123,26 @@ class SystemCollector(BaseCollector):
             if not self._is_idle:
                 idle_duration = current_time - self._last_idle_time
                 if idle_duration > self.idle_threshold:
-                    await self._emit_event("system:idle", {
-                        'idle_duration': idle_duration,
-                        'timestamp': current_time
-                    }, "normal", "system")
+                    await self._emit_event(
+                        "system:idle",
+                        {"idle_duration": idle_duration, "timestamp": current_time},
+                        "normal",
+                        "system",
+                    )
                     self._is_idle = True
         else:
             if self._is_idle:
-                await self._emit_event("system:active", {
-                    'timestamp': current_time
-                }, "normal", "system")
+                await self._emit_event(
+                    "system:active", {"timestamp": current_time}, "normal", "system"
+                )
                 self._is_idle = False
             self._last_idle_time = current_time
 
     async def _monitor_system(self) -> None:
         """Main monitoring loop."""
-        self.logger.info(f"Starting system monitoring (interval: {self.check_interval}s)")
+        self.logger.info(
+            f"Starting system monitoring (interval: {self.check_interval}s)"
+        )
 
         while self.is_running:
             try:
@@ -167,10 +190,6 @@ class SystemCollector(BaseCollector):
 
         self.logger.info("System collector stopped")
 
-    async def emit_system_event(
-        self,
-        event_type: str,
-        payload: Dict[str, Any]
-    ) -> None:
+    async def emit_system_event(self, event_type: str, payload: Dict[str, Any]) -> None:
         """Manually emit a system event (for testing or external triggers)."""
         await self._emit_event(f"system:{event_type}", payload, "normal", "system")

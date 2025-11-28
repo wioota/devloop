@@ -1,4 +1,5 @@
 """Basic tests for the prototype."""
+
 import asyncio
 
 import pytest
@@ -18,9 +19,7 @@ async def test_event_bus():
 
     # Emit an event
     event = Event(
-        type="test:event",
-        payload={"message": "hello"},
-        priority=Priority.NORMAL
+        type="test:event", payload={"message": "hello"}, priority=Priority.NORMAL
     )
     await event_bus.emit(event)
 
@@ -36,11 +35,7 @@ async def test_echo_agent():
     event_bus = EventBus()
 
     # Create agent
-    agent = EchoAgent(
-        name="test-echo",
-        triggers=["test:*"],
-        event_bus=event_bus
-    )
+    agent = EchoAgent(name="test-echo", triggers=["test:*"], event_bus=event_bus)
 
     # Start agent
     await agent.start()
@@ -50,10 +45,7 @@ async def test_echo_agent():
     await event_bus.subscribe("agent:test-echo:completed", result_queue)
 
     # Emit a test event
-    await event_bus.emit(Event(
-        type="test:hello",
-        payload={"data": "test"}
-    ))
+    await event_bus.emit(Event(type="test:hello", payload={"data": "test"}))
 
     # Wait for result
     result_event = await asyncio.wait_for(result_queue.get(), timeout=2.0)
@@ -69,11 +61,7 @@ async def test_agent_lifecycle():
     """Test agent start/stop."""
     event_bus = EventBus()
 
-    agent = EchoAgent(
-        name="lifecycle-test",
-        triggers=["test:*"],
-        event_bus=event_bus
-    )
+    agent = EchoAgent(name="lifecycle-test", triggers=["test:*"], event_bus=event_bus)
 
     # Agent should not be running initially
     assert not agent._running

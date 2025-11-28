@@ -6,7 +6,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from .event import Event, EventBus
 from .feedback import FeedbackAPI, FeedbackType
@@ -16,7 +16,9 @@ from .feedback import FeedbackAPI, FeedbackType
 class DeveloperAction:
     """Represents a developer action that can provide implicit feedback."""
 
-    action_type: str  # 'file_save', 'file_edit', 'cursor_move', 'suggestion_accept', etc.
+    action_type: (
+        str  # 'file_save', 'file_edit', 'cursor_move', 'suggestion_accept', etc.
+    )
     file_path: Optional[str]
     timestamp: float
     context: Dict[str, any] = None
@@ -30,10 +32,7 @@ class ContextualFeedbackEngine:
     """Engine that infers feedback from developer behavior patterns."""
 
     def __init__(
-        self,
-        event_bus: EventBus,
-        feedback_api: FeedbackAPI,
-        project_dir: Path
+        self, event_bus: EventBus, feedback_api: FeedbackAPI, project_dir: Path
     ):
         self.event_bus = event_bus
         self.feedback_api = feedback_api
@@ -57,7 +56,9 @@ class ContextualFeedbackEngine:
     def _setup_event_listeners(self):
         """Set up listeners for various developer actions."""
         # Listen for agent completion events to correlate with developer actions
-        asyncio.create_task(self.event_bus.subscribe("agent:*:completed", self._on_agent_completed))
+        asyncio.create_task(
+            self.event_bus.subscribe("agent:*:completed", self._on_agent_completed)
+        )
 
         # Listen for file system events that indicate developer activity
         asyncio.create_task(self.event_bus.subscribe("file:*", self._on_file_event))
@@ -76,7 +77,7 @@ class ContextualFeedbackEngine:
             "success": success,
             "duration": duration,
             "timestamp": time.time(),
-            "event": event.payload
+            "event": event.payload,
         }
 
         self.recent_agent_actions.append(agent_action)
@@ -84,7 +85,8 @@ class ContextualFeedbackEngine:
         # Clean old agent actions
         cutoff = time.time() - self.agent_action_window
         self.recent_agent_actions = [
-            action for action in self.recent_agent_actions
+            action
+            for action in self.recent_agent_actions
             if action["timestamp"] > cutoff
         ]
 
@@ -101,7 +103,7 @@ class ContextualFeedbackEngine:
             action_type=f"file_{event.type.split(':')[1]}",  # file_modified, file_created, etc.
             file_path=file_path,
             timestamp=time.time(),
-            context={"event_payload": event.payload}
+            context={"event_payload": event.payload},
         )
 
         self.recent_actions.append(action)
@@ -127,13 +129,13 @@ class ContextualFeedbackEngine:
 
     async def _analyze_immediate_feedback(self, agent_action: Dict[str, any]) -> None:
         """Analyze immediate feedback patterns after agent actions."""
-        agent_name = agent_action["agent_name"]
         agent_time = agent_action["timestamp"]
 
         # Look for developer actions within 30 seconds after agent action
         immediate_window = 30
         recent_actions = [
-            action for action in self.recent_actions
+            action
+            for action in self.recent_actions
             if agent_time <= action.timestamp <= agent_time + immediate_window
         ]
 
@@ -148,7 +150,9 @@ class ContextualFeedbackEngine:
             # This could indicate engagement with agent results
             await self._infer_feedback_from_file_changes(agent_action, file_actions)
 
-    async def _analyze_file_patterns(self, file_path: str, latest_action: DeveloperAction) -> None:
+    async def _analyze_file_patterns(
+        self, file_path: str, latest_action: DeveloperAction
+    ) -> None:
         """Analyze file interaction patterns to infer feedback."""
         if file_path not in self.file_interaction_times:
             return
@@ -175,21 +179,20 @@ class ContextualFeedbackEngine:
             await self._infer_feedback_from_quick_modification(file_path, latest_action)
 
     async def _infer_feedback_from_file_changes(
-        self,
-        agent_action: Dict[str, any],
-        file_actions: List[DeveloperAction]
+        self, agent_action: Dict[str, any], file_actions: List[DeveloperAction]
     ) -> None:
         """Infer feedback from file changes after agent action."""
-        agent_name = agent_action["agent_name"]
 
         # If developer modifies files that agent just processed, it might indicate
         # they're refining the agent's work (mixed feedback)
-        modified_files = set(a.file_path for a in file_actions if a.action_type == "file_modified")
+        modified_files = set(
+            a.file_path for a in file_actions if a.action_type == "file_modified"
+        )
 
         if modified_files:
             # Submit neutral/mixed feedback
             await self.feedback_api.submit_feedback(
-                agent_name=agent_name,
+                agent_name=agent_action["agent_name"],
                 event_type="file_interaction",
                 feedback_type=FeedbackType.RATING,
                 value=3,  # Neutral rating
@@ -197,15 +200,12 @@ class ContextualFeedbackEngine:
                 context={
                     "agent_action": agent_action,
                     "modified_files": list(modified_files),
-                    "inference_type": "file_changes_after_agent"
-                }
+                    "inference_type": "file_changes_after_agent",
+                },
             )
 
     async def _infer_feedback_from_interaction_pattern(
-        self,
-        file_path: str,
-        frequency: float,
-        pattern_type: str
+        self, file_path: str, frequency: float, pattern_type: str
     ) -> None:
         """Infer feedback from file interaction patterns."""
         # Find agents that recently worked on this file
@@ -240,14 +240,12 @@ class ContextualFeedbackEngine:
                 "file_path": file_path,
                 "interaction_frequency": frequency,
                 "pattern_type": pattern_type,
-                "inference_type": "interaction_pattern"
-            }
+                "inference_type": "interaction_pattern",
+            },
         )
 
     async def _infer_feedback_from_quick_modification(
-        self,
-        file_path: str,
-        action: DeveloperAction
+        self, file_path: str, action: DeveloperAction
     ) -> None:
         """Infer feedback from quick file modifications."""
         # Find the most recent agent that might have worked on this file
@@ -273,8 +271,8 @@ class ContextualFeedbackEngine:
             context={
                 "file_path": file_path,
                 "time_since_agent": time.time() - (recent_agent and 0 or time.time()),
-                "inference_type": "quick_modification"
-            }
+                "inference_type": "quick_modification",
+            },
         )
 
     async def get_contextual_insights(self, agent_name: str) -> Dict[str, any]:
@@ -293,7 +291,8 @@ class ContextualFeedbackEngine:
             agent_time = agent_action["timestamp"]
             # Count developer actions within 5 minutes after agent action
             correlated = sum(
-                1 for action in self.recent_actions
+                1
+                for action in self.recent_actions
                 if agent_time <= action.timestamp <= agent_time + 300
             )
             correlated_file_actions += correlated
@@ -303,6 +302,10 @@ class ContextualFeedbackEngine:
             "time_window_hours": 1,
             "agent_actions_count": len(agent_related_actions),
             "correlated_developer_actions": correlated_file_actions,
-            "inference_types": ["file_changes", "interaction_patterns", "quick_modifications"],
-            "confidence_level": "medium"  # Could be improved with ML
+            "inference_types": [
+                "file_changes",
+                "interaction_patterns",
+                "quick_modifications",
+            ],
+            "confidence_level": "medium",  # Could be improved with ML
         }

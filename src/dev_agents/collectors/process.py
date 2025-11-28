@@ -1,14 +1,14 @@
 """Process event collector using psutil monitoring."""
+
 from __future__ import annotations
 
 import asyncio
-import logging
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional
 
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -23,7 +23,7 @@ class ProcessCollector(BaseCollector):
     def __init__(
         self,
         event_bus: Any,  # EventBus type (avoiding circular import)
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__("process", event_bus, config)
 
@@ -34,10 +34,22 @@ class ProcessCollector(BaseCollector):
             self._psutil_available = True
 
         self.monitored_processes: Dict[int, Dict[str, Any]] = {}
-        self.monitoring_patterns = self.config.get("patterns", [
-            "pytest", "python", "node", "npm", "yarn", "make",
-            "gradle", "maven", "cargo", "go", "rustc"
-        ])
+        self.monitoring_patterns = self.config.get(
+            "patterns",
+            [
+                "pytest",
+                "python",
+                "node",
+                "npm",
+                "yarn",
+                "make",
+                "gradle",
+                "maven",
+                "cargo",
+                "go",
+                "rustc",
+            ],
+        )
         self._monitoring_task: Optional[asyncio.Task] = None
 
     def _should_monitor_process(self, process: Any) -> bool:
@@ -56,9 +68,10 @@ class ProcessCollector(BaseCollector):
 
             # Check command line for build/dev scripts
             cmdline_str = " ".join(cmdline).lower()
-            if any(script in cmdline_str for script in [
-                "test", "build", "lint", "format", "check", "run"
-            ]):
+            if any(
+                script in cmdline_str
+                for script in ["test", "build", "lint", "format", "check", "run"]
+            ):
                 return True
 
         except (psutil.AccessDenied, psutil.NoSuchProcess):
@@ -76,9 +89,11 @@ class ProcessCollector(BaseCollector):
                 # Get current processes
                 current_pids = set()
 
-                for process in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
+                for process in psutil.process_iter(
+                    ["pid", "name", "cmdline", "create_time"]
+                ):
                     try:
-                        pid = process.info['pid']
+                        pid = process.info["pid"]
                         current_pids.add(pid)
 
                         # Check if we should monitor this process
@@ -86,10 +101,14 @@ class ProcessCollector(BaseCollector):
                             if pid not in self.monitored_processes:
                                 # New process to monitor
                                 self.monitored_processes[pid] = {
-                                    'info': process.info,
-                                    'start_time': process.info.get('create_time', time.time())
+                                    "info": process.info,
+                                    "start_time": process.info.get(
+                                        "create_time", time.time()
+                                    ),
                                 }
-                                self.logger.debug(f"Started monitoring process {pid}: {process.info['name']}")
+                                self.logger.debug(
+                                    f"Started monitoring process {pid}: {process.info['name']}"
+                                )
 
                     except (psutil.AccessDenied, psutil.NoSuchProcess):
                         continue
@@ -112,41 +131,49 @@ class ProcessCollector(BaseCollector):
             await asyncio.sleep(1.0)  # Check every second
 
     async def _handle_process_completion(
-        self,
-        pid: int,
-        process_data: Dict[str, Any]
+        self, pid: int, process_data: Dict[str, Any]
     ) -> None:
         """Handle process completion event."""
         try:
-            info = process_data['info']
-            start_time = process_data['start_time']
+            info = process_data["info"]
+            start_time = process_data["start_time"]
             duration = time.time() - start_time
 
             # Determine event type based on process
             event_type = "process:completed"
-            process_name = info.get('name', 'unknown')
+            process_name = info.get("name", "unknown")
 
             # Categorize the process
-            if any(term in process_name.lower() for term in ['pytest', 'test']):
+            if any(term in process_name.lower() for term in ["pytest", "test"]):
                 event_type = "test:completed"
-            elif any(term in process_name.lower() for term in ['lint', 'flake8', 'ruff', 'eslint']):
+            elif any(
+                term in process_name.lower()
+                for term in ["lint", "flake8", "ruff", "eslint"]
+            ):
                 event_type = "lint:completed"
-            elif any(term in process_name.lower() for term in ['format', 'black', 'prettier']):
+            elif any(
+                term in process_name.lower() for term in ["format", "black", "prettier"]
+            ):
                 event_type = "format:completed"
-            elif any(term in process_name.lower() for term in ['build', 'make', 'gradle', 'maven', 'cargo']):
+            elif any(
+                term in process_name.lower()
+                for term in ["build", "make", "gradle", "maven", "cargo"]
+            ):
                 event_type = "build:completed"
 
             payload = {
-                'pid': pid,
-                'name': process_name,
-                'cmdline': info.get('cmdline', []),
-                'duration': duration,
-                'start_time': start_time,
-                'end_time': time.time()
+                "pid": pid,
+                "name": process_name,
+                "cmdline": info.get("cmdline", []),
+                "duration": duration,
+                "start_time": start_time,
+                "end_time": time.time(),
             }
 
-            await self._emit_event(event_type, payload, 'normal', 'process')
-            self.logger.info(f"Process completed: {process_name} (PID: {pid}, duration: {duration:.2f}s)")
+            await self._emit_event(event_type, payload, "normal", "process")
+            self.logger.info(
+                f"Process completed: {process_name} (PID: {pid}, duration: {duration:.2f}s)"
+            )
 
         except Exception as e:
             self.logger.error(f"Error handling process completion for PID {pid}: {e}")
@@ -188,9 +215,7 @@ class ProcessCollector(BaseCollector):
         self.logger.info("Process collector stopped")
 
     async def emit_process_event(
-        self,
-        event_type: str,
-        payload: Dict[str, Any]
+        self, event_type: str, payload: Dict[str, Any]
     ) -> None:
         """Manually emit a process event (for testing or external triggers)."""
         await self._emit_event(f"process:{event_type}", payload, "normal", "process")

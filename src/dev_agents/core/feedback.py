@@ -99,7 +99,9 @@ class FeedbackStore:
         async with aiofiles.open(self.feedback_file, "a") as f:
             await f.write(json.dumps(feedback_dict) + "\n")
 
-    async def get_feedback_for_agent(self, agent_name: str, limit: int = 100) -> List[Feedback]:
+    async def get_feedback_for_agent(
+        self, agent_name: str, limit: int = 100
+    ) -> List[Feedback]:
         """Get recent feedback for a specific agent."""
         feedback_items = []
 
@@ -134,7 +136,9 @@ class FeedbackStore:
 
         return feedback_items
 
-    async def update_performance(self, agent_name: str, success: bool, duration: float) -> None:
+    async def update_performance(
+        self, agent_name: str, success: bool, duration: float
+    ) -> None:
         """Update performance metrics for an agent."""
         performance = await self.get_performance(agent_name)
 
@@ -147,14 +151,17 @@ class FeedbackStore:
             performance.average_duration = duration
         else:
             performance.average_duration = (
-                (performance.average_duration * (performance.total_executions - 1)) + duration
+                (performance.average_duration * (performance.total_executions - 1))
+                + duration
             ) / performance.total_executions
 
         performance.last_updated = time.time()
 
         await self._save_performance(performance)
 
-    async def update_performance_with_feedback(self, agent_name: str, feedback: Feedback) -> None:
+    async def update_performance_with_feedback(
+        self, agent_name: str, feedback: Feedback
+    ) -> None:
         """Update performance metrics with feedback data."""
         performance = await self.get_performance(agent_name)
 
@@ -170,7 +177,8 @@ class FeedbackStore:
                 performance.average_rating = feedback.value
             else:
                 performance.average_rating = (
-                    (performance.average_rating * (performance.feedback_count - 1)) + feedback.value
+                    (performance.average_rating * (performance.feedback_count - 1))
+                    + feedback.value
                 ) / performance.feedback_count
 
         performance.last_updated = time.time()
@@ -265,7 +273,9 @@ class FeedbackAPI:
     async def get_agent_insights(self, agent_name: str) -> Dict[str, Any]:
         """Get insights about an agent's performance and feedback."""
         performance = await self.feedback_store.get_performance(agent_name)
-        recent_feedback = await self.feedback_store.get_feedback_for_agent(agent_name, limit=20)
+        recent_feedback = await self.feedback_store.get_feedback_for_agent(
+            agent_name, limit=20
+        )
 
         success_rate = (
             (performance.successful_executions / performance.total_executions * 100)

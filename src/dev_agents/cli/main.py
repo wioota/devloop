@@ -1,4 +1,5 @@
 """CLI entry point - v2 with real agents."""
+
 import asyncio
 import logging
 import signal
@@ -10,14 +11,29 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from dev_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
+from dev_agents.agents import (
+    AgentHealthMonitorAgent,
+    FormatterAgent,
+    GitCommitAssistantAgent,
+    LinterAgent,
+    PerformanceProfilerAgent,
+    SecurityScannerAgent,
+    TestRunnerAgent,
+    TypeCheckerAgent,
+)
 from dev_agents.collectors import FileSystemCollector
-from dev_agents.core import AgentManager, Config, ConfigWrapper, EventBus, context_store, event_store
+from dev_agents.core import (
+    AgentManager,
+    Config,
+    ConfigWrapper,
+    EventBus,
+    context_store,
+    event_store,
+)
 from dev_agents.core.amp_integration import check_agent_findings, show_agent_status
 
 app = typer.Typer(
-    help="Dev Agents - Development workflow automation",
-    add_completion=False
+    help="Dev Agents - Development workflow automation", add_completion=False
 )
 console = Console()
 
@@ -26,6 +42,7 @@ console = Console()
 def amp_status():
     """Show current agent status for Amp."""
     import asyncio
+
     result = asyncio.run(show_agent_status())
     console.print_json(data=result)
 
@@ -34,6 +51,7 @@ def amp_status():
 def amp_findings():
     """Show agent findings for Amp."""
     import asyncio
+
     result = asyncio.run(check_agent_findings())
     console.print_json(data=result)
 
@@ -41,7 +59,6 @@ def amp_findings():
 @app.command()
 def amp_context():
     """Show context store index for Amp."""
-    import asyncio
     from pathlib import Path
 
     # Try to read the context index
@@ -51,13 +68,16 @@ def amp_context():
     if index_file.exists():
         try:
             import json
+
             with open(index_file) as f:
                 data = json.load(f)
             console.print_json(data=data)
         except Exception as e:
             console.print(f"[red]Error reading context: {e}[/red]")
     else:
-        console.print("[yellow]No context index found. Start agents with 'dev-agents watch .' first.[/yellow]")
+        console.print(
+            "[yellow]No context index found. Start agents with 'dev-agents watch .' first.[/yellow]"
+        )
 
 
 def setup_logging(verbose: bool = False):
@@ -67,7 +87,7 @@ def setup_logging(verbose: bool = False):
     logging.basicConfig(
         level=level,
         format="%(message)s",
-        handlers=[RichHandler(console=console, rich_tracebacks=True)]
+        handlers=[RichHandler(console=console, rich_tracebacks=True)],
     )
 
 
@@ -81,8 +101,10 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
         pid = os.fork()
         if pid > 0:
             # Parent process - exit
-            console.print(f"[green]✓[/green] Dev Agents started in background (PID: {pid})")
-            console.print(f"[dim]Run 'dev-agents stop' to stop the daemon[/dim]")
+            console.print(
+                f"[green]✓[/green] Dev Agents started in background (PID: {pid})"
+            )
+            console.print("[dim]Run 'dev-agents stop' to stop the daemon[/dim]")
             sys.exit(0)
     except OSError as e:
         console.print(f"[red]✗[/red] Failed to start daemon: {e}")
@@ -125,25 +147,14 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
 
 @app.command()
 def watch(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Path to watch for changes"
-    ),
+    path: Path = typer.Argument(Path.cwd(), help="Path to watch for changes"),
     config_path: Optional[Path] = typer.Option(
-        None,
-        "--config",
-        help="Path to configuration file"
+        None, "--config", help="Path to configuration file"
     ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        help="Verbose logging"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", help="Verbose logging"),
     foreground: bool = typer.Option(
-        False,
-        "--foreground",
-        help="Run in foreground (blocking mode) for debugging"
-    )
+        False, "--foreground", help="Run in foreground (blocking mode) for debugging"
+    ),
 ):
     """
     Watch a directory for file changes and run agents.
@@ -156,7 +167,7 @@ def watch(
     if foreground:
         # Run in foreground for debugging
         setup_logging(verbose)
-        console.print(f"[bold green]Dev Agents v2[/bold green]")
+        console.print("[bold green]Dev Agents v2[/bold green]")
         console.print(f"Watching: [cyan]{path.absolute()}[/cyan] (foreground mode)\\n")
     else:
         # Run in background (default)
@@ -197,10 +208,7 @@ async def watch_async(path: Path, config_path: Path | None):
     agent_manager = AgentManager(event_bus)
 
     # Create filesystem collector
-    fs_collector = FileSystemCollector(
-        event_bus=event_bus,
-        watch_paths=[str(path)]
-    )
+    fs_collector = FileSystemCollector(event_bus=event_bus, watch_paths=[str(path)])
 
     # Create and register agents based on configuration
     if config.is_agent_enabled("linter"):
@@ -209,7 +217,7 @@ async def watch_async(path: Path, config_path: Path | None):
             name="linter",
             triggers=linter_config.get("triggers", ["file:modified"]),
             event_bus=event_bus,
-            config=linter_config.get("config", {})
+            config=linter_config.get("config", {}),
         )
         agent_manager.register(linter)
 
@@ -219,7 +227,7 @@ async def watch_async(path: Path, config_path: Path | None):
             name="formatter",
             triggers=formatter_config.get("triggers", ["file:modified"]),
             event_bus=event_bus,
-            config=formatter_config.get("config", {})
+            config=formatter_config.get("config", {}),
         )
         agent_manager.register(formatter)
 
@@ -229,7 +237,7 @@ async def watch_async(path: Path, config_path: Path | None):
             name="test-runner",
             triggers=test_config.get("triggers", ["file:modified"]),
             event_bus=event_bus,
-            config=test_config.get("config", {})
+            config=test_config.get("config", {}),
         )
         agent_manager.register(test_runner)
 
@@ -239,39 +247,35 @@ async def watch_async(path: Path, config_path: Path | None):
             name="agent-health-monitor",
             triggers=monitor_config.get("triggers", ["agent:*:completed"]),
             event_bus=event_bus,
-            config=monitor_config.get("config", {})
+            config=monitor_config.get("config", {}),
         )
         agent_manager.register(health_monitor)
 
     if config.is_agent_enabled("type-checker"):
         type_config = config.get_agent_config("type-checker") or {}
         type_checker = TypeCheckerAgent(
-            config=type_config.get("config", {}),
-            event_bus=event_bus
+            config=type_config.get("config", {}), event_bus=event_bus
         )
         agent_manager.register(type_checker)
 
     if config.is_agent_enabled("security-scanner"):
         security_config = config.get_agent_config("security-scanner") or {}
         security_scanner = SecurityScannerAgent(
-            config=security_config.get("config", {}),
-            event_bus=event_bus
+            config=security_config.get("config", {}), event_bus=event_bus
         )
         agent_manager.register(security_scanner)
 
     if config.is_agent_enabled("git-commit-assistant"):
         commit_config = config.get_agent_config("git-commit-assistant") or {}
         commit_assistant = GitCommitAssistantAgent(
-            config=commit_config.get("config", {}),
-            event_bus=event_bus
+            config=commit_config.get("config", {}), event_bus=event_bus
         )
         agent_manager.register(commit_assistant)
 
     if config.is_agent_enabled("performance-profiler"):
         perf_config = config.get_agent_config("performance-profiler") or {}
         performance_profiler = PerformanceProfilerAgent(
-            config=perf_config.get("config", {}),
-            event_bus=event_bus
+            config=perf_config.get("config", {}), event_bus=event_bus
         )
         agent_manager.register(performance_profiler)
 
@@ -304,14 +308,8 @@ async def watch_async(path: Path, config_path: Path | None):
 
 @app.command()
 def init(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Project directory"
-    ),
-    create_config: bool = typer.Option(
-        True,
-        help="Create default configuration file"
-    )
+    path: Path = typer.Argument(Path.cwd(), help="Project directory"),
+    create_config: bool = typer.Option(True, help="Create default configuration file"),
 ):
     """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
@@ -321,19 +319,21 @@ def init(
     else:
         claude_dir.mkdir(exist_ok=True)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
-#
+    #
     # Create default configuration
     if create_config:
         config_file = claude_dir / "agents.json"
         if config_file.exists():
-            console.print(f"[yellow]Configuration already exists: {config_file}[/yellow]")
+            console.print(
+                f"[yellow]Configuration already exists: {config_file}[/yellow]"
+            )
         else:
             config = Config.default_config()
             config.save(config_file)
             console.print(f"[green]✓[/green] Created: {config_file}")
-#
-    console.print(f"\n[green]✓[/green] Initialized!")
-    console.print(f"\nNext steps:")
+    #
+    console.print("\n[green]✓[/green] Initialized!")
+    console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
     console.print(f"  2. Run: [cyan]dev-agents watch {path}[/cyan]")
 
@@ -360,17 +360,8 @@ def status():
     console.print(table)
 
 
-
-
-
-
 @app.command()
-def stop(
-path: Path = typer.Argument(
-    Path.cwd(),
-    help="Project directory"
-    )
-):
+def stop(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
     """Stop the background dev-agents daemon."""
     import os
     import signal
@@ -408,6 +399,7 @@ path: Path = typer.Argument(
 def version():
     """Show version information."""
     from dev_agents import __version__
+
     console.print(f"Dev Agents v{__version__}")
 
 

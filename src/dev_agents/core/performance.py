@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import psutil
 import time
 from contextlib import asynccontextmanager
@@ -38,8 +37,12 @@ class ResourceUsage:
         # Get system-wide I/O counters (since process I/O counters might not be available)
         try:
             io_counters = psutil.disk_io_counters()
-            disk_read_mb = io_counters.read_bytes / (1024 * 1024) if io_counters else 0.0
-            disk_write_mb = io_counters.write_bytes / (1024 * 1024) if io_counters else 0.0
+            disk_read_mb = (
+                io_counters.read_bytes / (1024 * 1024) if io_counters else 0.0
+            )
+            disk_write_mb = (
+                io_counters.write_bytes / (1024 * 1024) if io_counters else 0.0
+            )
         except (AttributeError, psutil.AccessDenied):
             disk_read_mb = 0.0
             disk_write_mb = 0.0
@@ -89,8 +92,13 @@ class PerformanceMetrics:
         self.error_message = error_message
 
         if self.resource_usage_start and self.resource_usage_end:
-            self.cpu_used = self.resource_usage_end.cpu_percent - self.resource_usage_start.cpu_percent
-            self.memory_used_mb = self.resource_usage_end.memory_mb - self.resource_usage_start.memory_mb
+            self.cpu_used = (
+                self.resource_usage_end.cpu_percent
+                - self.resource_usage_start.cpu_percent
+            )
+            self.memory_used_mb = (
+                self.resource_usage_end.memory_mb - self.resource_usage_start.memory_mb
+            )
 
 
 class PerformanceMonitor:
@@ -104,9 +112,7 @@ class PerformanceMonitor:
 
     @asynccontextmanager
     async def monitor_operation(
-        self,
-        operation_name: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, operation_name: str, metadata: Optional[Dict[str, Any]] = None
     ):
         """Context manager to monitor an operation."""
         start_usage = ResourceUsage.snapshot()
@@ -141,7 +147,7 @@ class PerformanceMonitor:
         # Get system-wide metrics
         system_cpu = psutil.cpu_percent(interval=0.1)
         system_memory = psutil.virtual_memory()
-        system_disk = psutil.disk_usage('/')
+        system_disk = psutil.disk_usage("/")
 
         return {
             "timestamp": usage.timestamp,
@@ -158,20 +164,20 @@ class PerformanceMonitor:
                 "disk_percent": system_disk.percent,
                 "disk_used_gb": system_disk.used / (1024**3),
                 "disk_total_gb": system_disk.total / (1024**3),
-            }
+            },
         }
 
     async def get_performance_summary(
-        self,
-        operation_name: Optional[str] = None,
-        hours: int = 24
+        self, operation_name: Optional[str] = None, hours: int = 24
     ) -> Dict[str, Any]:
         """Get performance summary for operations."""
         cutoff_time = time.time() - (hours * 3600)
 
         operations = await self._load_recent_metrics(cutoff_time)
         if operation_name:
-            operations = [op for op in operations if op.operation_name == operation_name]
+            operations = [
+                op for op in operations if op.operation_name == operation_name
+            ]
 
         if not operations:
             return {
@@ -193,7 +199,9 @@ class PerformanceMonitor:
         cpu_usages = [op.cpu_used for op in operations if op.cpu_used is not None]
         avg_cpu = sum(cpu_usages) / len(cpu_usages) if cpu_usages else 0.0
 
-        memory_usages = [op.memory_used_mb for op in operations if op.memory_used_mb is not None]
+        memory_usages = [
+            op.memory_used_mb for op in operations if op.memory_used_mb is not None
+        ]
         avg_memory = sum(memory_usages) / len(memory_usages) if memory_usages else 0.0
 
         return {
@@ -237,9 +245,13 @@ class PerformanceMonitor:
         trends = []
         for hour_data in hourly_data.values():
             if hour_data["cpu_samples"]:
-                hour_data["avg_cpu"] = sum(hour_data["cpu_samples"]) / len(hour_data["cpu_samples"])
+                hour_data["avg_cpu"] = sum(hour_data["cpu_samples"]) / len(
+                    hour_data["cpu_samples"]
+                )
             if hour_data["memory_samples"]:
-                hour_data["avg_memory_mb"] = sum(hour_data["memory_samples"]) / len(hour_data["memory_samples"])
+                hour_data["avg_memory_mb"] = sum(hour_data["memory_samples"]) / len(
+                    hour_data["memory_samples"]
+                )
 
             del hour_data["cpu_samples"]
             del hour_data["memory_samples"]
@@ -294,7 +306,9 @@ class PerformanceMonitor:
         # Cleanup old metrics
         await self._cleanup_old_metrics()
 
-    async def _load_recent_metrics(self, cutoff_time: float) -> List[PerformanceMetrics]:
+    async def _load_recent_metrics(
+        self, cutoff_time: float
+    ) -> List[PerformanceMetrics]:
         """Load metrics newer than cutoff time."""
         metrics = []
 
@@ -317,19 +331,21 @@ class PerformanceMonitor:
                     if "resource_usage_end" in data:
                         end_usage = ResourceUsage(**data["resource_usage_end"])
 
-                    metrics.append(PerformanceMetrics(
-                        operation_name=data["operation_name"],
-                        start_time=data["start_time"],
-                        end_time=data.get("end_time"),
-                        duration=data.get("duration"),
-                        resource_usage_start=start_usage,
-                        resource_usage_end=end_usage,
-                        cpu_used=data.get("cpu_used"),
-                        memory_used_mb=data.get("memory_used_mb"),
-                        success=data.get("success"),
-                        error_message=data.get("error_message"),
-                        metadata=data.get("metadata", {}),
-                    ))
+                    metrics.append(
+                        PerformanceMetrics(
+                            operation_name=data["operation_name"],
+                            start_time=data["start_time"],
+                            end_time=data.get("end_time"),
+                            duration=data.get("duration"),
+                            resource_usage_start=start_usage,
+                            resource_usage_end=end_usage,
+                            cpu_used=data.get("cpu_used"),
+                            memory_used_mb=data.get("memory_used_mb"),
+                            success=data.get("success"),
+                            error_message=data.get("error_message"),
+                            metadata=data.get("metadata", {}),
+                        )
+                    )
             except (json.JSONDecodeError, KeyError):
                 continue
 
@@ -370,9 +386,7 @@ class PerformanceOptimizer:
         self._concurrency_limits: Dict[str, asyncio.Semaphore] = {}
 
     async def should_skip_operation(
-        self,
-        operation_key: str,
-        debounce_seconds: float = 1.0
+        self, operation_key: str, debounce_seconds: float = 1.0
     ) -> bool:
         """Check if operation should be debounced."""
         now = time.time()
@@ -384,7 +398,9 @@ class PerformanceOptimizer:
         self._debounce_cache[operation_key] = now
         return False
 
-    def get_concurrency_limiter(self, operation_type: str, max_concurrent: int) -> asyncio.Semaphore:
+    def get_concurrency_limiter(
+        self, operation_type: str, max_concurrent: int
+    ) -> asyncio.Semaphore:
         """Get a semaphore for limiting concurrency."""
         if operation_type not in self._concurrency_limits:
             self._concurrency_limits[operation_type] = asyncio.Semaphore(max_concurrent)
@@ -404,10 +420,14 @@ class PerformanceOptimizer:
 
             # If CPU usage is high, suggest lower concurrency
             if summary["average_cpu_usage"] > 50:
-                config["max_concurrent"] = max(1, int(10 / (summary["average_cpu_usage"] / 10)))
+                config["max_concurrent"] = max(
+                    1, int(10 / (summary["average_cpu_usage"] / 10))
+                )
 
             # If memory usage is high, suggest smaller batches
             if summary["average_memory_usage_mb"] > 100:
-                config["batch_size"] = max(1, int(100 / summary["average_memory_usage_mb"] * 10))
+                config["batch_size"] = max(
+                    1, int(100 / summary["average_memory_usage_mb"] * 10)
+                )
 
         return config

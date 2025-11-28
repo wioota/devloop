@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
+import aiofiles
 import importlib.util
 import inspect
 import json
-import sys
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
-from .agent import Agent, AgentResult
-from .event import Event, EventBus
+from .agent import Agent
+from .event import EventBus
 
 
 @dataclass
@@ -48,28 +47,29 @@ class AgentTemplateRegistry:
 
     def _load_builtin_templates(self) -> None:
         """Load built-in agent templates."""
-        self.templates.update({
-            "file-watcher": AgentTemplate(
-                name="file-watcher",
-                description="Monitor specific file patterns and perform custom actions",
-                category="monitoring",
-                triggers=["file:modified", "file:created", "file:deleted"],
-                config_schema={
-                    "type": "object",
-                    "properties": {
-                        "filePatterns": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": ["**/*.txt"]
+        self.templates.update(
+            {
+                "file-watcher": AgentTemplate(
+                    name="file-watcher",
+                    description="Monitor specific file patterns and perform custom actions",
+                    category="monitoring",
+                    triggers=["file:modified", "file:created", "file:deleted"],
+                    config_schema={
+                        "type": "object",
+                        "properties": {
+                            "filePatterns": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": ["**/*.txt"],
+                            },
+                            "action": {
+                                "type": "string",
+                                "enum": ["log", "backup", "notify"],
+                                "default": "log",
+                            },
                         },
-                        "action": {
-                            "type": "string",
-                            "enum": ["log", "backup", "notify"],
-                            "default": "log"
-                        }
-                    }
-                },
-                template_code='''
+                    },
+                    template_code='''
 from dev_agents.core.agent import Agent, AgentResult
 
 class FileWatcherAgent(Agent):
@@ -117,29 +117,25 @@ class FileWatcherAgent(Agent):
             if fnmatch(file_path, pattern):
                 return True
         return False
-'''
-            ),
-
-            "command-runner": AgentTemplate(
-                name="command-runner",
-                description="Run shell commands in response to events",
-                category="automation",
-                triggers=["file:modified", "git:commit"],
-                config_schema={
-                    "type": "object",
-                    "properties": {
-                        "commands": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": ["echo 'Hello from custom agent!'"]
+''',
+                ),
+                "command-runner": AgentTemplate(
+                    name="command-runner",
+                    description="Run shell commands in response to events",
+                    category="automation",
+                    triggers=["file:modified", "git:commit"],
+                    config_schema={
+                        "type": "object",
+                        "properties": {
+                            "commands": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": ["echo 'Hello from custom agent!'"],
+                            },
+                            "workingDirectory": {"type": "string", "default": "."},
                         },
-                        "workingDirectory": {
-                            "type": "string",
-                            "default": "."
-                        }
-                    }
-                },
-                template_code='''
+                    },
+                    template_code="""
 import subprocess
 import asyncio
 from dev_agents.core.agent import Agent, AgentResult
@@ -179,35 +175,34 @@ class CommandRunnerAgent(Agent):
             duration=0.1,
             message=f"Ran {len(commands)} commands: {'; '.join(results)}"
         )
-'''
-            ),
-
-            "data-processor": AgentTemplate(
-                name="data-processor",
-                description="Process and transform data files",
-                category="data",
-                triggers=["file:modified"],
-                config_schema={
-                    "type": "object",
-                    "properties": {
-                        "inputFormat": {
-                            "type": "string",
-                            "enum": ["json", "csv", "txt"],
-                            "default": "json"
+""",
+                ),
+                "data-processor": AgentTemplate(
+                    name="data-processor",
+                    description="Process and transform data files",
+                    category="data",
+                    triggers=["file:modified"],
+                    config_schema={
+                        "type": "object",
+                        "properties": {
+                            "inputFormat": {
+                                "type": "string",
+                                "enum": ["json", "csv", "txt"],
+                                "default": "json",
+                            },
+                            "outputFormat": {
+                                "type": "string",
+                                "enum": ["json", "csv", "txt"],
+                                "default": "json",
+                            },
+                            "transformations": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": [],
+                            },
                         },
-                        "outputFormat": {
-                            "type": "string",
-                            "enum": ["json", "csv", "txt"],
-                            "default": "json"
-                        },
-                        "transformations": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "default": []
-                        }
-                    }
-                },
-                template_code='''
+                    },
+                    template_code='''
 import json
 import csv
 from pathlib import Path
@@ -315,9 +310,10 @@ class DataProcessorAgent(Agent):
         # Add more transformations as needed
 
         return data
-'''
-            ),
-        })
+''',
+                ),
+            }
+        )
 
     def get_template(self, name: str) -> Optional[AgentTemplate]:
         """Get a template by name."""
@@ -347,7 +343,7 @@ class AgentFactory:
         agent_name: str,
         triggers: List[str],
         event_bus: EventBus,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
     ) -> Optional[Agent]:
         """Create an agent from a template."""
         template = self.template_registry.get_template(template_name)
@@ -356,8 +352,7 @@ class AgentFactory:
 
         # Create a temporary module with the template code
         spec = importlib.util.spec_from_loader(
-            f"custom_agent_{agent_name}",
-            loader=None
+            f"custom_agent_{agent_name}", loader=None
         )
         module = importlib.util.module_from_spec(spec)
 
@@ -367,9 +362,7 @@ class AgentFactory:
         # Find the agent class (assume it's the first Agent subclass)
         agent_class = None
         for name, obj in module.__dict__.items():
-            if (inspect.isclass(obj) and
-                issubclass(obj, Agent) and
-                obj != Agent):
+            if inspect.isclass(obj) and issubclass(obj, Agent) and obj != Agent:
                 agent_class = obj
                 break
 
@@ -385,7 +378,7 @@ class AgentFactory:
         agent_name: str,
         triggers: List[str],
         event_bus: EventBus,
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
     ) -> Optional[Agent]:
         """Create an agent from a Python file."""
         if not file_path.exists():
@@ -393,8 +386,7 @@ class AgentFactory:
 
         # Load the module
         spec = importlib.util.spec_from_file_location(
-            f"custom_agent_{agent_name}",
-            file_path
+            f"custom_agent_{agent_name}", file_path
         )
         if not spec or not spec.loader:
             return None
@@ -405,9 +397,7 @@ class AgentFactory:
         # Find the agent class
         agent_class = None
         for name, obj in module.__dict__.items():
-            if (inspect.isclass(obj) and
-                issubclass(obj, Agent) and
-                obj != Agent):
+            if inspect.isclass(obj) and issubclass(obj, Agent) and obj != Agent:
                 agent_class = obj
                 break
 
@@ -427,11 +417,7 @@ class AgentMarketplace:
         self.index_file = marketplace_path / "index.json"
         self.agents_dir = marketplace_path / "agents"
 
-    async def publish_agent(
-        self,
-        agent_file: Path,
-        metadata: Dict[str, Any]
-    ) -> bool:
+    async def publish_agent(self, agent_file: Path, metadata: Dict[str, Any]) -> bool:
         """Publish an agent to the marketplace."""
         if not agent_file.exists():
             return False
@@ -442,10 +428,12 @@ class AgentMarketplace:
         agent_dir.mkdir(exist_ok=True)
 
         import shutil
+
         shutil.copy2(agent_file, agent_dir / "agent.py")
 
         # Save metadata
         import time
+
         metadata["published_at"] = metadata.get("published_at", time.time())
         async with aiofiles.open(agent_dir / "metadata.json", "w") as f:
             await f.write(json.dumps(metadata, indent=2))

@@ -1,13 +1,10 @@
 """Git event collector using git hooks and monitoring."""
+
 from __future__ import annotations
 
-import asyncio
-import logging
-import os
 import subprocess
-import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from dev_agents.collectors.base import BaseCollector
 from dev_agents.core.event import EventBus
@@ -16,11 +13,7 @@ from dev_agents.core.event import EventBus
 class GitCollector(BaseCollector):
     """Collects git-related events through hooks and monitoring."""
 
-    def __init__(
-        self,
-        event_bus: EventBus,
-        config: Optional[Dict[str, Any]] = None
-    ):
+    def __init__(self, event_bus: EventBus, config: Optional[Dict[str, Any]] = None):
         super().__init__("git", event_bus, config)
         self.git_hooks = [
             "pre-commit",
@@ -31,7 +24,7 @@ class GitCollector(BaseCollector):
             "post-checkout",
             "post-merge",
             "pre-push",
-            "post-rewrite"
+            "post-rewrite",
         ]
         self.repo_path = Path(self.config.get("repo_path", ".")).absolute()
         self.installed_hooks: Dict[str, Path] = {}
@@ -44,7 +37,7 @@ class GitCollector(BaseCollector):
                 cwd=self.repo_path,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             return result.returncode == 0
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -173,10 +166,6 @@ fi
         self._set_running(False)
         self.logger.info("Git collector stopped")
 
-    async def emit_git_event(
-        self,
-        event_type: str,
-        payload: Dict[str, Any]
-    ) -> None:
+    async def emit_git_event(self, event_type: str, payload: Dict[str, Any]) -> None:
         """Manually emit a git event (for testing or external triggers)."""
         await self._emit_event(f"git:{event_type}", payload, "normal", "git")

@@ -20,7 +20,7 @@ class AgentManager:
         event_bus: EventBus,
         project_dir: Optional[Path] = None,
         enable_feedback: bool = True,
-        enable_performance: bool = True
+        enable_performance: bool = True,
     ):
         self.event_bus = event_bus
         self.agents: Dict[str, Agent] = {}
@@ -44,31 +44,34 @@ class AgentManager:
     def register(self, agent: Agent) -> None:
         """Register an agent."""
         # Inject feedback and performance systems if not already set
-        if hasattr(agent, 'feedback_api') and agent.feedback_api is None:
+        if hasattr(agent, "feedback_api") and agent.feedback_api is None:
             agent.feedback_api = self.feedback_api
-        if hasattr(agent, 'performance_monitor') and agent.performance_monitor is None:
+        if hasattr(agent, "performance_monitor") and agent.performance_monitor is None:
             agent.performance_monitor = self.performance_monitor
 
         self.agents[agent.name] = agent
         self.logger.info(f"Registered agent: {agent.name}")
 
-    def create_agent(self, agent_class, name: str, triggers: List[str], **kwargs) -> Agent:
+    def create_agent(
+        self, agent_class, name: str, triggers: List[str], **kwargs
+    ) -> Agent:
         """Create and register an agent with feedback/performance systems."""
         # Build kwargs for agent constructor
         agent_kwargs = {
             "name": name,
             "triggers": triggers,
             "event_bus": self.event_bus,
-            **kwargs
+            **kwargs,
         }
 
         # Add optional feedback/performance parameters if the agent class supports them
         import inspect
+
         sig = inspect.signature(agent_class.__init__)
-        if 'feedback_api' in sig.parameters:
-            agent_kwargs['feedback_api'] = self.feedback_api
-        if 'performance_monitor' in sig.parameters:
-            agent_kwargs['performance_monitor'] = self.performance_monitor
+        if "feedback_api" in sig.parameters:
+            agent_kwargs["feedback_api"] = self.feedback_api
+        if "performance_monitor" in sig.parameters:
+            agent_kwargs["performance_monitor"] = self.performance_monitor
 
         agent = agent_class(**agent_kwargs)
         self.register(agent)
@@ -169,7 +172,15 @@ class AgentManager:
             return None
         return await self.performance_monitor.get_system_health()
 
-    async def submit_feedback(self, agent_name: str, feedback_type, value, event_type=None, comment=None, context=None):
+    async def submit_feedback(
+        self,
+        agent_name: str,
+        feedback_type,
+        value,
+        event_type=None,
+        comment=None,
+        context=None,
+    ):
         """Submit feedback for an agent."""
         if not self.feedback_api:
             return None
@@ -179,7 +190,7 @@ class AgentManager:
             feedback_type=feedback_type,
             value=value,
             comment=comment,
-            context=context
+            context=context,
         )
 
     def get_agent(self, name: str) -> Optional[Agent]:

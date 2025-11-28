@@ -1,17 +1,17 @@
 {
   "errors": [],
-  "generated_at": "2025-11-28T04:32:45Z",
+  "generated_at": "2025-11-28T04:56:37Z",
   "metrics": {
     "_totals": {
-      "CONFIDENCE.HIGH": 17,
+      "CONFIDENCE.HIGH": 15,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 1,
-      "SEVERITY.LOW": 15,
+      "SEVERITY.LOW": 13,
       "SEVERITY.MEDIUM": 1,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 6725,
+      "loc": 6873,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -50,7 +50,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 66,
+      "loc": 67,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -89,33 +89,33 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 412,
+      "loc": 410,
       "nosec": 0,
       "skipped_tests": 0
     },
     "src/dev_agents/agents/git_commit_assistant.py": {
-      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 1,
+      "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 276,
+      "loc": 318,
       "nosec": 0,
       "skipped_tests": 0
     },
     "src/dev_agents/agents/linter.py": {
-      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 1,
+      "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 305,
+      "loc": 312,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -133,15 +133,15 @@
       "skipped_tests": 0
     },
     "src/dev_agents/agents/security_scanner.py": {
-      "CONFIDENCE.HIGH": 3,
+      "CONFIDENCE.HIGH": 2,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 3,
+      "SEVERITY.LOW": 2,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 288,
+      "loc": 287,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -154,20 +154,20 @@
       "SEVERITY.LOW": 1,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 380,
+      "loc": 381,
       "nosec": 0,
       "skipped_tests": 0
     },
     "src/dev_agents/agents/type_checker.py": {
-      "CONFIDENCE.HIGH": 2,
+      "CONFIDENCE.HIGH": 3,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 2,
+      "SEVERITY.LOW": 3,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 202,
+      "loc": 197,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -193,7 +193,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 307,
+      "loc": 298,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -206,7 +206,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 116,
+      "loc": 100,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -219,7 +219,7 @@
       "SEVERITY.LOW": 1,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 205,
+      "loc": 236,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -245,7 +245,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 51,
+      "loc": 44,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -258,7 +258,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 94,
+      "loc": 93,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -271,7 +271,7 @@
       "SEVERITY.LOW": 3,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 137,
+      "loc": 125,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -284,7 +284,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 129,
+      "loc": 125,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -297,7 +297,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 143,
+      "loc": 166,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -310,7 +310,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 136,
+      "loc": 153,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -336,7 +336,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 156,
+      "loc": 153,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -349,7 +349,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 1,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 406,
+      "loc": 394,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -375,7 +375,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 196,
+      "loc": 199,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -401,7 +401,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 105,
+      "loc": 114,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -414,7 +414,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 79,
+      "loc": 84,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -427,7 +427,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 401,
+      "loc": 402,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -440,7 +440,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 215,
+      "loc": 218,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -466,7 +466,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 217,
+      "loc": 246,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -479,7 +479,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 242,
+      "loc": 252,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -492,7 +492,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 160,
+      "loc": 170,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -505,7 +505,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 328,
+      "loc": 348,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -518,52 +518,12 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 228,
+      "loc": 236,
       "nosec": 0,
       "skipped_tests": 0
     }
   },
   "results": [
-    {
-      "code": "4 import asyncio\n5 import subprocess\n6 import sys\n",
-      "col_offset": 0,
-      "end_col_offset": 17,
-      "filename": "src/dev_agents/agents/git_commit_assistant.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 5,
-      "line_range": [
-        5
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
-    },
-    {
-      "code": "4 import logging\n5 import subprocess\n6 from pathlib import Path\n",
-      "col_offset": 0,
-      "end_col_offset": 17,
-      "filename": "src/dev_agents/agents/linter.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 5,
-      "line_range": [
-        5
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
-    },
     {
       "code": "5 import json\n6 import subprocess\n7 import sys\n",
       "col_offset": 0,
@@ -607,27 +567,7 @@
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "6 import logging\n7 import subprocess\n8 import sys\n",
-      "col_offset": 0,
-      "end_col_offset": 17,
-      "filename": "src/dev_agents/agents/security_scanner.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 7,
-      "line_range": [
-        7
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
-    },
-    {
-      "code": "240             # Check if bandit is available\n241             import subprocess\n242 \n",
+      "code": "239             # Check if bandit is available\n240             import subprocess\n241 \n",
       "col_offset": 12,
       "end_col_offset": 29,
       "filename": "src/dev_agents/agents/security_scanner.py",
@@ -638,16 +578,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 241,
+      "line_number": 240,
       "line_range": [
-        241
+        240
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "242 \n243             result = subprocess.run(\n244                 [sys.executable, \"-c\", \"import bandit\"], capture_output=True, text=True\n245             )\n246             if result.returncode != 0:\n",
+      "code": "241 \n242             result = subprocess.run(\n243                 [sys.executable, \"-c\", \"import bandit\"], capture_output=True, text=True\n244             )\n245             if result.returncode != 0:\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "src/dev_agents/agents/security_scanner.py",
@@ -658,18 +598,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 243,
+      "line_number": 242,
       "line_range": [
+        242,
         243,
-        244,
-        245
+        244
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "88         \"\"\"Check if a command is available.\"\"\"\n89         import subprocess\n90         try:\n",
+      "code": "94         \"\"\"Check if a command is available.\"\"\"\n95         import subprocess\n96 \n",
       "col_offset": 8,
       "end_col_offset": 25,
       "filename": "src/dev_agents/agents/test_runner.py",
@@ -680,16 +620,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 89,
+      "line_number": 95,
       "line_range": [
-        89
+        95
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "92                 command,\n93                 shell=True,\n94                 capture_output=True,\n95                 text=True,\n96                 timeout=5\n97             )\n98             return result.returncode == 0\n99         except (subprocess.TimeoutExpired, FileNotFoundError):\n100             return False\n",
+      "code": "98             result = subprocess.run(\n99                 command, shell=True, capture_output=True, text=True, timeout=5\n100             )\n101             return result.returncode == 0\n102         except (subprocess.TimeoutExpired, FileNotFoundError):\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "src/dev_agents/agents/test_runner.py",
@@ -700,22 +640,18 @@
       },
       "issue_severity": "HIGH",
       "issue_text": "subprocess call with shell=True identified, security issue.",
-      "line_number": 93,
+      "line_number": 99,
       "line_range": [
-        91,
-        92,
-        93,
-        94,
-        95,
-        96,
-        97
+        98,
+        99,
+        100
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b602_subprocess_popen_with_shell_equals_true.html",
       "test_id": "B602",
       "test_name": "subprocess_popen_with_shell_equals_true"
     },
     {
-      "code": "6 import logging\n7 import subprocess\n8 import sys\n",
+      "code": "4 import logging\n5 import subprocess\n6 import sys\n",
       "col_offset": 0,
       "end_col_offset": 17,
       "filename": "src/dev_agents/agents/type_checker.py",
@@ -726,16 +662,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 7,
+      "line_number": 5,
       "line_range": [
-        7
+        5
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "181             # Check if mypy is available\n182             result = subprocess.run(\n183                 [sys.executable, \"-c\", \"import mypy\"], capture_output=True, text=True\n184             )\n185             if result.returncode != 0:\n",
+      "code": "175             # Check if mypy is available\n176             result = subprocess.run(\n177                 [sys.executable, \"-c\", \"import mypy\"], capture_output=True, text=True\n178             )\n179             if result.returncode != 0:\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "src/dev_agents/agents/type_checker.py",
@@ -746,18 +682,43 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 182,
+      "line_number": 176,
       "line_range": [
-        182,
-        183,
-        184
+        176,
+        177,
+        178
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "253                 )\n254             except Exception:\n255                 # Agent might not exist or have no data\n256                 continue\n257 \n",
+      "code": "196             # Run mypy in subprocess\n197             result = subprocess.run(\n198                 cmd,\n199                 capture_output=True,\n200                 text=True,\n201                 cwd=file_path.parent,\n202             )\n203             issues = []\n",
+      "col_offset": 21,
+      "end_col_offset": 13,
+      "filename": "src/dev_agents/agents/type_checker.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "subprocess call - check for execution of untrusted input.",
+      "line_number": 197,
+      "line_range": [
+        197,
+        198,
+        199,
+        200,
+        201,
+        202
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
+      "test_id": "B603",
+      "test_name": "subprocess_without_shell_equals_true"
+    },
+    {
+      "code": "290                 )\n291             except Exception:\n292                 # Agent might not exist or have no data\n293                 continue\n294 \n",
       "col_offset": 12,
       "end_col_offset": 24,
       "filename": "src/dev_agents/cli/phase3_commands.py",
@@ -768,18 +729,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Try, Except, Continue detected.",
-      "line_number": 254,
+      "line_number": 291,
       "line_range": [
-        254,
-        255,
-        256
+        291,
+        292,
+        293
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b112_try_except_continue.html",
       "test_id": "B112",
       "test_name": "try_except_continue"
     },
     {
-      "code": "6 import os\n7 import subprocess\n8 import sys\n",
+      "code": "4 \n5 import subprocess\n6 from pathlib import Path\n",
       "col_offset": 0,
       "end_col_offset": 17,
       "filename": "src/dev_agents/collectors/git.py",
@@ -790,16 +751,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 7,
+      "line_number": 5,
       "line_range": [
-        7
+        5
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "41         try:\n42             result = subprocess.run(\n43                 [\"git\", \"rev-parse\", \"--git-dir\"],\n44                 cwd=self.repo_path,\n45                 capture_output=True,\n46                 text=True,\n47                 check=True\n48             )\n49             return result.returncode == 0\n",
+      "code": "34         try:\n35             result = subprocess.run(\n36                 [\"git\", \"rev-parse\", \"--git-dir\"],\n37                 cwd=self.repo_path,\n38                 capture_output=True,\n39                 text=True,\n40                 check=True,\n41             )\n42             return result.returncode == 0\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "src/dev_agents/collectors/git.py",
@@ -810,22 +771,22 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Starting a process with a partial executable path",
-      "line_number": 42,
+      "line_number": 35,
       "line_range": [
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        48
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b607_start_process_with_partial_path.html",
       "test_id": "B607",
       "test_name": "start_process_with_partial_path"
     },
     {
-      "code": "41         try:\n42             result = subprocess.run(\n43                 [\"git\", \"rev-parse\", \"--git-dir\"],\n44                 cwd=self.repo_path,\n45                 capture_output=True,\n46                 text=True,\n47                 check=True\n48             )\n49             return result.returncode == 0\n",
+      "code": "34         try:\n35             result = subprocess.run(\n36                 [\"git\", \"rev-parse\", \"--git-dir\"],\n37                 cwd=self.repo_path,\n38                 capture_output=True,\n39                 text=True,\n40                 check=True,\n41             )\n42             return result.returncode == 0\n",
       "col_offset": 21,
       "end_col_offset": 13,
       "filename": "src/dev_agents/collectors/git.py",
@@ -836,22 +797,22 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 42,
+      "line_number": 35,
       "line_range": [
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        48
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "364         # Execute the template code in the module\n365         exec(template.template_code, module.__dict__)\n366 \n",
+      "code": "359         # Execute the template code in the module\n360         exec(template.template_code, module.__dict__)\n361 \n",
       "col_offset": 8,
       "end_col_offset": 53,
       "filename": "src/dev_agents/core/agent_template.py",
@@ -862,16 +823,16 @@
       },
       "issue_severity": "MEDIUM",
       "issue_text": "Use of exec detected.",
-      "line_number": 365,
+      "line_number": 360,
       "line_range": [
-        365
+        360
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b102_exec_used.html",
       "test_id": "B102",
       "test_name": "exec_used"
     },
     {
-      "code": "74                             notified_queues.add(queue)\n75                         except Exception:\n76                             pass  # Queue might be closed\n77 \n",
+      "code": "78                             notified_queues.add(queue)\n79                         except Exception:\n80                             pass  # Queue might be closed\n81 \n",
       "col_offset": 24,
       "end_col_offset": 32,
       "filename": "src/dev_agents/core/event.py",
@@ -882,10 +843,10 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Try, Except, Pass detected.",
-      "line_number": 75,
+      "line_number": 79,
       "line_range": [
-        75,
-        76
+        79,
+        80
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b110_try_except_pass.html",
       "test_id": "B110",

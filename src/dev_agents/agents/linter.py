@@ -1,8 +1,7 @@
 """Linter agent - runs linters on file changes."""
+
 import asyncio
 import json
-import logging
-import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -18,11 +17,10 @@ class LinterConfig:
         self.enabled = config.get("enabled", True)
         self.auto_fix = config.get("autoFix", False)
         self.file_patterns = config.get("filePatterns", ["**/*.py"])
-        self.linters = config.get("linters", {
-            "python": "ruff",
-            "javascript": "eslint",
-            "typescript": "eslint"
-        })
+        self.linters = config.get(
+            "linters",
+            {"python": "ruff", "javascript": "eslint", "typescript": "eslint"},
+        )
         self.debounce = config.get("debounce", 500)  # ms
 
 
@@ -33,7 +31,7 @@ class LinterResult:
         self,
         success: bool,
         issues: List[Dict[str, Any]] | None = None,
-        error: str | None = None
+        error: str | None = None,
     ):
         self.success = success
         self.issues = issues or []
@@ -53,8 +51,22 @@ class LinterResult:
 class LinterAgent(Agent):
     """Agent that runs linters on file changes."""
 
-    def __init__(self, name: str, triggers: List[str], event_bus, config: Dict[str, Any] | None = None, feedback_api=None, performance_monitor=None):
-        super().__init__(name, triggers, event_bus, feedback_api=feedback_api, performance_monitor=performance_monitor)
+    def __init__(
+        self,
+        name: str,
+        triggers: List[str],
+        event_bus,
+        config: Dict[str, Any] | None = None,
+        feedback_api=None,
+        performance_monitor=None,
+    ):
+        super().__init__(
+            name,
+            triggers,
+            event_bus,
+            feedback_api=feedback_api,
+            performance_monitor=performance_monitor,
+        )
         self.config = LinterConfig(config or {})
         self._last_run: Dict[str, float] = {}  # path -> timestamp for debouncing
 
@@ -67,7 +79,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message="No file path in event"
+                message="No file path in event",
             )
 
         path = Path(file_path)
@@ -78,7 +90,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message=f"Skipped {path.name} (not in patterns)"
+                message=f"Skipped {path.name} (not in patterns)",
             )
 
         # Get appropriate linter for file type
@@ -88,7 +100,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message=f"No linter configured for {path.suffix}"
+                message=f"No linter configured for {path.suffix}",
             )
 
         # Run linter
@@ -121,8 +133,8 @@ class LinterAgent(Agent):
                 "file": str(path),
                 "linter": linter,
                 "issues": result.issues,
-                "issue_count": result.issue_count
-            }
+                "issue_count": result.issue_count,
+            },
         )
 
         # Write findings to context store for Claude Code integration
@@ -174,25 +186,20 @@ class LinterAgent(Agent):
             elif linter == "eslint":
                 result = await self._run_eslint(path)
             else:
-                result = LinterResult(
-                    success=False,
-                    error=f"Unknown linter: {linter}"
-                )
+                result = LinterResult(success=False, error=f"Unknown linter: {linter}")
 
             return result
 
         except Exception as e:
             self.logger.error(f"Error running {linter}: {e}")
-            return LinterResult(
-                success=False,
-                error=str(e)
-            )
+            return LinterResult(success=False, error=str(e))
 
     async def _run_ruff(self, path: Path) -> LinterResult:
         """Run ruff on a Python file."""
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -200,27 +207,27 @@ class LinterAgent(Agent):
 
             # Check if ruff is installed
             check = await asyncio.create_subprocess_exec(
-                "ruff", "--version",
+                "ruff",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
             await check.communicate()
 
             if check.returncode != 0:
-                return LinterResult(
-                    success=False,
-                    error="ruff not installed"
-                )
+                return LinterResult(success=False, error="ruff not installed")
 
             # Run ruff with JSON output
             proc = await asyncio.create_subprocess_exec(
-                "ruff", "check",
-                "--output-format", "json",
+                "ruff",
+                "check",
+                "--output-format",
+                "json",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
 
             stdout, stderr = await proc.communicate()
@@ -238,35 +245,31 @@ class LinterAgent(Agent):
                 return LinterResult(success=True, issues=[])
 
         except FileNotFoundError:
-            return LinterResult(
-                success=False,
-                error="ruff command not found"
-            )
+            return LinterResult(success=False, error="ruff command not found")
 
     async def _run_eslint(self, path: Path) -> LinterResult:
         """Run eslint on a JavaScript/TypeScript file."""
         try:
             # Check if eslint is installed
             check = await asyncio.create_subprocess_exec(
-                "eslint", "--version",
+                "eslint",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await check.communicate()
 
             if check.returncode != 0:
-                return LinterResult(
-                    success=False,
-                    error="eslint not installed"
-                )
+                return LinterResult(success=False, error="eslint not installed")
 
             # Run eslint with JSON output
             proc = await asyncio.create_subprocess_exec(
                 "eslint",
-                "--format", "json",
+                "--format",
+                "json",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await proc.communicate()
@@ -284,16 +287,14 @@ class LinterAgent(Agent):
             return LinterResult(success=True, issues=[])
 
         except FileNotFoundError:
-            return LinterResult(
-                success=False,
-                error="eslint command not found"
-            )
+            return LinterResult(success=False, error="eslint command not found")
 
     async def _auto_fix(self, linter: str, path: Path) -> LinterResult:
         """Attempt to auto-fix issues."""
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -301,20 +302,25 @@ class LinterAgent(Agent):
 
             if linter == "ruff":
                 proc = await asyncio.create_subprocess_exec(
-                    "ruff", "check", "--fix", str(path),
+                    "ruff",
+                    "check",
+                    "--fix",
+                    str(path),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=env
+                    env=env,
                 )
                 await proc.communicate()
                 return LinterResult(success=True)
 
             elif linter == "eslint":
                 proc = await asyncio.create_subprocess_exec(
-                    "eslint", "--fix", str(path),
+                    "eslint",
+                    "--fix",
+                    str(path),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=env
+                    env=env,
                 )
                 await proc.communicate()
                 return LinterResult(success=True)
@@ -373,12 +379,16 @@ class LinterAgent(Agent):
                 severity=severity,
                 message=message_text,
                 rule_id=code,
-                suggestion=f"Run {linter} --fix {path}" if fixable and self.config.auto_fix else None,
+                suggestion=(
+                    f"Run {linter} --fix {path}"
+                    if fixable and self.config.auto_fix
+                    else None
+                ),
                 metadata={
                     "linter": linter,
                     "fixable": fixable,
                     "auto_fixable": fixable and self.config.auto_fix,
-                }
+                },
             )
 
             findings.append(finding)

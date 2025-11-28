@@ -46,7 +46,9 @@ class ContextReader:
         try:
             with open(json_file) as f:
                 data = json.load(f)
-                return [FileFindings(**file_data) for file_data in data.get("files", [])]
+                return [
+                    FileFindings(**file_data) for file_data in data.get("files", [])
+                ]
         except (json.JSONDecodeError, FileNotFoundError):
             return []
 
@@ -57,8 +59,7 @@ class ContextReader:
 
         for agent_name, file_findings_list in all_findings.items():
             matching_files = [
-                ff for ff in file_findings_list
-                if ff.file_path == file_path
+                ff for ff in file_findings_list if ff.file_path == file_path
             ]
             if matching_files:
                 file_findings[agent_name] = matching_files
@@ -90,13 +91,17 @@ class ContextReader:
 
 
 # Convenience function for coding agents
-def read_agent_context(base_path: Path = Path(".claude/context")) -> Dict[str, List[FileFindings]]:
+def read_agent_context(
+    base_path: Path = Path(".claude/context"),
+) -> Dict[str, List[FileFindings]]:
     """Read all agent findings - convenience function for coding agents."""
     reader = ContextReader(base_path)
     return reader.get_all_findings()
 
 
-def get_context_summary(base_path: Path = Path(".claude/context")) -> Dict[str, Dict[str, int]]:
+def get_context_summary(
+    base_path: Path = Path(".claude/context"),
+) -> Dict[str, Dict[str, int]]:
     """Get a summary of agent findings - convenience function for coding agents."""
     reader = ContextReader(base_path)
     return reader.get_summary()

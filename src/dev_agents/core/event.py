@@ -1,4 +1,5 @@
 """Event system core - simplified for prototype."""
+
 from __future__ import annotations
 
 import asyncio
@@ -11,6 +12,7 @@ from typing import Any, Dict, Set
 
 class Priority(Enum):
     """Event priority levels."""
+
     LOW = 0
     NORMAL = 1
     HIGH = 2
@@ -20,6 +22,7 @@ class Priority(Enum):
 @dataclass
 class Event:
     """Base event class."""
+
     type: str
     payload: Dict[str, Any]
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -59,6 +62,7 @@ class EventBus:
 
         # Store event in event store (async, non-blocking)
         from .event_store import event_store
+
         # Don't await - fire and forget for performance
         asyncio.create_task(event_store.store_event(event))
 

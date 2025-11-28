@@ -1,14 +1,12 @@
 """CLI commands for Phase 3 features: feedback and performance analytics."""
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
 
 from ..core.feedback import FeedbackAPI, FeedbackStore, FeedbackType
 from ..core.performance import PerformanceMonitor
@@ -40,15 +38,18 @@ def get_performance_monitor(project_dir: Path = None) -> PerformanceMonitor:
 def feedback_list(
     agent: Optional[str] = typer.Option(None, help="Filter by agent name"),
     limit: int = typer.Option(20, help="Maximum number of feedback items to show"),
-    project_dir: Optional[Path] = typer.Option(None, help="Project directory")
+    project_dir: Optional[Path] = typer.Option(None, help="Project directory"),
 ):
     """List recent feedback for agents."""
+
     async def _run():
         feedback_api = get_feedback_api(project_dir)
 
         if agent:
             # Get feedback for specific agent
-            feedback_items = await feedback_api.feedback_store.get_feedback_for_agent(agent, limit)
+            feedback_items = await feedback_api.feedback_store.get_feedback_for_agent(
+                agent, limit
+            )
             if not feedback_items:
                 console.print(f"[yellow]No feedback found for agent '{agent}'[/yellow]")
                 return
@@ -64,12 +65,14 @@ def feedback_list(
                     item.feedback_type.value,
                     str(item.value),
                     item.comment or "",
-                    f"{item.timestamp:.1f}"
+                    f"{item.timestamp:.1f}",
                 )
         else:
             # Show summary for all agents
             # This would require scanning all feedback - for now show message
-            console.print("[yellow]Use --agent to specify which agent feedback to view[/yellow]")
+            console.print(
+                "[yellow]Use --agent to specify which agent feedback to view[/yellow]"
+            )
             return
 
         console.print(table)
@@ -80,13 +83,19 @@ def feedback_list(
 @app.command()
 def feedback_submit(
     agent: str = typer.Argument(..., help="Agent name"),
-    feedback_type: str = typer.Argument(..., help="Type of feedback (thumbs_up, thumbs_down, rating, comment, dismiss)"),
-    value: str = typer.Argument(..., help="Feedback value (boolean for thumbs, number for rating, text for comment)"),
+    feedback_type: str = typer.Argument(
+        ..., help="Type of feedback (thumbs_up, thumbs_down, rating, comment, dismiss)"
+    ),
+    value: str = typer.Argument(
+        ...,
+        help="Feedback value (boolean for thumbs, number for rating, text for comment)",
+    ),
     comment: Optional[str] = typer.Option(None, help="Optional comment"),
     event_type: str = typer.Option("manual", help="Event type that triggered feedback"),
-    project_dir: Optional[Path] = typer.Option(None, help="Project directory")
+    project_dir: Optional[Path] = typer.Option(None, help="Project directory"),
 ):
     """Submit feedback for an agent."""
+
     async def _run():
         feedback_api = get_feedback_api(project_dir)
 
@@ -95,17 +104,19 @@ def feedback_submit(
             fb_type = FeedbackType(feedback_type)
         except ValueError:
             console.print(f"[red]Invalid feedback type: {feedback_type}[/red]")
-            console.print("Valid types: thumbs_up, thumbs_down, rating, comment, dismiss")
+            console.print(
+                "Valid types: thumbs_up, thumbs_down, rating, comment, dismiss"
+            )
             return
 
         # Parse value based on type
         if fb_type in (FeedbackType.THUMBS_UP, FeedbackType.THUMBS_DOWN):
-            if value.lower() in ('true', '1', 'yes'):
+            if value.lower() in ("true", "1", "yes"):
                 parsed_value = True
-            elif value.lower() in ('false', '0', 'no'):
+            elif value.lower() in ("false", "0", "no"):
                 parsed_value = False
             else:
-                console.print(f"[red]Thumbs feedback must be boolean (true/false)[/red]")
+                console.print("[red]Thumbs feedback must be boolean (true/false)[/red]")
                 return
         elif fb_type == FeedbackType.RATING:
             try:
@@ -127,7 +138,7 @@ def feedback_submit(
             event_type=event_type,
             feedback_type=fb_type,
             value=parsed_value,
-            comment=comment
+            comment=comment,
         )
 
         console.print(f"[green]Feedback submitted![/green] ID: {feedback_id}")
@@ -139,9 +150,10 @@ def feedback_submit(
 def performance_status(
     agent: Optional[str] = typer.Option(None, help="Filter by agent name"),
     hours: int = typer.Option(24, help="Time range in hours"),
-    project_dir: Optional[Path] = typer.Option(None, help="Project directory")
+    project_dir: Optional[Path] = typer.Option(None, help="Project directory"),
 ):
     """Show performance analytics."""
+
     async def _run():
         performance_monitor = get_performance_monitor(project_dir)
 
@@ -157,28 +169,42 @@ def performance_status(
             console.print(f"Success rate: {summary['success_rate']}%")
             console.print(f"Average duration: {summary['average_duration']}s")
             console.print(f"Average CPU usage: {summary['average_cpu_usage']}%")
-            console.print(f"Average memory usage: {summary['average_memory_usage_mb']} MB")
+            console.print(
+                f"Average memory usage: {summary['average_memory_usage_mb']} MB"
+            )
 
-            console.print(f"\n[bold]Feedback Insights[/bold]")
-            console.print(f"Total feedback: {insights['performance']['feedback_count']}")
-            console.print(f"Thumbs up rate: {insights['performance']['thumbs_up_rate']}%")
-            console.print(f"Average rating: {insights['performance']['average_rating']}/5")
+            console.print("\n[bold]Feedback Insights[/bold]")
+            console.print(
+                f"Total feedback: {insights['performance']['feedback_count']}"
+            )
+            console.print(
+                f"Thumbs up rate: {insights['performance']['thumbs_up_rate']}%"
+            )
+            console.print(
+                f"Average rating: {insights['performance']['average_rating']}/5"
+            )
 
         else:
             # Show system health
             health = await performance_monitor.get_system_health()
 
-            console.print(f"\n[bold]System Health[/bold]")
+            console.print("\n[bold]System Health[/bold]")
             console.print(f"Timestamp: {health['timestamp']}")
 
-            console.print(f"\n[bold]Process Metrics[/bold]")
+            console.print("\n[bold]Process Metrics[/bold]")
             console.print(f"CPU Usage: {health['process']['cpu_percent']}%")
-            console.print(f"Memory Usage: {health['process']['memory_mb']:.1f} MB ({health['process']['memory_percent']}%)")
+            console.print(
+                f"Memory Usage: {health['process']['memory_mb']:.1f} MB ({health['process']['memory_percent']}%)"
+            )
 
-            console.print(f"\n[bold]System Metrics[/bold]")
+            console.print("\n[bold]System Metrics[/bold]")
             console.print(f"System CPU: {health['system']['cpu_percent']}%")
-            console.print(f"System Memory: {health['system']['memory_used_gb']:.1f} GB / {health['system']['memory_total_gb']:.1f} GB ({health['system']['memory_percent']}%)")
-            console.print(f"Disk Usage: {health['system']['disk_used_gb']:.1f} GB / {health['system']['disk_total_gb']:.1f} GB ({health['system']['disk_percent']}%)")
+            console.print(
+                f"System Memory: {health['system']['memory_used_gb']:.1f} GB / {health['system']['memory_total_gb']:.1f} GB ({health['system']['memory_percent']}%)"
+            )
+            console.print(
+                f"Disk Usage: {health['system']['disk_used_gb']:.1f} GB / {health['system']['disk_total_gb']:.1f} GB ({health['system']['disk_percent']}%)"
+            )
 
     asyncio.run(_run())
 
@@ -186,15 +212,18 @@ def performance_status(
 @app.command()
 def performance_trends(
     hours: int = typer.Option(24, help="Time range in hours"),
-    project_dir: Optional[Path] = typer.Option(None, help="Project directory")
+    project_dir: Optional[Path] = typer.Option(None, help="Project directory"),
 ):
     """Show performance trends over time."""
+
     async def _run():
         performance_monitor = get_performance_monitor(project_dir)
         trends = await performance_monitor.get_resource_trends(hours)
 
         if not trends:
-            console.print(f"[yellow]No performance data found for the last {hours} hours[/yellow]")
+            console.print(
+                f"[yellow]No performance data found for the last {hours} hours[/yellow]"
+            )
             return
 
         table = Table(title=f"Performance Trends (Last {hours} hours)")
@@ -205,12 +234,15 @@ def performance_trends(
 
         for trend in trends:
             import datetime
-            time_str = datetime.datetime.fromtimestamp(trend["timestamp"]).strftime("%H:%M")
+
+            time_str = datetime.datetime.fromtimestamp(trend["timestamp"]).strftime(
+                "%H:%M"
+            )
             table.add_row(
                 time_str,
                 str(trend["operations"]),
                 f"{trend['avg_cpu']:.1f}",
-                f"{trend['avg_memory_mb']:.1f}"
+                f"{trend['avg_memory_mb']:.1f}",
             )
 
         console.print(table)
@@ -223,6 +255,7 @@ def agent_insights(
     project_dir: Optional[Path] = typer.Option(None, help="Project directory")
 ):
     """Show insights for all agents."""
+
     async def _run():
         feedback_api = get_feedback_api(project_dir)
 
@@ -249,7 +282,11 @@ def agent_insights(
                     f"{perf['success_rate']}%",
                     f"{perf['average_duration']:.2f}s",
                     str(perf["feedback_count"]),
-                    f"{perf['average_rating']:.1f}/5" if perf["average_rating"] > 0 else "-"
+                    (
+                        f"{perf['average_rating']:.1f}/5"
+                        if perf["average_rating"] > 0
+                        else "-"
+                    ),
                 )
             except Exception:
                 # Agent might not exist or have no data

@@ -1,4 +1,5 @@
 """Collector manager for coordinating all event collectors."""
+
 from __future__ import annotations
 
 import asyncio
@@ -27,22 +28,18 @@ class CollectorManager:
             "filesystem": FileSystemCollector,
             "git": GitCollector,
             "process": ProcessCollector,
-            "system": SystemCollector
+            "system": SystemCollector,
         }
 
     def register_collector_class(
-        self,
-        name: str,
-        collector_class: Type[BaseCollector]
+        self, name: str, collector_class: Type[BaseCollector]
     ) -> None:
         """Register a new collector class."""
         self._collector_classes[name] = collector_class
         self.logger.info(f"Registered collector class: {name}")
 
     def create_collector(
-        self,
-        name: str,
-        config: Optional[Dict[str, Any]] = None
+        self, name: str, config: Optional[Dict[str, Any]] = None
     ) -> Optional[BaseCollector]:
         """Create a collector instance."""
         if name not in self._collector_classes:
@@ -144,7 +141,7 @@ class CollectorManager:
             name: {
                 "running": collector.is_running,
                 "type": type(collector).__name__,
-                "config": collector.config
+                "config": collector.config,
             }
             for name, collector in self.collectors.items()
         }

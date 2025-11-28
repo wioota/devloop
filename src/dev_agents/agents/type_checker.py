@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Type Checker Agent - Runs static type checking on code."""
 
-import asyncio
-import json
 import logging
 import subprocess
 import sys
@@ -11,7 +9,6 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
-from ..core.context_store import context_store
 from ..core.event import Event
 
 
@@ -203,13 +200,10 @@ class TypeCheckerAgent(Agent):
                 text=True,
                 cwd=file_path.parent,
             )
-            stdout = result.stdout
-            stderr = result.stderr
-
             issues = []
 
             # Parse mypy output (line by line)
-            output_lines = stdout.decode().strip().split("\n")
+            output_lines = result.stdout.strip().split("\n")
             for line in output_lines:
                 if line.strip() and not line.startswith("Success:"):
                     # Parse mypy error format: file:line: error: message [error-code]

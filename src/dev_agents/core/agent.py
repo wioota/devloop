@@ -78,7 +78,7 @@ class Agent(ABC):
         triggers: List[str],
         event_bus: EventBus,
         feedback_api: Optional[FeedbackAPI] = None,
-        performance_monitor: Optional[PerformanceMonitor] = None
+        performance_monitor: Optional[PerformanceMonitor] = None,
     ):
         self.name = name
         self.triggers = triggers
@@ -142,10 +142,7 @@ class Agent(ABC):
                 if self.performance_monitor:
                     async with self.performance_monitor.monitor_operation(
                         operation_name,
-                        metadata={
-                            "event_type": event.type,
-                            "agent_name": self.name
-                        }
+                        metadata={"event_type": event.type, "agent_name": self.name},
                     ) as metrics:
                         result = await self.handle(event)
                         metrics.complete(result.success, result.error)
