@@ -8,9 +8,9 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from claude_agents.agents.linter import LinterAgent
-from claude_agents.core.context_store import context_store
-from claude_agents.core.event import Event, EventBus
+from dev_agents.agents.linter import LinterAgent
+from dev_agents.core.context_store import context_store
+from dev_agents.core.event import Event, EventBus
 
 
 async def test_linter_context_integration():
@@ -78,7 +78,7 @@ async def test_linter_context_integration():
     print(f"  Auto-fixed: {index['auto_fixed']['count']}")
 
     # Check immediate findings
-    from claude_agents.core.context_store import Tier
+    from dev_agents.core.context_store import Tier
     immediate_findings = await context_store.get_findings(tier=Tier.IMMEDIATE)
     if immediate_findings:
         print(f"\nImmediate findings ({len(immediate_findings)}):")

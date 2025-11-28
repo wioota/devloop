@@ -57,21 +57,40 @@ class EventBus:
         if len(self._event_log) > 100:  # Keep last 100 events
             self._event_log.pop(0)
 
-        # Emit to specific event type subscribers
-        if event.type in self._subscribers:
-            for queue in list(self._subscribers[event.type]):
-                try:
-                    await queue.put(event)
-                except Exception:
-                    pass  # Queue might be closed
+        # Store event in event store (async, non-blocking)
+        from .event_store import event_store
+        # Don't await - fire and forget for performance
+        asyncio.create_task(event_store.store_event(event))
 
-        # Also emit to wildcard subscribers (*)
-        if "*" in self._subscribers:
-            for queue in list(self._subscribers["*"]):
-                try:
-                    await queue.put(event)
-                except Exception:
-                    pass
+        # Emit to matching subscribers (supporting patterns)
+        notified_queues = set()
+
+        for pattern, queues in self._subscribers.items():
+            if self._matches_pattern(event.type, pattern):
+                for queue in list(queues):
+                    if queue not in notified_queues:  # Avoid duplicate notifications
+                        try:
+                            await queue.put(event)
+                            notified_queues.add(queue)
+                        except Exception:
+                            pass  # Queue might be closed
+
+    def _matches_pattern(self, event_type: str, pattern: str) -> bool:
+        """Check if event type matches a subscription pattern."""
+        # Exact match
+        if event_type == pattern:
+            return True
+
+        # Global wildcard
+        if pattern == "*":
+            return True
+
+        # Pattern matching (e.g., "file:*" matches "file:created")
+        if pattern.endswith("*"):
+            prefix = pattern[:-1]  # Remove the *
+            return event_type.startswith(prefix)
+
+        return False
 
     def get_recent_events(self, count: int = 10) -> list[Event]:
         """Get recent events for debugging."""

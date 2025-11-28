@@ -37,19 +37,26 @@ This document provides a complete reference for configuring the background agent
     }
   },
   "global": {
-    "maxConcurrentAgents": number,
-    "notificationLevel": "none" | "errors" | "summary" | "verbose",
-    "resourceLimits": {
-      "maxCpu": number,
-      "maxMemory": string,
-      "maxDisk": string
-    },
-    "logging": {
-      "level": "debug" | "info" | "warn" | "error",
-      "path": string,
-      "rotate": boolean
-    }
+  "maxConcurrentAgents": number,
+  "notificationLevel": "none" | "errors" | "summary" | "verbose",
+  "resourceLimits": {
+  "maxCpu": number,
+  "maxMemory": string,
+  "maxDisk": string
   },
+  "logging": {
+  "level": "debug" | "info" | "warn" | "error",
+  "path": string,
+  "rotate": boolean
+  },
+    "contextStore": {
+       "enabled": boolean,
+       "mode": "flow" | "balanced" | "quality",
+       "location": string,
+       "maxFindings": number,
+       "cleanupInterval": number
+     }
+   },
   "eventSystem": {
     "collectors": object,
     "dispatcher": object,

@@ -12,8 +12,7 @@ from rich.table import Table
 
 from dev_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
 from dev_agents.collectors import FileSystemCollector
-from dev_agents.core import AgentManager, Config, ConfigWrapper, EventBus
-from dev_agents.core.context_store import context_store
+from dev_agents.core import AgentManager, Config, ConfigWrapper, EventBus, context_store, event_store
 
 app = typer.Typer(
     help="Dev Agents - Development workflow automation",
@@ -33,6 +32,58 @@ def setup_logging(verbose: bool = False):
     )
 
 
+def run_daemon(path: Path, config_path: Path | None, verbose: bool):
+    """Run dev-agents in daemon/background mode."""
+    import os
+    import sys
+
+    # Fork to background
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # Parent process - exit
+            console.print(f"[green]✓[/green] Dev Agents started in background (PID: {pid})")
+            console.print(f"[dim]Run 'dev-agents stop' to stop the daemon[/dim]")
+            sys.exit(0)
+    except OSError as e:
+        console.print(f"[red]✗[/red] Failed to start daemon: {e}")
+        sys.exit(1)
+
+    # Child process continues
+    os.chdir("/")
+    os.setsid()
+    os.umask(0)
+
+    # Redirect stdout/stderr to log file
+    log_file = path / ".claude" / "dev-agents.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as f:
+        os.dup2(f.fileno(), sys.stdout.fileno())
+        os.dup2(f.fileno(), sys.stderr.fileno())
+
+    # Setup logging for daemon
+    setup_logging(verbose)
+
+    # Write PID file
+    pid_file = path / ".claude" / "dev-agents.pid"
+    with open(pid_file, "w") as f:
+        f.write(str(os.getpid()))
+
+    print(f"Dev Agents v2 daemon started (PID: {os.getpid()})")
+    print(f"Watching: {path.absolute()}")
+
+    # Run the async main loop (will run indefinitely)
+    try:
+        asyncio.run(watch_async(path, config_path))
+    except Exception as e:
+        print(f"Daemon error: {e}")
+    finally:
+        # Clean up PID file
+        if pid_file.exists():
+            pid_file.unlink()
+
+
 @app.command()
 def watch(
     path: Path = typer.Argument(
@@ -48,6 +99,11 @@ def watch(
         False,
         "--verbose",
         help="Verbose logging"
+    ),
+    foreground: bool = typer.Option(
+        False,
+        "--foreground",
+        help="Run in foreground (blocking mode) for debugging"
     )
 ):
     """
@@ -55,12 +111,18 @@ def watch(
 
     Agents will automatically lint, format, and test your code as you work.
 
-    Press Ctrl+C to stop.
+    Runs in background by default for coding agent integration.
+    Use --foreground for debugging/interactive mode.
     """
-    setup_logging(verbose)
-
-    console.print(f"[bold green]Dev Agents v2[/bold green]")
-    console.print(f"Watching: [cyan]{path.absolute()}[/cyan]\n")
+    if foreground:
+        # Run in foreground for debugging
+        setup_logging(verbose)
+        console.print(f"[bold green]Dev Agents v2[/bold green]")
+        console.print(f"Watching: [cyan]{path.absolute()}[/cyan] (foreground mode)\\n")
+    else:
+        # Run in background (default)
+        run_daemon(path, config_path, verbose)
+        return
 
     # Run the async main loop
     try:
@@ -85,7 +147,12 @@ async def watch_async(path: Path, config_path: Path | None):
     # Initialize context store
     context_store.context_dir = path / ".claude" / "context"
     await context_store.initialize()
+
+    # Initialize event store
+    event_store.db_path = path / ".claude" / "events.db"
+    await event_store.initialize()
     console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
+    console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
 
     # Create agent manager
     agent_manager = AgentManager(event_bus)
@@ -256,6 +323,46 @@ def status():
 
 
 
+
+
+@app.command()
+def stop(
+path: Path = typer.Argument(
+    Path.cwd(),
+    help="Project directory"
+    )
+):
+    """Stop the background dev-agents daemon."""
+    import os
+    import signal
+
+    pid_file = path / ".claude" / "dev-agents.pid"
+
+    if not pid_file.exists():
+        console.print(f"[yellow]No daemon running in {path}[/yellow]")
+        return
+
+    try:
+        with open(pid_file) as f:
+            pid = int(f.read().strip())
+
+        # Check if process is still running
+        os.kill(pid, 0)  # Signal 0 just checks if process exists
+
+        # Send SIGTERM to gracefully stop
+        os.kill(pid, signal.SIGTERM)
+        console.print(f"[green]✓[/green] Stopped dev-agents daemon (PID: {pid})")
+
+        # Clean up files
+        pid_file.unlink()
+        log_file = path / ".claude" / "dev-agents.log"
+        if log_file.exists():
+            console.print(f"[dim]Logs available at: {log_file}[/dim]")
+
+    except (ValueError, OSError) as e:
+        console.print(f"[red]✗[/red] Failed to stop daemon: {e}")
+        if pid_file.exists():
+            pid_file.unlink()
 
 
 @app.command()
