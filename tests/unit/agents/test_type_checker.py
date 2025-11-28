@@ -12,7 +12,7 @@ class TestTypeCheckerConfig:
 
     def test_default_config(self):
         """Test default configuration."""
-        config = TypeCheckerConfig({})
+        config = TypeCheckerConfig(**{})
 
         assert config.enabled_tools == ["mypy"]
         assert config.strict_mode is False
@@ -29,7 +29,7 @@ class TestTypeCheckerConfig:
             "exclude_patterns": ["custom_*"],
             "max_issues": 100
         }
-        config = TypeCheckerConfig(custom_config)
+        config = TypeCheckerConfig(**custom_config)
 
         assert config.enabled_tools == ["mypy", "pyright"]
         assert config.strict_mode is True
@@ -85,17 +85,25 @@ class TestTypeCheckerAgent:
     @pytest.mark.asyncio
     async def test_handle_non_python_file(self, agent):
         """Test handling of non-Python files."""
-        event = Event(
-            type="file:modified",
-            payload={"path": "styles.css"},
-            source="test"
-        )
+        # Create a temporary non-Python file
+        non_py_file = Path("temp_styles.css")
+        non_py_file.write_text("body { color: red; }")
 
-        result = await agent.handle(event)
+        try:
+            event = Event(
+                type="file:modified",
+                payload={"path": str(non_py_file)},
+                source="test"
+            )
 
-        assert result.success is True
-        assert "Skipped non-Python file" in result.message
-        assert result.agent_name == "type-checker"
+            result = await agent.handle(event)
+
+            assert result.success is True
+            assert "Skipped non-Python file" in result.message
+            assert result.agent_name == "type-checker"
+
+        finally:
+            non_py_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
     async def test_handle_missing_file(self, agent):
@@ -169,23 +177,22 @@ class TestTypeCheckerAgent:
             py_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
-    async def test_mypy_tool_check(self, agent):
+    def test_mypy_tool_check(self, agent):
         """Test mypy tool availability checking."""
         with patch('subprocess.run') as mock_run:
             # Test when mypy is available
             mock_run.return_value = MagicMock(returncode=0)
-            result = await agent._run_mypy(Path("test.py"))
+            result = agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "mypy" in result.tool
 
             # Test when mypy is not available
             mock_run.return_value = MagicMock(returncode=1)
-            result = await agent._run_mypy(Path("test.py"))
+            result = agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "not installed" in result.errors[0]
 
-    @pytest.mark.asyncio
-    async def test_mypy_output_parsing(self, agent):
+    def test_mypy_output_parsing(self, agent):
         """Test parsing of mypy output."""
         mypy_output = """test.py:5: error: Argument 1 to "len" has incompatible type "int"; expected "Sized"  [arg-type]
 test.py:10: note: Revealed type is "builtins.int"
@@ -193,13 +200,13 @@ Found 1 error in 1 file (checked 1 source file)
 """
 
         with patch('subprocess.run') as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0,
-                stdout=mypy_output,
-                stderr=""
-            )
+            # Configure different responses for availability check and mypy run
+            mock_run.side_effect = [
+                MagicMock(returncode=0, stdout="", stderr=""),  # availability check
+                MagicMock(returncode=0, stdout=mypy_output, stderr="")  # mypy run
+            ]
 
-            result = await agent._run_mypy(Path("test.py"))
+            result = agent._run_mypy(Path("test.py"))
 
             assert result.tool == "mypy"
             assert len(result.issues) == 2  # One error, one note
@@ -208,14 +215,23 @@ Found 1 error in 1 file (checked 1 source file)
             assert "arg-type" in result.issues[0]["error_code"]
             assert result.issues[1]["severity"] == "note"
 
+    @pytest.mark.asyncio
     def test_strict_mode_flag(self, agent):
         """Test that strict mode adds the --strict flag."""
         agent.config.strict_mode = True
 
         with patch('subprocess.run') as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-            result = await agent._run_mypy(Path("test.py"))
+            result = agent._run_mypy(Path("test.py"))
 
-            # Check that --strict was in the command
-            call_args = mock_run.call_args[0][0]  # Get the command list
-            assert "--strict" in call_args
+            # Check that subprocess.run was called (should be called twice: availability check + mypy run)
+            assert mock_run.call_count >= 2
+
+            # Check that --strict was in one of the commands
+            strict_found = False
+            for call in mock_run.call_args_list:
+                cmd = call[0][0]  # First positional arg is the command
+                if isinstance(cmd, list) and "--strict" in cmd:
+                    strict_found = True
+                    break
+            assert strict_found, f"--strict not found in any subprocess.run call. Calls: {mock_run.call_args_list}"

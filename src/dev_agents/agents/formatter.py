@@ -6,12 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context_store import (
-    context_store,
-    Finding,
-    Severity,
-    ScopeType,
-)
+from dev_agents.core.context import Finding
 from dev_agents.core.event import Event
 
 
@@ -82,11 +77,11 @@ class FormatterAgent(Agent):
         # Loop prevention: Check for formatting loops
         if self._detect_formatting_loop(path):
             await self._write_finding_to_context(
-                path=path,
-                formatter="loop_detector",
-                severity=Severity.WARNING,
-                message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
-                blocking=True,
+            path=path,
+            formatter="loop_detector",
+            severity="warning",
+            message=f"Prevented formatting loop for {path.name} (too many recent format operations)",
+            blocking=True,
             )
             result = AgentResult(
                 agent_name=self.name,
@@ -125,7 +120,7 @@ class FormatterAgent(Agent):
                 await self._write_finding_to_context(
                     path=path,
                     formatter=formatter,
-                    severity=Severity.ERROR,
+                    severity="error",
                     message=f"Failed to check if {path.name} needs formatting: {check_error}",
                     blocking=True,
                 )
@@ -156,7 +151,7 @@ class FormatterAgent(Agent):
                 await self._write_finding_to_context(
                     path=path,
                     formatter=formatter,
-                    severity=Severity.ERROR,
+                    severity="error",
                     message=message,
                     blocking=True,
                 )
@@ -168,7 +163,7 @@ class FormatterAgent(Agent):
                 await self._write_finding_to_context(
                     path=path,
                     formatter=formatter,
-                    severity=Severity.INFO,
+                    severity="info",
                     message=f"{path.name} needs formatting with {formatter}",
                     auto_fixable=True,
                 )
@@ -203,7 +198,7 @@ class FormatterAgent(Agent):
                 await self._write_finding_to_context(
                     path=path,
                     formatter=formatter,
-                    severity=Severity.ERROR,
+                    severity="error",
                     message=message,
                     blocking=True,
                 )
@@ -294,27 +289,28 @@ class FormatterAgent(Agent):
         self,
         path: Path,
         formatter: str,
-        severity: Severity,
+        severity: str,
         message: str,
         blocking: bool = False,
         auto_fixable: bool = False,
     ) -> None:
         """Write a formatting finding to the context store."""
+        from dev_agents.core.context import context_store
+
         finding = Finding(
-            id=f"format_{path.name}_{formatter}_{datetime.utcnow().timestamp()}",
-            agent="formatter",
-            timestamp=datetime.utcnow().isoformat() + "Z",
-            file=str(path),
+            agent_name=self.name,
+            file_path=str(path),
             severity=severity,
-            blocking=blocking,
-            category=f"format_{formatter}",
             message=message,
-            auto_fixable=auto_fixable,
-            scope_type=ScopeType.CURRENT_FILE,
-            caused_by_recent_change=True,
-            is_new=True,
+            rule_id=f"format_{formatter}",
+            suggestion=f"Run {formatter} on {path}" if auto_fixable else None,
+            metadata={
+                "formatter": formatter,
+                "auto_fixable": auto_fixable,
+                "blocking": blocking,
+            }
         )
-        await context_store.add_finding(finding)
+        context_store.store_findings(self.name, [finding])
 
     async def _run_formatter(
         self, formatter: str, path: Path

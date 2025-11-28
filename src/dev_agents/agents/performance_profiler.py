@@ -28,7 +28,7 @@ class PerformanceConfig:
         if self.enabled_tools is None:
             self.enabled_tools = ["radon"]
         if self.exclude_patterns is None:
-            self.exclude_patterns = ["test_*", "*_test.py", "*/tests/*", "__init__.py"]
+            self.exclude_patterns = ["test*", "*_test.py", "*/tests/*", "__init__.py"]
 
 
 class PerformanceResult:

@@ -29,7 +29,7 @@ class TestSecurityConfig:
             "exclude_patterns": ["custom_*"],
             "max_issues": 100
         }
-        config = SecurityConfig(custom_config)
+        config = SecurityConfig(**custom_config)
 
         assert config.enabled_tools == ["bandit", "safety"]
         assert config.severity_threshold == "high"
@@ -90,17 +90,25 @@ class TestSecurityScannerAgent:
     @pytest.mark.asyncio
     async def test_handle_non_python_file(self, agent):
         """Test handling of non-Python files."""
-        event = Event(
-            type="file:modified",
-            payload={"path": "styles.css"},
-            source="test"
-        )
+        # Create a temporary non-Python file
+        non_py_file = Path("temp_styles.css")
+        non_py_file.write_text("body { color: red; }")
 
-        result = await agent.handle(event)
+        try:
+            event = Event(
+                type="file:modified",
+                payload={"path": str(non_py_file)},
+                source="test"
+            )
 
-        assert result.success is True
-        assert "Skipped non-Python file" in result.message
-        assert result.agent_name == "security-scanner"
+            result = await agent.handle(event)
+
+            assert result.success is True
+            assert "Skipped non-Python file" in result.message
+            assert result.agent_name == "security-scanner"
+
+        finally:
+            non_py_file.unlink(missing_ok=True)
 
     @pytest.mark.asyncio
     async def test_handle_missing_file(self, agent):
@@ -120,7 +128,7 @@ class TestSecurityScannerAgent:
     async def test_handle_test_file(self, agent):
         """Test handling of test files (should be excluded)."""
         # Create a temporary test file
-        test_file = Path("temp_test_file.py")
+        test_file = Path("temp_test.py")
         test_file.write_text("# Test file")
 
         try:

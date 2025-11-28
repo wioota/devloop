@@ -10,7 +10,7 @@ from dev_agents.collectors.base import BaseCollector
 from dev_agents.collectors.filesystem import FileSystemCollector
 from dev_agents.collectors.git import GitCollector
 from dev_agents.collectors.manager import CollectorManager
-from dev_agents.collectors.process import ProcessCollector
+from dev_agents.collectors.process import ProcessCollector, HAS_PSUTIL
 from dev_agents.core.event import EventBus
 
 
@@ -177,7 +177,7 @@ class TestProcessCollector:
         assert collector.event_bus == event_bus
         assert len(collector.monitoring_patterns) > 0
 
-    @pytest.mark.skipif(not ProcessCollector()._psutil_available, reason="psutil not available")
+    @pytest.mark.skipif(not HAS_PSUTIL, reason="psutil not available")
     def test_should_monitor_process(self):
         """Test process monitoring logic."""
         event_bus = EventBus()
@@ -196,20 +196,20 @@ class TestProcessCollector:
 
         assert not collector._should_monitor_process(mock_process)
 
-    @pytest.mark.skipif(not ProcessCollector()._psutil_available, reason="psutil not available")
+    @pytest.mark.skipif(not HAS_PSUTIL, reason="psutil not available")
     @pytest.mark.asyncio
     async def test_start_stop(self):
         """Test starting and stopping the process collector."""
-            event_bus = EventBus()
-            collector = ProcessCollector(event_bus)
+        event_bus = EventBus()
+        collector = ProcessCollector(event_bus)
 
-            # Start the collector
-            await collector.start()
-            assert collector._running
+        # Start the collector
+        await collector.start()
+        assert collector._running
 
-            # Stop the collector
-            await collector.stop()
-            assert not collector._running
+        # Stop the collector
+        await collector.stop()
+        assert not collector._running
 
     @pytest.mark.asyncio
     async def test_emit_process_event(self):
@@ -327,5 +327,4 @@ class TestCollectorManager:
 
         # Active collectors
         active = manager.list_active_collectors()
-        assert "filesystem" in active</content>
-</xai:function_call">Comprehensive test suite created for all collectors and the collector manager." 
+        assert "filesystem" in active

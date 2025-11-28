@@ -29,7 +29,7 @@ class TypeCheckerConfig:
         if self.enabled_tools is None:
             self.enabled_tools = ["mypy"]
         if self.exclude_patterns is None:
-            self.exclude_patterns = ["test_*", "*_test.py", "*/tests/*"]
+            self.exclude_patterns = ["test*", "*_test.py", "*/tests/*"]
 
 
 class TypeCheckResult:
@@ -126,9 +126,6 @@ class TypeCheckerAgent(Agent):
                 },
             )
 
-            # Write to context store for Claude Code integration
-            context_store.write_finding(agent_result)
-
             return agent_result
         except Exception as e:
             self.logger.error(
@@ -165,7 +162,7 @@ class TypeCheckerAgent(Agent):
 
         # Try mypy first (most common Python type checker)
         if "mypy" in self.config.enabled_tools:
-            mypy_result = await self._run_mypy(file_path)
+            mypy_result = self._run_mypy(file_path)
             if mypy_result:
                 results.append(mypy_result)
 
@@ -175,7 +172,7 @@ class TypeCheckerAgent(Agent):
 
         return TypeCheckResult("none", [], ["No type checking tools available"])
 
-    async def _run_mypy(self, file_path: Path) -> Optional[TypeCheckResult]:
+    def _run_mypy(self, file_path: Path) -> Optional[TypeCheckResult]:
         """Run MyPy type checker."""
         try:
             # Check if mypy is available
@@ -200,14 +197,14 @@ class TypeCheckerAgent(Agent):
                 cmd.append("--strict")
 
             # Run mypy in subprocess
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
                 cwd=file_path.parent,
             )
-
-            stdout, stderr = await process.communicate()
+            stdout = result.stdout
+            stderr = result.stderr
 
             issues = []
 

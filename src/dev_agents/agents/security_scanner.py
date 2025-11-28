@@ -35,7 +35,7 @@ class SecurityConfig:
         if self.enabled_tools is None:
             self.enabled_tools = ["bandit"]
         if self.exclude_patterns is None:
-            self.exclude_patterns = ["test_*", "*_test.py", "*/tests/*"]
+            self.exclude_patterns = ["test*", "*_test.py", "*/tests/*"]
 
 
 class SecurityResult:

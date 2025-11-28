@@ -7,12 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context_store import (
-    context_store,
-    Finding,
-    Severity,
-    ScopeType,
-)
+from dev_agents.core.context import Finding
 from dev_agents.core.event import Event
 
 
@@ -58,8 +53,8 @@ class LinterResult:
 class LinterAgent(Agent):
     """Agent that runs linters on file changes."""
 
-    def __init__(self, name: str, triggers: List[str], event_bus, config: Dict[str, Any] | None = None):
-        super().__init__(name, triggers, event_bus)
+    def __init__(self, name: str, triggers: List[str], event_bus, config: Dict[str, Any] | None = None, feedback_api=None, performance_monitor=None):
+        super().__init__(name, triggers, event_bus, feedback_api=feedback_api, performance_monitor=performance_monitor)
         self.config = LinterConfig(config or {})
         self._last_run: Dict[str, float] = {}  # path -> timestamp for debouncing
 
@@ -336,35 +331,30 @@ class LinterAgent(Agent):
         if not result.success or not result.has_issues:
             return
 
-        from datetime import datetime
+        from src.dev_agents.core.context import context_store
 
         # Convert each linter issue to a Finding
+        findings = []
         for idx, issue in enumerate(result.issues):
             # Extract issue details (format varies by linter)
             if linter == "ruff":
-                line = issue.get("location", {}).get("row", 0)
-                column = issue.get("location", {}).get("column", 0)
+                location = issue.get("location", {})
+                line = location.get("row") if isinstance(location, dict) else None
+                column = location.get("column") if isinstance(location, dict) else None
                 code = issue.get("code", "unknown")
                 message_text = issue.get("message", "")
                 fixable = issue.get("fix", None) is not None
-                severity_map = {
-                    "E": Severity.ERROR,
-                    "W": Severity.WARNING,
-                    "F": Severity.ERROR,  # Fatal
-                }
                 # Get severity from code prefix (E, W, F, etc.)
-                severity = severity_map.get(code[0], Severity.WARNING) if code else Severity.WARNING
-                category = f"lint_{code}" if code else "lint_error"
+                severity = "error" if code.startswith(("E", "F")) else "warning"
             elif linter == "eslint":
-                line = issue.get("line", 0)
-                column = issue.get("column", 0)
+                line = issue.get("line")
+                column = issue.get("column")
                 code = issue.get("ruleId", "unknown")
                 message_text = issue.get("message", "")
                 fixable = issue.get("fix", None) is not None
                 # eslint severity: 1 = warning, 2 = error
                 eslint_severity = issue.get("severity", 1)
-                severity = Severity.ERROR if eslint_severity == 2 else Severity.WARNING
-                category = f"lint_{code}" if code else "lint_error"
+                severity = "error" if eslint_severity == 2 else "warning"
             else:
                 # Generic format
                 line = None
@@ -372,37 +362,30 @@ class LinterAgent(Agent):
                 code = "unknown"
                 message_text = str(issue)
                 fixable = False
-                severity = Severity.WARNING
-                category = "lint_error"
+                severity = "warning"
 
             # Create Finding
             finding = Finding(
-                id=f"lint_{path.name}_{line}_{idx}",
-                agent="linter",
-                timestamp=datetime.utcnow().isoformat() + "Z",
-                file=str(path),
-                line=line,
-                column=column,
+                agent_name=self.name,
+                file_path=str(path),
+                line_number=line,
+                column_number=column,
                 severity=severity,
-                blocking=severity == Severity.ERROR,
-                category=category,
                 message=message_text,
-                detail=f"{linter} found issue: {message_text}",
-                suggestion=f"Fix {code}" if code != "unknown" else "",
-                auto_fixable=fixable and self.config.auto_fix,
-                fix_command=f"{linter} --fix {path}" if fixable else None,
-                scope_type=ScopeType.CURRENT_FILE,
-                caused_by_recent_change=True,  # Assume recent since we just linted
-                is_new=True,
-                context={
+                rule_id=code,
+                suggestion=f"Run {linter} --fix {path}" if fixable and self.config.auto_fix else None,
+                metadata={
                     "linter": linter,
-                    "code": code,
                     "fixable": fixable,
-                },
+                    "auto_fixable": fixable and self.config.auto_fix,
+                }
             )
 
-            # Add to context store
+            findings.append(finding)
+
+        # Store all findings for this file
+        if findings:
             try:
-                await context_store.add_finding(finding)
+                context_store.store_findings(self.name, findings)
             except Exception as e:
-                self.logger.error(f"Failed to write finding to context: {e}")
+                self.logger.error(f"Failed to write findings to context: {e}")
