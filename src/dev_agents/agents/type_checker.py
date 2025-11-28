@@ -139,7 +139,7 @@ class TypeCheckerAgent(Agent):
 
     def _should_exclude_file(self, file_path: str) -> bool:
         """Check if file should be excluded from type checking."""
-    if not self.config.exclude_patterns:
+        if not self.config.exclude_patterns:
             return False
         for pattern in self.config.exclude_patterns:
             if pattern.startswith("*") and pattern.endswith("*"):
