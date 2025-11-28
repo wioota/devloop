@@ -20,8 +20,8 @@ class PerformanceConfig:
 
     complexity_threshold: int = 10  # McCabe complexity threshold
     min_lines_threshold: int = 50  # Minimum lines to analyze
-    enabled_tools: List[str] = None  # ["radon", "flake8-complexity"]
-    exclude_patterns: List[str] = None
+    enabled_tools: Optional[List[str]] = None  # ["radon", "flake8-complexity"]
+    exclude_patterns: Optional[List[str]] = None
     max_issues: int = 50
 
     def __post_init__(self):

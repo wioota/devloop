@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent
 from dev_agents.core.context_store import context_store
@@ -148,7 +148,7 @@ class AgentManager:
 
         self.logger.info(f"Resumed agents: {target_agents}")
 
-    def get_status(self) -> Dict[str, Dict[str, any]]:
+    def get_status(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all agents."""
         return {
             name: {
@@ -160,13 +160,13 @@ class AgentManager:
             for name, agent in self.agents.items()
         }
 
-    async def get_agent_insights(self, agent_name: str) -> Optional[Dict[str, any]]:
+    async def get_agent_insights(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """Get insights for a specific agent."""
         if not self.feedback_api:
             return None
         return await self.feedback_api.get_agent_insights(agent_name)
 
-    async def get_system_health(self) -> Optional[Dict[str, any]]:
+    async def get_system_health(self) -> Optional[Dict[str, Any]]:
         """Get current system health metrics."""
         if not self.performance_monitor:
             return None

@@ -45,7 +45,7 @@ class FormatterAgent(Agent):
         self.config = FormatterConfig(config or {})
 
         # Loop prevention mechanisms
-        self._recent_formats = {}  # file_path -> list of timestamps
+        self._recent_formats: Dict[str, List[float]] = {}  # file_path -> list of timestamps
         self._format_timeout = 30  # seconds
         self._loop_detection_window = 10  # seconds
         self._max_consecutive_formats = 3  # per file per window

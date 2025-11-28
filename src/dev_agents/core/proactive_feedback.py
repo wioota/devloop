@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable
 
 from .event import Event, EventBus
 from .feedback import FeedbackAPI, FeedbackType
@@ -20,7 +20,7 @@ class FeedbackPrompt:
     event_type: str
     prompt_type: str  # 'quick_rating', 'detailed_feedback', 'thumbs_only'
     message: str
-    context: Dict[str, any]
+    context: Dict[str, Any]
     timestamp: float
     expires_at: float
     callback: Optional[Callable] = None
@@ -87,7 +87,7 @@ class ProactiveFeedbackManager:
         agent_name = event.payload.get("agent_name")
         success = event.payload.get("success", False)
 
-        if success:
+        if agent_name and success:
             await self._schedule_prompt(
                 agent_name=agent_name,
                 event_type="agent:completed",
@@ -96,7 +96,7 @@ class ProactiveFeedbackManager:
                 context=event.payload,
                 delay_seconds=self.prompt_delays["after_agent_success"],
             )
-        else:
+        elif agent_name:
             # For failures, ask for feedback more urgently
             await self._schedule_prompt(
                 agent_name=agent_name,
@@ -166,7 +166,7 @@ class ProactiveFeedbackManager:
         event_type: str,
         prompt_type: str,
         message: str,
-        context: Dict[str, any],
+        context: Dict[str, Any],
         delay_seconds: int,
     ) -> None:
         """Schedule a feedback prompt to be shown after a delay."""
@@ -237,7 +237,7 @@ class ProactiveFeedbackManager:
         self,
         prompt_id: str,
         feedback_type: FeedbackType,
-        value: any,
+        value: Any,
         comment: Optional[str] = None,
     ) -> bool:
         """Submit feedback for a proactive prompt."""
@@ -264,7 +264,7 @@ class ProactiveFeedbackManager:
         del self.active_prompts[prompt_id]
         return True
 
-    def get_active_prompts(self) -> List[Dict[str, any]]:
+    def get_active_prompts(self) -> List[Dict[str, Any]]:
         """Get list of currently active feedback prompts."""
         current_time = time.time()
         active = []

@@ -20,7 +20,7 @@ class ContextReader:
 
     def get_all_findings(self) -> Dict[str, List[FileFindings]]:
         """Get all findings from all agents."""
-        findings = {}
+        findings: Dict[str, List[FileFindings]] = {}
         if not self.base_path.exists():
             return findings
 

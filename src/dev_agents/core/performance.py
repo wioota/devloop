@@ -220,7 +220,7 @@ class PerformanceMonitor:
         operations = await self._load_recent_metrics(cutoff_time)
 
         # Group by hour
-        hourly_data = {}
+        hourly_data: Dict[int, Dict[str, Any]] = {}
         for op in operations:
             if op.resource_usage_start:
                 hour = int(op.start_time // 3600)
@@ -310,7 +310,7 @@ class PerformanceMonitor:
         self, cutoff_time: float
     ) -> List[PerformanceMetrics]:
         """Load metrics newer than cutoff time."""
-        metrics = []
+        metrics: List[PerformanceMetrics] = []
 
         if not self.metrics_file.exists():
             return metrics

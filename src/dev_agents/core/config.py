@@ -28,7 +28,7 @@ class GlobalConfig:
     notification_level: str = "summary"
     context_store_enabled: bool = True
     context_store_path: str = ".claude/context"
-    autonomous_fixes: AutonomousFixesConfig = None
+    autonomous_fixes: Optional[AutonomousFixesConfig] = None
 
     def __post_init__(self):
         if self.mode not in ["report-only", "active"]:
@@ -44,7 +44,7 @@ class Config:
 
     def __init__(self, config_path: str = ".claude/agents.json"):
         self.config_path = Path(config_path)
-        self._config = None
+        self._config: Optional[Dict[str, Any]] = None
 
     def load(self) -> Dict[str, Any]:
         """Load configuration from file."""

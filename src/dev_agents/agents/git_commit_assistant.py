@@ -20,7 +20,7 @@ class CommitConfig:
     include_breaking_changes: bool = True
     analyze_file_changes: bool = True
     auto_generate_scope: bool = True
-    common_types: List[str] = None
+    common_types: Optional[List[str]] = None
 
     def __post_init__(self):
         if self.common_types is None:

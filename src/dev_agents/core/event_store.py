@@ -23,6 +23,13 @@ class EventStore:
         self._lock = asyncio.Lock()
         self._connection: Optional[sqlite3.Connection] = None
 
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """Get the database connection, raising an exception if not initialized."""
+        if self._connection is None:
+            raise RuntimeError("Database connection not initialized. Call initialize() first.")
+        return self._connection
+
     async def initialize(self) -> None:
         """Initialize the event store database."""
         async with self._lock:
@@ -35,7 +42,7 @@ class EventStore:
     def _init_db(self) -> None:
         """Initialize database schema (runs in thread pool)."""
         self._connection = sqlite3.connect(str(self.db_path))
-        self._connection.execute(
+        self.connection.execute(
             """
         CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
@@ -50,23 +57,23 @@ class EventStore:
         )
 
         # Create indexes for efficient queries
-        self._connection.execute(
+        self.connection.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)
         """
         )
-        self._connection.execute(
+        self.connection.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)
         """
         )
-        self._connection.execute(
+        self.connection.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_events_source ON events(source)
         """
         )
 
-        self._connection.commit()
+        self.connection.commit()
         logger.info(f"Event store initialized at {self.db_path}")
 
     async def store_event(self, event: Event) -> None:
@@ -97,7 +104,7 @@ class EventStore:
                 "created_at": datetime.now(UTC).timestamp(),
             }
 
-            self._connection.execute(
+            self.connection.execute(
                 """
                 INSERT OR REPLACE INTO events
                 (id, type, timestamp, source, payload, priority, created_at)
@@ -114,7 +121,7 @@ class EventStore:
                 ),
             )
 
-            self._connection.commit()
+            self.connection.commit()
 
         except Exception as e:
             logger.error(f"Failed to store event {event.id}: {e}")
@@ -148,7 +155,7 @@ class EventStore:
         """Retrieve events synchronously."""
         try:
             query = "SELECT id, type, timestamp, source, payload, priority FROM events WHERE 1=1"
-            params = []
+            params: List[Any] = []
 
             if event_type:
                 query += " AND type = ?"
@@ -165,7 +172,7 @@ class EventStore:
             query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
 
-            cursor = self._connection.execute(query, params)
+            cursor = self.connection.execute(query, params)
             rows = cursor.fetchall()
 
             events = []
@@ -206,11 +213,11 @@ class EventStore:
         """Get event statistics synchronously."""
         try:
             # Total events
-            cursor = self._connection.execute("SELECT COUNT(*) FROM events")
+            cursor = self.connection.execute("SELECT COUNT(*) FROM events")
             total_events = cursor.fetchone()[0]
 
             # Events by type
-            cursor = self._connection.execute(
+            cursor = self.connection.execute(
                 """
                 SELECT type, COUNT(*) as count
                 FROM events
@@ -221,7 +228,7 @@ class EventStore:
             events_by_type = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Events by source
-            cursor = self._connection.execute(
+            cursor = self.connection.execute(
                 """
                 SELECT source, COUNT(*) as count
                 FROM events
@@ -232,7 +239,7 @@ class EventStore:
             events_by_source = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Time range
-            cursor = self._connection.execute(
+            cursor = self.connection.execute(
                 """
                 SELECT MIN(timestamp), MAX(timestamp) FROM events
             """
@@ -268,7 +275,7 @@ class EventStore:
 
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
-                None, self._cleanup_old_events_sync, cutoff_timestamp
+                None, lambda: self._cleanup_old_events_sync(cutoff_timestamp, days_to_keep)
             )
 
     def _cleanup_old_events_sync(
@@ -276,11 +283,11 @@ class EventStore:
     ) -> int:
         """Clean up old events synchronously."""
         try:
-            cursor = self._connection.execute(
+            cursor = self.connection.execute(
                 "DELETE FROM events WHERE timestamp < ?", (cutoff_timestamp,)
             )
             deleted_count = cursor.rowcount
-            self._connection.commit()
+            self.connection.commit()
 
             if deleted_count > 0:
                 logger.info(

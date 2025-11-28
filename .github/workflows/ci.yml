@@ -98,9 +98,8 @@ jobs:
         poetry install --with dev
 
     - name: Run mypy (type checking)
-      run: |
-        echo "Temporarily skipping mypy due to type annotation issues - will be re-enabled after type fixes"
-        # cd src && poetry run mypy dev_agents/core/ dev_agents/agents/ --no-error-summary
+       run: |
+         cd src && poetry run mypy dev_agents/core/ dev_agents/agents/ --no-error-summary
 
   security:
     runs-on: ubuntu-latest

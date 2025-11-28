@@ -6,7 +6,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .event import Event, EventBus
 from .feedback import FeedbackAPI, FeedbackType
@@ -21,7 +21,7 @@ class DeveloperAction:
     )
     file_path: Optional[str]
     timestamp: float
-    context: Dict[str, any] = None
+    context: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.context is None:
@@ -43,7 +43,7 @@ class ContextualFeedbackEngine:
         self.action_window = 300  # 5 minutes window for action correlation
 
         # Track agent actions to correlate with developer responses
-        self.recent_agent_actions: List[Dict[str, any]] = []
+        self.recent_agent_actions: List[Dict[str, Any]] = []
         self.agent_action_window = 600  # 10 minutes
 
         # File interaction patterns
@@ -127,7 +127,7 @@ class ContextualFeedbackEngine:
         # Analyze patterns
         await self._analyze_file_patterns(file_path, action)
 
-    async def _analyze_immediate_feedback(self, agent_action: Dict[str, any]) -> None:
+    async def _analyze_immediate_feedback(self, agent_action: Dict[str, Any]) -> None:
         """Analyze immediate feedback patterns after agent actions."""
         agent_time = agent_action["timestamp"]
 
@@ -179,7 +179,7 @@ class ContextualFeedbackEngine:
             await self._infer_feedback_from_quick_modification(file_path, latest_action)
 
     async def _infer_feedback_from_file_changes(
-        self, agent_action: Dict[str, any], file_actions: List[DeveloperAction]
+        self, agent_action: Dict[str, Any], file_actions: List[DeveloperAction]
     ) -> None:
         """Infer feedback from file changes after agent action."""
 
@@ -275,7 +275,7 @@ class ContextualFeedbackEngine:
             },
         )
 
-    async def get_contextual_insights(self, agent_name: str) -> Dict[str, any]:
+    async def get_contextual_insights(self, agent_name: str) -> Dict[str, Any]:
         """Get contextual insights about developer behavior patterns."""
         # Analyze recent actions for patterns
         cutoff_time = time.time() - 3600  # Last hour

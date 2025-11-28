@@ -427,7 +427,7 @@ class ContextStore:
 
     def _severity_breakdown(self, findings: List[Finding]) -> Dict[str, int]:
         """Count findings by severity."""
-        breakdown = {}
+        breakdown: Dict[str, int] = {}
         for f in findings:
             severity = f.severity.value
             breakdown[severity] = breakdown.get(severity, 0) + 1
@@ -435,7 +435,7 @@ class ContextStore:
 
     def _category_breakdown(self, findings: List[Finding]) -> Dict[str, int]:
         """Count findings by category."""
-        breakdown = {}
+        breakdown: Dict[str, int] = {}
         for f in findings:
             breakdown[f.category] = breakdown.get(f.category, 0) + 1
         return breakdown

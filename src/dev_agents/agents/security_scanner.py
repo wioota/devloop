@@ -24,10 +24,10 @@ from ..core.event import Event
 class SecurityConfig:
     """Configuration for security scanning."""
 
-    enabled_tools: List[str] = None  # ["bandit", "safety", "trivy"]
+    enabled_tools: Optional[List[str]] = None  # ["bandit", "safety", "trivy"]
     severity_threshold: str = "medium"  # low, medium, high
     confidence_threshold: str = "medium"  # low, medium, high
-    exclude_patterns: List[str] = None
+    exclude_patterns: Optional[List[str]] = None
     max_issues: int = 50
 
     def __post_init__(self):

@@ -34,7 +34,7 @@ class Feedback:
     value: Any  # thumbs_up/down: bool, rating: int 1-5, comment: str, dismiss: None
     comment: Optional[str] = None
     context: Optional[Dict[str, Any]] = None  # Agent result data, file info, etc.
-    timestamp: float = None
+    timestamp: Optional[float] = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -67,7 +67,7 @@ class AgentPerformance:
     thumbs_up_count: int = 0
     thumbs_down_count: int = 0
     average_rating: float = 0.0
-    last_updated: float = None
+    last_updated: Optional[float] = None
 
     def __post_init__(self):
         if self.last_updated is None:
@@ -103,7 +103,7 @@ class FeedbackStore:
         self, agent_name: str, limit: int = 100
     ) -> List[Feedback]:
         """Get recent feedback for a specific agent."""
-        feedback_items = []
+        feedback_items: List[Feedback] = []
 
         if not self.feedback_file.exists():
             return feedback_items
