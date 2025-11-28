@@ -1,37 +1,35 @@
 """Filesystem event collector using watchdog."""
+
 import asyncio
-import logging
 from pathlib import Path
-from typing import List
+from typing import Any, Dict
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from dev_agents.core.event import Event, EventBus, Priority
+from dev_agents.collectors.base import BaseCollector
+from dev_agents.core.event import EventBus
 
 
-class FileSystemCollector(FileSystemEventHandler):
+class FileSystemCollector(BaseCollector, FileSystemEventHandler):
     """Collects filesystem events and emits them to the event bus."""
 
-    def __init__(
-        self,
-        event_bus: EventBus,
-        watch_paths: List[str] | None = None,
-        ignore_patterns: List[str] | None = None
-    ):
-        self.event_bus = event_bus
-        self.watch_paths = watch_paths or ["."]
-        self.ignore_patterns = ignore_patterns or [
-            "*/.git/*",
-            "*/__pycache__/*",
-            "*/.claude/*",
-            "*/node_modules/*",
-            "*/.venv/*",
-            "*/venv/*"
-        ]
-        self.logger = logging.getLogger("collector.filesystem")
+    def __init__(self, event_bus: EventBus, config: Dict[str, Any] | None = None):
+        super().__init__("filesystem", event_bus, config)
+
+        self.watch_paths = self.config.get("watch_paths", ["."])
+        self.ignore_patterns = self.config.get(
+            "ignore_patterns",
+            [
+                "*/.git/*",
+                "*/__pycache__/*",
+                "*/.claude/*",
+                "*/node_modules/*",
+                "*/.venv/*",
+                "*/venv/*",
+            ],
+        )
         self.observer = Observer()
-        self._running = False
         self._loop = None  # Store reference to the event loop
 
     def should_ignore(self, path: str) -> bool:
@@ -51,59 +49,56 @@ class FileSystemCollector(FileSystemEventHandler):
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
-        self._emit_event("file:created", event.src_path)
+        self._emit_event_sync("file:created", event.src_path)
 
     def on_modified(self, event: FileSystemEvent) -> None:
         """Handle file/directory modified."""
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
-        self._emit_event("file:modified", event.src_path)
+        self._emit_event_sync("file:modified", event.src_path)
 
     def on_deleted(self, event: FileSystemEvent) -> None:
         """Handle file/directory deleted."""
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
-        self._emit_event("file:deleted", event.src_path)
+        self._emit_event_sync("file:deleted", event.src_path)
 
     def on_moved(self, event: FileSystemEvent) -> None:
         """Handle file/directory moved/renamed."""
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
-        self._emit_event("file:moved", event.src_path, {
-            "dest_path": event.dest_path if hasattr(event, "dest_path") else None
-        })
+        self._emit_event_sync(
+            "file:moved",
+            event.src_path,
+            {"dest_path": event.dest_path if hasattr(event, "dest_path") else None},
+        )
 
-    def _emit_event(self, event_type: str, path: str, extra_payload: dict | None = None) -> None:
-        """Emit a filesystem event to the event bus."""
-        payload = {
-            "path": path,
-            "absolute_path": str(Path(path).absolute())
-        }
+    def _emit_event_sync(
+        self, event_type: str, path: str, extra_payload: Dict[str, Any] | None = None
+    ) -> None:
+        """Emit a filesystem event to the event bus (synchronous version for watchdog threads)."""
+        payload = {"path": path, "absolute_path": str(Path(path).absolute())}
 
         if extra_payload:
             payload.update(extra_payload)
 
-        event = Event(
-            type=event_type,
-            payload=payload,
-            source="filesystem",
-            priority=Priority.NORMAL
-        )
-
         # Schedule coroutine from watchdog thread to asyncio event loop
         # This is thread-safe and handles the watchdog (threading) -> asyncio bridge
         if self._loop and self._loop.is_running():
-            asyncio.run_coroutine_threadsafe(self.event_bus.emit(event), self._loop)
+            asyncio.run_coroutine_threadsafe(
+                self._emit_event(event_type, payload, "normal", "filesystem"),
+                self._loop,
+            )
 
     async def start(self) -> None:
         """Start watching filesystem."""
-        if self._running:
+        if self.is_running:
             return
 
-        self._running = True
+        self._set_running(True)
 
         # Capture the current event loop for thread-safe event emission
         self._loop = asyncio.get_running_loop()
@@ -122,10 +117,10 @@ class FileSystemCollector(FileSystemEventHandler):
 
     async def stop(self) -> None:
         """Stop watching filesystem."""
-        if not self._running:
+        if not self.is_running:
             return
 
-        self._running = False
+        self._set_running(False)
         self.observer.stop()
         self.observer.join()
         self.logger.info("Filesystem collector stopped")

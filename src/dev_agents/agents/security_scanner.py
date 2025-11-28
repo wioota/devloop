@@ -4,9 +4,8 @@
 import asyncio
 import json
 import logging
-import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
@@ -35,7 +34,7 @@ class SecurityConfig:
         if self.enabled_tools is None:
             self.enabled_tools = ["bandit"]
         if self.exclude_patterns is None:
-            self.exclude_patterns = ["test_*", "*_test.py", "*/tests/*"]
+            self.exclude_patterns = ["test*", "*_test.py", "*/tests/*"]
 
 
 class SecurityResult:
@@ -183,7 +182,7 @@ class SecurityScannerAgent(Agent):
             finding = Finding(
                 id=f"security_{path.name}_{issue.get('line_number', 0)}_{idx}",
                 agent="security-scanner",
-                timestamp=datetime.utcnow().isoformat() + "Z",
+                timestamp=datetime.now(UTC).isoformat() + "Z",
                 file=str(path),
                 line=issue.get("line_number"),
                 severity=severity,

@@ -1,18 +1,12 @@
 """Linter agent - runs linters on file changes."""
+
 import asyncio
 import json
-import logging
-import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context_store import (
-    context_store,
-    Finding,
-    Severity,
-    ScopeType,
-)
+from dev_agents.core.context import Finding
 from dev_agents.core.event import Event
 
 
@@ -23,11 +17,10 @@ class LinterConfig:
         self.enabled = config.get("enabled", True)
         self.auto_fix = config.get("autoFix", False)
         self.file_patterns = config.get("filePatterns", ["**/*.py"])
-        self.linters = config.get("linters", {
-            "python": "ruff",
-            "javascript": "eslint",
-            "typescript": "eslint"
-        })
+        self.linters = config.get(
+            "linters",
+            {"python": "ruff", "javascript": "eslint", "typescript": "eslint"},
+        )
         self.debounce = config.get("debounce", 500)  # ms
 
 
@@ -38,7 +31,7 @@ class LinterResult:
         self,
         success: bool,
         issues: List[Dict[str, Any]] | None = None,
-        error: str | None = None
+        error: str | None = None,
     ):
         self.success = success
         self.issues = issues or []
@@ -58,8 +51,22 @@ class LinterResult:
 class LinterAgent(Agent):
     """Agent that runs linters on file changes."""
 
-    def __init__(self, name: str, triggers: List[str], event_bus, config: Dict[str, Any] | None = None):
-        super().__init__(name, triggers, event_bus)
+    def __init__(
+        self,
+        name: str,
+        triggers: List[str],
+        event_bus,
+        config: Dict[str, Any] | None = None,
+        feedback_api=None,
+        performance_monitor=None,
+    ):
+        super().__init__(
+            name,
+            triggers,
+            event_bus,
+            feedback_api=feedback_api,
+            performance_monitor=performance_monitor,
+        )
         self.config = LinterConfig(config or {})
         self._last_run: Dict[str, float] = {}  # path -> timestamp for debouncing
 
@@ -72,7 +79,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message="No file path in event"
+                message="No file path in event",
             )
 
         path = Path(file_path)
@@ -83,7 +90,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message=f"Skipped {path.name} (not in patterns)"
+                message=f"Skipped {path.name} (not in patterns)",
             )
 
         # Get appropriate linter for file type
@@ -93,7 +100,7 @@ class LinterAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message=f"No linter configured for {path.suffix}"
+                message=f"No linter configured for {path.suffix}",
             )
 
         # Run linter
@@ -126,8 +133,8 @@ class LinterAgent(Agent):
                 "file": str(path),
                 "linter": linter,
                 "issues": result.issues,
-                "issue_count": result.issue_count
-            }
+                "issue_count": result.issue_count,
+            },
         )
 
         # Write findings to context store for Claude Code integration
@@ -179,25 +186,20 @@ class LinterAgent(Agent):
             elif linter == "eslint":
                 result = await self._run_eslint(path)
             else:
-                result = LinterResult(
-                    success=False,
-                    error=f"Unknown linter: {linter}"
-                )
+                result = LinterResult(success=False, error=f"Unknown linter: {linter}")
 
             return result
 
         except Exception as e:
             self.logger.error(f"Error running {linter}: {e}")
-            return LinterResult(
-                success=False,
-                error=str(e)
-            )
+            return LinterResult(success=False, error=str(e))
 
     async def _run_ruff(self, path: Path) -> LinterResult:
         """Run ruff on a Python file."""
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -205,27 +207,27 @@ class LinterAgent(Agent):
 
             # Check if ruff is installed
             check = await asyncio.create_subprocess_exec(
-                "ruff", "--version",
+                "ruff",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
             await check.communicate()
 
             if check.returncode != 0:
-                return LinterResult(
-                    success=False,
-                    error="ruff not installed"
-                )
+                return LinterResult(success=False, error="ruff not installed")
 
             # Run ruff with JSON output
             proc = await asyncio.create_subprocess_exec(
-                "ruff", "check",
-                "--output-format", "json",
+                "ruff",
+                "check",
+                "--output-format",
+                "json",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
 
             stdout, stderr = await proc.communicate()
@@ -243,35 +245,31 @@ class LinterAgent(Agent):
                 return LinterResult(success=True, issues=[])
 
         except FileNotFoundError:
-            return LinterResult(
-                success=False,
-                error="ruff command not found"
-            )
+            return LinterResult(success=False, error="ruff command not found")
 
     async def _run_eslint(self, path: Path) -> LinterResult:
         """Run eslint on a JavaScript/TypeScript file."""
         try:
             # Check if eslint is installed
             check = await asyncio.create_subprocess_exec(
-                "eslint", "--version",
+                "eslint",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await check.communicate()
 
             if check.returncode != 0:
-                return LinterResult(
-                    success=False,
-                    error="eslint not installed"
-                )
+                return LinterResult(success=False, error="eslint not installed")
 
             # Run eslint with JSON output
             proc = await asyncio.create_subprocess_exec(
                 "eslint",
-                "--format", "json",
+                "--format",
+                "json",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await proc.communicate()
@@ -289,16 +287,14 @@ class LinterAgent(Agent):
             return LinterResult(success=True, issues=[])
 
         except FileNotFoundError:
-            return LinterResult(
-                success=False,
-                error="eslint command not found"
-            )
+            return LinterResult(success=False, error="eslint command not found")
 
     async def _auto_fix(self, linter: str, path: Path) -> LinterResult:
         """Attempt to auto-fix issues."""
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -306,20 +302,25 @@ class LinterAgent(Agent):
 
             if linter == "ruff":
                 proc = await asyncio.create_subprocess_exec(
-                    "ruff", "check", "--fix", str(path),
+                    "ruff",
+                    "check",
+                    "--fix",
+                    str(path),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=env
+                    env=env,
                 )
                 await proc.communicate()
                 return LinterResult(success=True)
 
             elif linter == "eslint":
                 proc = await asyncio.create_subprocess_exec(
-                    "eslint", "--fix", str(path),
+                    "eslint",
+                    "--fix",
+                    str(path),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=env
+                    env=env,
                 )
                 await proc.communicate()
                 return LinterResult(success=True)
@@ -336,35 +337,30 @@ class LinterAgent(Agent):
         if not result.success or not result.has_issues:
             return
 
-        from datetime import datetime
+        from src.dev_agents.core.context import context_store
 
         # Convert each linter issue to a Finding
+        findings = []
         for idx, issue in enumerate(result.issues):
             # Extract issue details (format varies by linter)
             if linter == "ruff":
-                line = issue.get("location", {}).get("row", 0)
-                column = issue.get("location", {}).get("column", 0)
+                location = issue.get("location", {})
+                line = location.get("row") if isinstance(location, dict) else None
+                column = location.get("column") if isinstance(location, dict) else None
                 code = issue.get("code", "unknown")
                 message_text = issue.get("message", "")
                 fixable = issue.get("fix", None) is not None
-                severity_map = {
-                    "E": Severity.ERROR,
-                    "W": Severity.WARNING,
-                    "F": Severity.ERROR,  # Fatal
-                }
                 # Get severity from code prefix (E, W, F, etc.)
-                severity = severity_map.get(code[0], Severity.WARNING) if code else Severity.WARNING
-                category = f"lint_{code}" if code else "lint_error"
+                severity = "error" if code.startswith(("E", "F")) else "warning"
             elif linter == "eslint":
-                line = issue.get("line", 0)
-                column = issue.get("column", 0)
+                line = issue.get("line")
+                column = issue.get("column")
                 code = issue.get("ruleId", "unknown")
                 message_text = issue.get("message", "")
                 fixable = issue.get("fix", None) is not None
                 # eslint severity: 1 = warning, 2 = error
                 eslint_severity = issue.get("severity", 1)
-                severity = Severity.ERROR if eslint_severity == 2 else Severity.WARNING
-                category = f"lint_{code}" if code else "lint_error"
+                severity = "error" if eslint_severity == 2 else "warning"
             else:
                 # Generic format
                 line = None
@@ -372,37 +368,34 @@ class LinterAgent(Agent):
                 code = "unknown"
                 message_text = str(issue)
                 fixable = False
-                severity = Severity.WARNING
-                category = "lint_error"
+                severity = "warning"
 
             # Create Finding
             finding = Finding(
-                id=f"lint_{path.name}_{line}_{idx}",
-                agent="linter",
-                timestamp=datetime.utcnow().isoformat() + "Z",
-                file=str(path),
-                line=line,
-                column=column,
+                agent_name=self.name,
+                file_path=str(path),
+                line_number=line,
+                column_number=column,
                 severity=severity,
-                blocking=severity == Severity.ERROR,
-                category=category,
                 message=message_text,
-                detail=f"{linter} found issue: {message_text}",
-                suggestion=f"Fix {code}" if code != "unknown" else "",
-                auto_fixable=fixable and self.config.auto_fix,
-                fix_command=f"{linter} --fix {path}" if fixable else None,
-                scope_type=ScopeType.CURRENT_FILE,
-                caused_by_recent_change=True,  # Assume recent since we just linted
-                is_new=True,
-                context={
+                rule_id=code,
+                suggestion=(
+                    f"Run {linter} --fix {path}"
+                    if fixable and self.config.auto_fix
+                    else None
+                ),
+                metadata={
                     "linter": linter,
-                    "code": code,
                     "fixable": fixable,
+                    "auto_fixable": fixable and self.config.auto_fix,
                 },
             )
 
-            # Add to context store
+            findings.append(finding)
+
+        # Store all findings for this file
+        if findings:
             try:
-                await context_store.add_finding(finding)
+                context_store.store_findings(self.name, findings)
             except Exception as e:
-                self.logger.error(f"Failed to write finding to context: {e}")
+                self.logger.error(f"Failed to write findings to context: {e}")

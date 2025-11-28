@@ -1,9 +1,8 @@
 """Automatic fix application based on agent findings."""
 
-import asyncio
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 from dev_agents.core.config import config
 from dev_agents.core.context_store import context_store
@@ -46,15 +45,21 @@ class AutoFix:
 
         return applied_fixes
 
-    async def _apply_single_fix(self, agent_type: str, finding: Dict, global_config) -> bool:
+    async def _apply_single_fix(
+        self, agent_type: str, finding: Dict, global_config
+    ) -> bool:
         """Apply a single fix if it's safe to do so."""
         finding_id = self._get_finding_id(finding)
         if finding_id in self._fix_history:
-                return False  # Already applied
+            return False  # Already applied
 
         # Check if fix is safe based on safety level
-        if not self._is_safe_for_config(agent_type, finding, global_config.autonomous_fixes.safety_level):
-            logger.info(f"Skipping {agent_type} fix (not safe for current safety level): {finding.get('message', '')}")
+        if not self._is_safe_for_config(
+            agent_type, finding, global_config.autonomous_fixes.safety_level
+        ):
+            logger.info(
+                f"Skipping {agent_type} fix (not safe for current safety level): {finding.get('message', '')}"
+            )
             return False
 
         # Apply the fix
@@ -65,12 +70,16 @@ class AutoFix:
 
         return success
 
-    def _is_safe_for_config(self, agent_type: str, finding: Dict, safety_level: str) -> bool:
+    def _is_safe_for_config(
+        self, agent_type: str, finding: Dict, safety_level: str
+    ) -> bool:
         """Check if a finding is safe to apply based on the configured safety level."""
         message = finding.get("message", "").lower()
 
         # Always reject errors/failures
-        if any(keyword in message for keyword in ["error", "failed", "timeout", "conflict"]):
+        if any(
+            keyword in message for keyword in ["error", "failed", "timeout", "conflict"]
+        ):
             return False
 
         if safety_level == "safe_only":
@@ -88,10 +97,7 @@ class AutoFix:
 
         if agent_type == "formatter":
             # Only basic formatting issues
-            return (
-                "would format" in message or
-                "needs formatting" in message
-            )
+            return "would format" in message or "needs formatting" in message
 
         elif agent_type == "linter":
             # Only very safe linting fixes
@@ -111,10 +117,7 @@ class AutoFix:
 
         if agent_type == "formatter":
             # All formatting fixes
-            return (
-                "would format" in message or
-                "needs formatting" in message
-            )
+            return "would format" in message or "needs formatting" in message
 
         elif agent_type == "linter":
             # More linting fixes including imports
@@ -175,8 +178,8 @@ class AutoFix:
                 "formatOnSave": True,
                 "reportOnly": False,
                 "filePatterns": ["**/*"],
-                "formatters": {path.suffix.lstrip("."): formatter}
-            }
+                "formatters": {path.suffix.lstrip("."): formatter},
+            },
         )
 
         # Run the formatter directly

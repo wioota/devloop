@@ -1,18 +1,13 @@
 """Test runner agent - runs tests on file changes."""
+
 import asyncio
 import json
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context_store import (
-    context_store,
-    Finding,
-    Severity,
-    ScopeType,
-)
+from dev_agents.core.context import Finding
 from dev_agents.core.event import Event
 
 
@@ -26,16 +21,18 @@ class TestRunnerConfig:
         self.auto_detect_frameworks = config.get("autoDetectFrameworks", True)
 
         # Default frameworks (will be overridden by auto-detection if enabled)
-        self.test_frameworks = config.get("testFrameworks", {
-        "python": "pytest",
-        "javascript": "jest",
-            "typescript": "jest"
-        })
-        self.test_patterns = config.get("testPatterns", {
-        "python": ["**/test_*.py", "**/*_test.py"],
-"javascript": ["**/*.test.js", "**/*.spec.js"],
-"typescript": ["**/*.test.ts", "**/*.spec.ts"]
-})
+        self.test_frameworks = config.get(
+            "testFrameworks",
+            {"python": "pytest", "javascript": "jest", "typescript": "jest"},
+        )
+        self.test_patterns = config.get(
+            "testPatterns",
+            {
+                "python": ["**/test_*.py", "**/*_test.py"],
+                "javascript": ["**/*.test.js", "**/*.spec.js"],
+                "typescript": ["**/*.test.ts", "**/*.spec.ts"],
+            },
+        )
 
         # Auto-detect available frameworks if enabled
         if self.auto_detect_frameworks:
@@ -48,7 +45,9 @@ class TestRunnerConfig:
         project_root = Path.cwd()
 
         # Python frameworks
-        if (project_root / "pytest.ini").exists() or (project_root / "pyproject.toml").exists():
+        if (project_root / "pytest.ini").exists() or (
+            project_root / "pyproject.toml"
+        ).exists():
             if self._check_command("python -m pytest --version"):
                 detected["python"] = "pytest"
 
@@ -66,7 +65,9 @@ class TestRunnerConfig:
                 scripts = package_data.get("scripts", {})
                 dependencies = package_data.get("devDependencies", {})
 
-                if "jest" in dependencies or any("jest" in str(v) for v in scripts.values()):
+                if "jest" in dependencies or any(
+                    "jest" in str(v) for v in scripts.values()
+                ):
                     detected["javascript"] = "jest"
                     detected["typescript"] = "jest"
 
@@ -91,18 +92,9 @@ class TestRunnerConfig:
 
     def _check_command(self, command: str) -> bool:
         """Check if a command is available."""
-        import subprocess
-        try:
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return False
+        import shutil
+
+        return shutil.which(command) is not None
 
 
 class TestResult:
@@ -116,7 +108,7 @@ class TestResult:
         skipped: int = 0,
         duration: float = 0.0,
         failures: List[Dict[str, Any]] | None = None,
-        error: str | None = None
+        error: str | None = None,
     ):
         self.success = success
         self.passed = passed
@@ -145,7 +137,7 @@ class TestRunnerAgent(Agent):
         name: str,
         triggers: List[str],
         event_bus,
-        config: Dict[str, Any] | None = None
+        config: Dict[str, Any] | None = None,
     ):
         super().__init__(name, triggers, event_bus)
         self.config = TestRunnerConfig(config or {})
@@ -157,7 +149,7 @@ class TestRunnerAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message="Run on save disabled"
+                message="Run on save disabled",
             )
 
         # Extract file path
@@ -167,7 +159,7 @@ class TestRunnerAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message="No file path in event"
+                message="No file path in event",
             )
 
         path = Path(file_path)
@@ -182,7 +174,7 @@ class TestRunnerAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message=f"No test framework configured for {path.suffix}"
+                message=f"No test framework configured for {path.suffix}",
             )
 
         # Determine which tests to run
@@ -197,7 +189,7 @@ class TestRunnerAgent(Agent):
                     agent_name=self.name,
                     success=True,
                     duration=0,
-                    message=f"No tests found for {path.name}"
+                    message=f"No tests found for {path.name}",
                 )
         else:
             # Run all tests
@@ -232,9 +224,9 @@ class TestRunnerAgent(Agent):
                 "failed": result.failed,
                 "skipped": result.skipped,
                 "total": result.total,
-                "failures": result.failures
+                "failures": result.failures,
             },
-            error=result.error
+            error=result.error,
         )
 
         # Write to context store for Claude Code integration
@@ -246,47 +238,53 @@ class TestRunnerAgent(Agent):
         self, path: Path, test_result: TestResult, framework: str
     ) -> None:
         """Write test failures to the context store."""
+        from dev_agents.core.context import context_store
+
+        findings = []
+
         if test_result.failed > 0:
             # Create a finding for test failures
             finding = Finding(
-                id=f"test_{path.name}_{framework}_{datetime.utcnow().timestamp()}",
-                agent="test-runner",
-                timestamp=datetime.utcnow().isoformat() + "Z",
-                file=str(path),
-                severity=Severity.ERROR,
-                blocking=True,
-                category=f"test_{framework}",
+                agent_name=self.name,
+                file_path=str(path),
+                severity="error",
                 message=f"{test_result.failed} test(s) failed in {framework}",
-                scope_type=ScopeType.CURRENT_FILE,
-                caused_by_recent_change=True,
-                is_new=True,
+                rule_id=f"test_{framework}",
+                metadata={
+                    "framework": framework,
+                    "failed": test_result.failed,
+                    "passed": test_result.passed,
+                    "blocking": True,
+                },
             )
-            await context_store.add_finding(finding)
+            findings.append(finding)
         elif test_result.error:
             # Create a finding for test errors
             finding = Finding(
-                id=f"test_error_{path.name}_{framework}_{datetime.utcnow().timestamp()}",
-                agent="test-runner",
-                timestamp=datetime.utcnow().isoformat() + "Z",
-                file=str(path),
-                severity=Severity.ERROR,
-                blocking=True,
-                category=f"test_error_{framework}",
+                agent_name=self.name,
+                file_path=str(path),
+                severity="error",
                 message=f"Test error: {test_result.error}",
-                scope_type=ScopeType.CURRENT_FILE,
-                caused_by_recent_change=True,
-                is_new=True,
+                rule_id=f"test_error_{framework}",
+                metadata={
+                    "framework": framework,
+                    "error": test_result.error,
+                    "blocking": True,
+                },
             )
-            await context_store.add_finding(finding)
+            findings.append(finding)
+
+        if findings:
+            context_store.store_findings(self.name, findings)
 
     def _is_test_file(self, path: Path) -> bool:
         """Check if file is a test file."""
         name = path.name
         return (
-            name.startswith("test_") or
-            name.endswith("_test.py") or
-            ".test." in name or
-            ".spec." in name
+            name.startswith("test_")
+            or name.endswith("_test.py")
+            or ".test." in name
+            or ".spec." in name
         )
 
     def _get_test_framework(self, path: Path) -> Optional[str]:
@@ -337,10 +335,7 @@ class TestRunnerAgent(Agent):
         return test_files
 
     async def _run_tests(
-        self,
-        framework: str,
-        test_files: List[Path],
-        source_path: Path
+        self, framework: str, test_files: List[Path], source_path: Path
     ) -> TestResult:
         """Run tests using the specified framework."""
         try:
@@ -350,19 +345,21 @@ class TestRunnerAgent(Agent):
                 return await self._run_jest(test_files, source_path)
             else:
                 return TestResult(
-                    success=False,
-                    error=f"Unknown framework: {framework}"
+                    success=False, error=f"Unknown framework: {framework}"
                 )
 
         except Exception as e:
             self.logger.error(f"Error running {framework}: {e}")
             return TestResult(success=False, error=str(e))
 
-    async def _run_pytest(self, test_files: List[Path], source_path: Path) -> TestResult:
+    async def _run_pytest(
+        self, test_files: List[Path], source_path: Path
+    ) -> TestResult:
         """Run pytest."""
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -370,10 +367,11 @@ class TestRunnerAgent(Agent):
 
             # Check if pytest is installed
             check = await asyncio.create_subprocess_exec(
-                "pytest", "--version",
+                "pytest",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
             await check.communicate()
 
@@ -395,7 +393,7 @@ class TestRunnerAgent(Agent):
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
 
             stdout, stderr = await proc.communicate()
@@ -417,7 +415,7 @@ class TestRunnerAgent(Agent):
                 passed=passed,
                 failed=failed,
                 skipped=skipped,
-                duration=duration
+                duration=duration,
             )
 
         except FileNotFoundError:
@@ -428,6 +426,7 @@ class TestRunnerAgent(Agent):
         try:
             # Get updated environment with venv bin in PATH
             import os
+
             env = os.environ.copy()
             venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
             if venv_bin.exists():
@@ -435,10 +434,11 @@ class TestRunnerAgent(Agent):
 
             # Check if jest is installed
             check = await asyncio.create_subprocess_exec(
-                "jest", "--version",
+                "jest",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
             await check.communicate()
 
@@ -456,7 +456,7 @@ class TestRunnerAgent(Agent):
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
             )
 
             stdout, stderr = await proc.communicate()
@@ -470,7 +470,7 @@ class TestRunnerAgent(Agent):
                         passed=results.get("numPassedTests", 0),
                         failed=results.get("numFailedTests", 0),
                         skipped=results.get("numPendingTests", 0),
-                        duration=results.get("startTime", 0)
+                        duration=results.get("startTime", 0),
                     )
                 except json.JSONDecodeError:
                     pass

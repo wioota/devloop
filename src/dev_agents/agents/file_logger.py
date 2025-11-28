@@ -1,4 +1,5 @@
 """File logger agent - logs file changes to a file."""
+
 import json
 from pathlib import Path
 
@@ -22,7 +23,7 @@ class FileLoggerAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0,
-                message="Skipped non-file event"
+                message="Skipped non-file event",
             )
 
         # Create log entry
@@ -30,7 +31,7 @@ class FileLoggerAgent(Agent):
             "timestamp": event.timestamp,
             "event_type": event.type,
             "path": event.payload.get("path", "unknown"),
-            "source": event.source
+            "source": event.source,
         }
 
         # Append to log file
@@ -41,5 +42,5 @@ class FileLoggerAgent(Agent):
             agent_name=self.name,
             success=True,
             duration=0,
-            message=f"Logged {event.type}: {event.payload.get('path', 'unknown')}"
+            message=f"Logged {event.type}: {event.payload.get('path', 'unknown')}",
         )

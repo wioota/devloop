@@ -2,10 +2,8 @@
 """Git Commit Message Assistant - Generates conventional commit messages."""
 
 import asyncio
-import subprocess
-import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
@@ -26,13 +24,30 @@ class CommitConfig:
 
     def __post_init__(self):
         if self.common_types is None:
-            self.common_types = ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci", "build"]
+            self.common_types = [
+                "feat",
+                "fix",
+                "docs",
+                "style",
+                "refactor",
+                "test",
+                "chore",
+                "perf",
+                "ci",
+                "build",
+            ]
 
 
 class CommitSuggestion:
     """Commit message suggestion."""
 
-    def __init__(self, message: str, confidence: float, reasoning: str, alternatives: List[str] = None):
+    def __init__(
+        self,
+        message: str,
+        confidence: float,
+        reasoning: str,
+        alternatives: List[str] = None,
+    ):
         self.message = message
         self.confidence = confidence
         self.reasoning = reasoning
@@ -43,7 +58,7 @@ class CommitSuggestion:
             "message": self.message,
             "confidence": self.confidence,
             "reasoning": self.reasoning,
-            "alternatives": self.alternatives
+            "alternatives": self.alternatives,
         }
 
 
@@ -51,7 +66,9 @@ class GitCommitAssistantAgent(Agent):
     """Agent for generating conventional commit messages."""
 
     def __init__(self, config: Dict[str, Any], event_bus):
-        super().__init__("git-commit-assistant", ["git:pre-commit", "git:commit"], event_bus)
+        super().__init__(
+            "git-commit-assistant", ["git:pre-commit", "git:commit"], event_bus
+        )
         self.config = CommitConfig(**config)
 
     async def handle(self, event: Event) -> AgentResult:
@@ -69,7 +86,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message=f"Unsupported event type: {event_type}"
+                message=f"Unsupported event type: {event_type}",
             )
 
     async def _handle_pre_commit(self, event: Event) -> AgentResult:
@@ -81,7 +98,7 @@ class GitCommitAssistantAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
-                    message="No staged files to analyze"
+                    message="No staged files to analyze",
                 )
 
             # Analyze changes
@@ -98,8 +115,8 @@ class GitCommitAssistantAgent(Agent):
                     "staged_files": staged_files,
                     "change_analysis": change_analysis,
                     "suggestions": [s.to_dict() for s in suggestions],
-                    "top_suggestion": suggestions[0].to_dict() if suggestions else None
-                }
+                    "top_suggestion": suggestions[0].to_dict() if suggestions else None,
+                },
             )
 
             # Write to context store for Claude Code integration
@@ -111,7 +128,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message=f"Failed to generate commit suggestions: {str(e)}"
+                message=f"Failed to generate commit suggestions: {str(e)}",
             )
 
     async def _handle_commit(self, event: Event) -> AgentResult:
@@ -121,7 +138,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
-                message="No commit message to validate"
+                message="No commit message to validate",
             )
 
         is_valid, feedback = self._validate_commit_message(commit_msg)
@@ -130,25 +147,24 @@ class GitCommitAssistantAgent(Agent):
             agent_name=self.name,
             success=is_valid,
             message=f"Commit message validation: {'valid' if is_valid else 'invalid'}",
-            data={
-                "message": commit_msg,
-                "is_valid": is_valid,
-                "feedback": feedback
-            }
+            data={"message": commit_msg, "is_valid": is_valid, "feedback": feedback},
         )
 
     async def _get_staged_files(self) -> List[str]:
         """Get list of staged files."""
         try:
             result = await asyncio.create_subprocess_exec(
-                "git", "diff", "--cached", "--name-only",
+                "git",
+                "diff",
+                "--cached",
+                "--name-only",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await result.communicate()
 
             if result.returncode == 0:
-                files = stdout.decode().strip().split('\n')
+                files = stdout.decode().strip().split("\n")
                 return [f for f in files if f.strip()]
             return []
 
@@ -162,7 +178,7 @@ class GitCommitAssistantAgent(Agent):
             "file_types": {},
             "change_types": [],
             "affected_modules": set(),
-            "breaking_changes": False
+            "breaking_changes": False,
         }
 
         # Categorize files by type
@@ -171,17 +187,29 @@ class GitCommitAssistantAgent(Agent):
             ext = path.suffix
 
             if ext == ".py":
-                analysis["file_types"]["python"] = analysis["file_types"].get("python", 0) + 1
+                analysis["file_types"]["python"] = (
+                    analysis["file_types"].get("python", 0) + 1
+                )
             elif ext in [".js", ".ts", ".jsx", ".tsx"]:
-                analysis["file_types"]["javascript"] = analysis["file_types"].get("javascript", 0) + 1
+                analysis["file_types"]["javascript"] = (
+                    analysis["file_types"].get("javascript", 0) + 1
+                )
             elif ext in [".md", ".rst", ".txt"]:
-                analysis["file_types"]["documentation"] = analysis["file_types"].get("documentation", 0) + 1
+                analysis["file_types"]["documentation"] = (
+                    analysis["file_types"].get("documentation", 0) + 1
+                )
             elif ext in [".yml", ".yaml", ".json", ".toml"]:
-                analysis["file_types"]["config"] = analysis["file_types"].get("config", 0) + 1
+                analysis["file_types"]["config"] = (
+                    analysis["file_types"].get("config", 0) + 1
+                )
             elif ext in [".sh", ".bat", ".ps1"]:
-                analysis["file_types"]["scripts"] = analysis["file_types"].get("scripts", 0) + 1
+                analysis["file_types"]["scripts"] = (
+                    analysis["file_types"].get("scripts", 0) + 1
+                )
             else:
-                analysis["file_types"]["other"] = analysis["file_types"].get("other", 0) + 1
+                analysis["file_types"]["other"] = (
+                    analysis["file_types"].get("other", 0) + 1
+                )
 
             # Extract module/area from path
             parts = path.parts
@@ -211,7 +239,9 @@ class GitCommitAssistantAgent(Agent):
 
         return analysis
 
-    def _generate_commit_suggestions(self, analysis: Dict[str, Any]) -> List[CommitSuggestion]:
+    def _generate_commit_suggestions(
+        self, analysis: Dict[str, Any]
+    ) -> List[CommitSuggestion]:
         """Generate commit message suggestions based on analysis."""
         suggestions = []
 
@@ -234,13 +264,15 @@ class GitCommitAssistantAgent(Agent):
 
         # Ensure message length
         if len(message) > self.config.max_message_length:
-            message = message[:self.config.max_message_length - 3] + "..."
+            message = message[: self.config.max_message_length - 3] + "..."
 
-        suggestions.append(CommitSuggestion(
-            message=message,
-            confidence=0.8,
-            reasoning=f"Based on {analysis['files_changed']} files changed, primarily {primary_type} changes"
-        ))
+        suggestions.append(
+            CommitSuggestion(
+                message=message,
+                confidence=0.8,
+                reasoning=f"Based on {analysis['files_changed']} files changed, primarily {primary_type} changes",
+            )
+        )
 
         # Generate alternative suggestions
         alternatives = self._generate_alternatives(primary_type, scope, analysis)
@@ -262,7 +294,7 @@ class GitCommitAssistantAgent(Agent):
             "refactor": ["refactor", "clean", "improve"],
             "style": ["style", "format"],
             "perf": ["perf", "performance", "optimize"],
-            "chore": ["chore", "maintenance"]
+            "chore": ["chore", "maintenance"],
         }
 
         for commit_type, keywords in type_priority.items():
@@ -285,8 +317,10 @@ class GitCommitAssistantAgent(Agent):
             # Find common prefix
             common = ""
             for i, char in enumerate(modules[0]):
-                if all(module.startswith(modules[0][:i+1]) for module in modules[1:]):
-                    common = modules[0][:i+1]
+                if all(
+                    module.startswith(modules[0][: i + 1]) for module in modules[1:]
+                ):
+                    common = modules[0][: i + 1]
                 else:
                     break
             return common.lower().replace(" ", "-") if common else ""
@@ -316,7 +350,9 @@ class GitCommitAssistantAgent(Agent):
         else:
             return f"update {files_changed} files"
 
-    def _generate_alternatives(self, primary_type: str, scope: str, analysis: Dict[str, Any]) -> List[CommitSuggestion]:
+    def _generate_alternatives(
+        self, primary_type: str, scope: str, analysis: Dict[str, Any]
+    ) -> List[CommitSuggestion]:
         """Generate alternative commit message suggestions."""
         alternatives = []
 
@@ -326,20 +362,20 @@ class GitCommitAssistantAgent(Agent):
             alt1 += f"({scope})"
         alt1 += ": update code"
 
-        alternatives.append(CommitSuggestion(
-            message=alt1,
-            confidence=0.6,
-            reasoning="Simple alternative message"
-        ))
+        alternatives.append(
+            CommitSuggestion(
+                message=alt1, confidence=0.6, reasoning="Simple alternative message"
+            )
+        )
 
         # Alternative without scope
         alt2 = f"{primary_type}: {self._generate_description(analysis, primary_type)}"
 
-        alternatives.append(CommitSuggestion(
-            message=alt2,
-            confidence=0.5,
-            reasoning="Message without scope"
-        ))
+        alternatives.append(
+            CommitSuggestion(
+                message=alt2, confidence=0.5, reasoning="Message without scope"
+            )
+        )
 
         return alternatives
 
@@ -362,10 +398,16 @@ class GitCommitAssistantAgent(Agent):
             type_only = type_part
 
         if type_only not in self.config.common_types:
-            return False, f"Unknown commit type '{type_only}'. Use one of: {', '.join(self.config.common_types)}"
+            return (
+                False,
+                f"Unknown commit type '{type_only}'. Use one of: {', '.join(self.config.common_types)}",
+            )
 
         # Check length
         if len(message) > 100:  # Allow longer than subject line for full message
-            return False, "Commit message too long (keep under 100 characters for subject)"
+            return (
+                False,
+                "Commit message too long (keep under 100 characters for subject)",
+            )
 
         return True, "Valid conventional commit format"

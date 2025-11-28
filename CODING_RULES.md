@@ -519,6 +519,7 @@ When creating new agents, ensure:
 - [ ] Unit tests with >80% coverage
 - [ ] Integration tests for workflows
 - [ ] Documentation following existing patterns
+- [ ] **Commit progress** following AGENTS.md rules
 
 ## Code Review Checklist
 
@@ -533,3 +534,4 @@ Before committing code:
 - [ ] Tests exist and pass
 - [ ] Documentation is updated
 - [ ] No hardcoded paths or assumptions about environment
+- [ ] **Follow AGENTS.md commit process** (test, lint, commit with descriptive message)

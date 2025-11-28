@@ -1,8 +1,9 @@
 """Unit tests for context store."""
+
 import asyncio
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 import tempfile
 import shutil
 
@@ -26,7 +27,7 @@ class TestFindingValidation:
         finding = Finding(
             id="test_001",
             agent="linter",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(UTC).isoformat() + "Z",
             file="test.py",
         )
         assert finding.id == "test_001"

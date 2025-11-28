@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class AgentHealthMonitorAgent(Agent):
     """Monitors other agents for failures and triggers autonomous fixes."""
 
-    def __init__(self, name: str, triggers: list[str], event_bus, config: Dict[str, Any]):
+    def __init__(
+        self, name: str, triggers: list[str], event_bus, config: Dict[str, Any]
+    ):
         super().__init__(name, triggers, event_bus)
         self.config = config
 
@@ -36,7 +38,7 @@ class AgentHealthMonitorAgent(Agent):
                     agent_name=self.name,
                     success=True,
                     duration=0.0,
-                    message="Skipped monitoring own completion"
+                    message="Skipped monitoring own completion",
                 )
 
             # Check if the agent failed
@@ -47,13 +49,15 @@ class AgentHealthMonitorAgent(Agent):
                 applied_fixes = await auto_fix.apply_safe_fixes()
 
                 if applied_fixes:
-                    fix_summary = ", ".join(f"{k}: {v}" for k, v in applied_fixes.items())
+                    fix_summary = ", ".join(
+                        f"{k}: {v}" for k, v in applied_fixes.items()
+                    )
                     agent_result = AgentResult(
                         agent_name=self.name,
                         success=True,
                         duration=0.0,
                         message=f"Applied fixes for {agent_name} failure: {fix_summary}",
-                        data={"applied_fixes": applied_fixes}
+                        data={"applied_fixes": applied_fixes},
                     )
                     context_store.write_finding(agent_result)
                     return agent_result
@@ -63,7 +67,7 @@ class AgentHealthMonitorAgent(Agent):
                         success=True,
                         duration=0.0,
                         message=f"No safe fixes available for {agent_name} failure",
-                        data={"applied_fixes": {}}
+                        data={"applied_fixes": {}},
                     )
                     context_store.write_finding(agent_result)
                     return agent_result
@@ -73,14 +77,11 @@ class AgentHealthMonitorAgent(Agent):
                 agent_name=self.name,
                 success=True,
                 duration=0.0,
-                message=f"{agent_name} completed successfully"
+                message=f"{agent_name} completed successfully",
             )
 
         except Exception as e:
             logger.error(f"Error in health monitor: {e}")
             return AgentResult(
-                agent_name=self.name,
-                success=False,
-                duration=0.0,
-                error=str(e)
+                agent_name=self.name, success=False, duration=0.0, error=str(e)
             )

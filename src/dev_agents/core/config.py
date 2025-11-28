@@ -84,6 +84,19 @@ class Config:
             autonomous_fixes=autonomous_fixes,
         )
 
+    @staticmethod
+    def default_config() -> "Config":
+        """Get default configuration instance."""
+        config = Config()
+        config._config = config._get_default_config()
+        return config
+
+    def save(self, path: Path) -> None:
+        """Save configuration to file."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(self._config, f, indent=2)
+
     def _get_default_config(self) -> Dict[str, Any]:
         """Get default configuration."""
         return {

@@ -1,8 +1,5 @@
 """Integration commands for Amp/Claude Code."""
 
-import asyncio
-from typing import Dict
-
 from dev_agents.core.auto_fix import apply_safe_fixes
 from dev_agents.core.config import config
 from dev_agents.core.context_store import context_store
@@ -10,20 +7,35 @@ from dev_agents.core.context_store import context_store
 
 async def check_agent_findings():
     """Check what findings agents have discovered."""
-    findings = context_store.get_findings()
-    actionable = context_store.get_actionable_findings()
+    findings = await context_store.get_findings()
+
+    # Group findings by agent
+    findings_by_agent = {}
+    for finding in findings:
+        agent = finding.agent
+        if agent not in findings_by_agent:
+            findings_by_agent[agent] = []
+        findings_by_agent[agent].append(
+            {
+                "id": finding.id,
+                "file": finding.file,
+                "severity": finding.severity.value,
+                "message": finding.message,
+                "blocking": finding.blocking,
+                "auto_fixable": finding.auto_fixable,
+            }
+        )
 
     summary = {
-        "total_findings": sum(len(f) for f in findings.values()),
-        "actionable_findings": sum(len(f) for f in actionable.values()),
-        "findings_by_agent": {k: len(v) for k, v in findings.items()},
-        "actionable_by_agent": {k: len(v) for k, v in actionable.items()},
+        "total_findings": len(findings),
+        "findings_by_agent": {k: len(v) for k, v in findings_by_agent.items()},
+        "blockers": len([f for f in findings if f.blocking]),
+        "auto_fixable": len([f for f in findings if f.auto_fixable]),
     }
 
     return {
         "summary": summary,
-        "all_findings": findings,
-        "actionable_findings": actionable,
+        "findings": findings_by_agent,
     }
 
 
@@ -38,8 +50,8 @@ async def apply_autonomous_fixes():
             "total_applied": 0,
             "config_status": {
                 "enabled": False,
-                "safety_level": global_config.autonomous_fixes.safety_level
-            }
+                "safety_level": global_config.autonomous_fixes.safety_level,
+            },
         }
 
     results = await apply_safe_fixes()
@@ -61,48 +73,50 @@ async def apply_autonomous_fixes():
         "total_applied": total_applied,
         "config_status": {
             "enabled": True,
-            "safety_level": global_config.autonomous_fixes.safety_level
-        }
+            "safety_level": global_config.autonomous_fixes.safety_level,
+        },
     }
 
 
 async def show_agent_status():
     """Show current status of background agents."""
-    findings = context_store.get_findings()
-    actionable = context_store.get_actionable_findings()
-    global_config = config.get_global_config()
+    findings = await context_store.get_findings()
+
+    # Group findings by agent
+    findings_by_agent = {}
+    for finding in findings:
+        agent = finding.agent
+        if agent not in findings_by_agent:
+            findings_by_agent[agent] = []
+        findings_by_agent[agent].append(finding)
 
     status = {
         "agent_activity": {},
-        "pending_actions": {},
-        "recent_findings": {},
-        "autonomous_fixes_config": {
-            "enabled": global_config.autonomous_fixes.enabled,
-            "safety_level": global_config.autonomous_fixes.safety_level
-        },
+        "total_findings": len(findings),
+        "findings_by_agent": {k: len(v) for k, v in findings_by_agent.items()},
     }
 
-    for agent_type, agent_findings in findings.items():
+    # Show agent activity
+    for agent_type, agent_findings in findings_by_agent.items():
         if agent_findings:
-            latest = max(agent_findings, key=lambda x: x.get("timestamp", ""))
+            latest = max(agent_findings, key=lambda x: x.timestamp)
             status["agent_activity"][agent_type] = {
-                "last_active": latest.get("timestamp"),
-                "last_message": latest.get("message"),
+                "last_active": latest.timestamp,
+                "last_message": latest.message,
                 "total_findings": len(agent_findings),
+                "blocking_issues": len([f for f in agent_findings if f.blocking]),
             }
 
-    for agent_type, agent_findings in actionable.items():
-        status["pending_actions"][agent_type] = len(agent_findings)
-
-    # Show recent findings (last 5 per agent)
-    for agent_type, agent_findings in findings.items():
-        recent = sorted(agent_findings, key=lambda x: x.get("timestamp", ""), reverse=True)[:5]
+    # Show recent findings (last 3 per agent)
+    status["recent_findings"] = {}
+    for agent_type, agent_findings in findings_by_agent.items():
+        recent = sorted(agent_findings, key=lambda x: x.timestamp, reverse=True)[:3]
         status["recent_findings"][agent_type] = [
             {
-                "timestamp": f.get("timestamp"),
-                "message": f.get("message"),
-                "actionable": any(f.get("message", "") in af.get("message", "")
-                                for af in actionable.get(agent_type, []))
+                "timestamp": f.timestamp,
+                "message": f.message,
+                "severity": f.severity.value,
+                "blocking": f.blocking,
             }
             for f in recent
         ]

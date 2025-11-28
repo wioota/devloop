@@ -1,4 +1,5 @@
 """Echo agent - simply logs received events (for testing)."""
+
 from dev_agents.core.agent import Agent, AgentResult
 from dev_agents.core.event import Event
 
@@ -19,5 +20,5 @@ class EchoAgent(Agent):
             success=True,
             duration=0,
             message=message,
-            data=event.payload
+            data=event.payload,
         )

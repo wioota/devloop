@@ -6,10 +6,10 @@ import asyncio
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -208,9 +208,7 @@ class ContextStore:
             f"Added finding {finding.id} to {tier.value} (relevance: {finding.relevance_score:.2f})"
         )
 
-    def compute_relevance(
-        self, finding: Finding, user_context: UserContext
-    ) -> float:
+    def compute_relevance(self, finding: Finding, user_context: UserContext) -> float:
         """
         Compute relevance score for a finding.
 
@@ -394,7 +392,7 @@ class ContextStore:
 
             # Build index
             index = {
-                "last_updated": datetime.utcnow().isoformat() + "Z",
+                "last_updated": datetime.now(UTC).isoformat() + "Z",
                 "check_now": {
                     "count": len(immediate),
                     "severity_breakdown": self._severity_breakdown(immediate),
@@ -479,9 +477,12 @@ class ContextStore:
         try:
             if not index_file.exists():
                 return {
-                    "last_updated": datetime.utcnow().isoformat() + "Z",
+                    "last_updated": datetime.now(UTC).isoformat() + "Z",
                     "check_now": {"count": 0, "preview": "No immediate issues"},
-                    "mention_if_relevant": {"count": 0, "summary": "No relevant issues"},
+                    "mention_if_relevant": {
+                        "count": 0,
+                        "summary": "No relevant issues",
+                    },
                     "deferred": {"count": 0, "summary": "No background items"},
                     "auto_fixed": {"count": 0, "summary": "No auto-fixed items"},
                 }

@@ -1,14 +1,13 @@
 """CLI entry point - prototype version."""
+
 import asyncio
 import logging
 import signal
-import sys
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
-from rich.table import Table
 
 from dev_agents.agents import EchoAgent, FileLoggerAgent
 from dev_agents.collectors import FileSystemCollector
@@ -16,7 +15,7 @@ from dev_agents.core import EventBus
 
 app = typer.Typer(
     help="Claude Agents - Development workflow automation (PROTOTYPE)",
-    add_completion=False
+    add_completion=False,
 )
 console = Console()
 
@@ -28,22 +27,14 @@ def setup_logging(verbose: bool = False):
     logging.basicConfig(
         level=level,
         format="%(message)s",
-        handlers=[RichHandler(console=console, rich_tracebacks=True)]
+        handlers=[RichHandler(console=console, rich_tracebacks=True)],
     )
 
 
 @app.command()
 def watch(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Path to watch for changes"
-    ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        "-v",
-        help="Verbose logging"
-    )
+    path: Path = typer.Argument(Path.cwd(), help="Path to watch for changes"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose logging"),
 ):
     """
     Watch a directory for file changes and run agents.
@@ -57,7 +48,7 @@ def watch(
     """
     setup_logging(verbose)
 
-    console.print(f"[bold green]Claude Agents Prototype[/bold green]")
+    console.print("[bold green]Claude Agents Prototype[/bold green]")
     console.print(f"Watching: [cyan]{path.absolute()}[/cyan]\n")
 
     # Run the async main loop
@@ -73,22 +64,19 @@ async def watch_async(path: Path):
     event_bus = EventBus()
 
     # Create filesystem collector
-    fs_collector = FileSystemCollector(
-        event_bus=event_bus,
-        watch_paths=[str(path)]
-    )
+    fs_collector = FileSystemCollector(event_bus=event_bus, watch_paths=[str(path)])
 
     # Create agents
     echo_agent = EchoAgent(
         name="echo",
         triggers=["file:*"],  # Listen to all file events
-        event_bus=event_bus
+        event_bus=event_bus,
     )
 
     logger_agent = FileLoggerAgent(
         name="file-logger",
         triggers=["file:modified", "file:created"],
-        event_bus=event_bus
+        event_bus=event_bus,
     )
 
     # Start everything
@@ -97,8 +85,10 @@ async def watch_async(path: Path):
     await logger_agent.start()
 
     console.print("[green]✓[/green] Agents started:")
-    console.print(f"  • [cyan]echo[/cyan] - logs all file events")
-    console.print(f"  • [cyan]file-logger[/cyan] - writes changes to .claude/file-changes.log")
+    console.print("  • [cyan]echo[/cyan] - logs all file events")
+    console.print(
+        "  • [cyan]file-logger[/cyan] - writes changes to .claude/file-changes.log"
+    )
     console.print("\n[dim]Waiting for file changes... (Ctrl+C to stop)[/dim]\n")
 
     # Wait for shutdown signal
@@ -129,12 +119,7 @@ def events(
 
 
 @app.command()
-def init(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Project directory"
-    )
-):
+def init(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
     """Initialize dev-agents in a project."""
     claude_dir = path / ".claude"
 
@@ -151,6 +136,7 @@ def init(
 def version():
     """Show version information."""
     from dev_agents import __version__
+
     console.print(f"Claude Agents v{__version__} (PROTOTYPE)")
 
 

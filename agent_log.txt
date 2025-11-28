@@ -1,0 +1,130 @@
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ in _run_module_as_main:198                                                   │
+│ ╭───────────────────────────────── locals ─────────────────────────────────╮ │
+│ │   alter_argv = True                                                      │ │
+│ │         code = <code object <module> at 0x10f365c0, file                 │ │
+│ │                "/home/wioot/dev/claude-agents/src/dev_agents/cli/main.p… │ │
+│ │                line 1>                                                   │ │
+│ │ main_globals = {                                                         │ │
+│ │                │   '__name__': '__main__',                               │ │
+│ │                │   '__doc__': 'CLI entry point - v2 with real agents.',  │ │
+│ │                │   '__package__': 'dev_agents.cli',                      │ │
+│ │                │   '__loader__':                                         │ │
+│ │                <_frozen_importlib_external.SourceFileLoader object at    │ │
+│ │                0x7f80388ef4d0>,                                          │ │
+│ │                │   '__spec__': ModuleSpec(name='dev_agents.cli.main',    │ │
+│ │                loader=<_frozen_importlib_external.SourceFileLoader       │ │
+│ │                object at 0x7f80388ef4d0>,                                │ │
+│ │                origin='/home/wioot/dev/claude-agents/src/dev_agents/cli… │ │
+│ │                │   '__annotations__': {},                                │ │
+│ │                │   '__builtins__': <module 'builtins' (built-in)>,       │ │
+│ │                │   '__file__':                                           │ │
+│ │                '/home/wioot/dev/claude-agents/src/dev_agents/cli/main.p… │ │
+│ │                │   '__cached__':                                         │ │
+│ │                '/home/wioot/dev/claude-agents/src/dev_agents/cli/__pyca… │ │
+│ │                │   'asyncio': <module 'asyncio' from                     │ │
+│ │                '/usr/lib/python3.12/asyncio/__init__.py'>,               │ │
+│ │                │   ... +38                                               │ │
+│ │                }                                                         │ │
+│ │     mod_name = 'dev_agents.cli.main'                                     │ │
+│ │     mod_spec = ModuleSpec(name='dev_agents.cli.main',                    │ │
+│ │                loader=<_frozen_importlib_external.SourceFileLoader       │ │
+│ │                object at 0x7f80388ef4d0>,                                │ │
+│ │                origin='/home/wioot/dev/claude-agents/src/dev_agents/cli… │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│ in _run_code:88                                                              │
+│ ╭───────────────────────────────── locals ─────────────────────────────────╮ │
+│ │       cached = '/home/wioot/dev/claude-agents/src/dev_agents/cli/__pyca… │ │
+│ │         code = <code object <module> at 0x10f365c0, file                 │ │
+│ │                "/home/wioot/dev/claude-agents/src/dev_agents/cli/main.p… │ │
+│ │                line 1>                                                   │ │
+│ │        fname = '/home/wioot/dev/claude-agents/src/dev_agents/cli/main.p… │ │
+│ │ init_globals = None                                                      │ │
+│ │       loader = <_frozen_importlib_external.SourceFileLoader object at    │ │
+│ │                0x7f80388ef4d0>                                           │ │
+│ │     mod_name = '__main__'                                                │ │
+│ │     mod_spec = ModuleSpec(name='dev_agents.cli.main',                    │ │
+│ │                loader=<_frozen_importlib_external.SourceFileLoader       │ │
+│ │                object at 0x7f80388ef4d0>,                                │ │
+│ │                origin='/home/wioot/dev/claude-agents/src/dev_agents/cli… │ │
+│ │     pkg_name = 'dev_agents.cli'                                          │ │
+│ │  run_globals = {                                                         │ │
+│ │                │   '__name__': '__main__',                               │ │
+│ │                │   '__doc__': 'CLI entry point - v2 with real agents.',  │ │
+│ │                │   '__package__': 'dev_agents.cli',                      │ │
+│ │                │   '__loader__':                                         │ │
+│ │                <_frozen_importlib_external.SourceFileLoader object at    │ │
+│ │                0x7f80388ef4d0>,                                          │ │
+│ │                │   '__spec__': ModuleSpec(name='dev_agents.cli.main',    │ │
+│ │                loader=<_frozen_importlib_external.SourceFileLoader       │ │
+│ │                object at 0x7f80388ef4d0>,                                │ │
+│ │                origin='/home/wioot/dev/claude-agents/src/dev_agents/cli… │ │
+│ │                │   '__annotations__': {},                                │ │
+│ │                │   '__builtins__': <module 'builtins' (built-in)>,       │ │
+│ │                │   '__file__':                                           │ │
+│ │                '/home/wioot/dev/claude-agents/src/dev_agents/cli/main.p… │ │
+│ │                │   '__cached__':                                         │ │
+│ │                '/home/wioot/dev/claude-agents/src/dev_agents/cli/__pyca… │ │
+│ │                │   'asyncio': <module 'asyncio' from                     │ │
+│ │                '/usr/lib/python3.12/asyncio/__init__.py'>,               │ │
+│ │                │   ... +38                                               │ │
+│ │                }                                                         │ │
+│ │  script_name = None                                                      │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/src/dev_agents/cli/main.py:415 in <module>     │
+│                                                                              │
+│   412                                                                        │
+│   413                                                                        │
+│   414 if __name__ == "__main__":                                             │
+│ ❱ 415 │   app()                                                              │
+│   416                                                                        │
+│                                                                              │
+│ ╭───────────────────────────────── locals ─────────────────────────────────╮ │
+│ │           app = <typer.main.Typer object at 0x7f8038aefd10>              │ │
+│ │       asyncio = <module 'asyncio' from                                   │ │
+│ │                 '/usr/lib/python3.12/asyncio/__init__.py'>               │ │
+│ │       console = <console width=80 None>                                  │ │
+│ │ context_store = <dev_agents.core.context_store.ContextStore object at    │ │
+│ │                 0x7f8038aefaa0>                                          │ │
+│ │   event_store = <dev_agents.core.event_store.EventStore object at        │ │
+│ │                 0x7f80376d6b70>                                          │ │
+│ │       logging = <module 'logging' from                                   │ │
+│ │                 '/usr/lib/python3.12/logging/__init__.py'>               │ │
+│ │      Optional = typing.Optional                                          │ │
+│ │        signal = <module 'signal' from '/usr/lib/python3.12/signal.py'>   │ │
+│ │         typer = <module 'typer' from                                     │ │
+│ │                 '/home/wioot/dev/claude-agents/venv/lib/python3.12/site… │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:328 in __call__                                                            │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:311 in __call__                                                            │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:350 in get_command                                                         │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:332 in get_group                                                           │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:483 in get_group_from_info                                                 │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:577 in get_command_from_info                                               │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:553 in get_params_convertors_ctx_param_name_from_function                  │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/main.p │
+│ y:877 in get_click_param                                                     │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/typer/core.p │
+│ y:498 in __init__                                                            │
+│                                                                              │
+│ /home/wioot/dev/claude-agents/venv/lib/python3.12/site-packages/click/core.p │
+│ y:2793 in __init__                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+TypeError: Secondary flag is not valid for non-boolean flag.
