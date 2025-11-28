@@ -37,9 +37,14 @@ app = typer.Typer(
 )
 console = Console()
 
-# Import and add summary command
+# Import and add command submodules
 from .commands import summary as summary_cmd
+from .commands import custom_agents as custom_agents_cmd
+from .commands import feedback as feedback_cmd
+
 app.add_typer(summary_cmd.app, name="summary")
+app.add_typer(custom_agents_cmd.app, name="custom")
+app.add_typer(feedback_cmd.app, name="feedback")
 
 
 @app.command()
