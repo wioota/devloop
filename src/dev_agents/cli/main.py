@@ -120,12 +120,15 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
         sys.exit(1)
 
     # Child process continues
+    # Convert path to absolute before changing directory
+    project_dir = path.resolve()
+    
     os.chdir("/")
     os.setsid()
     os.umask(0)
 
     # Redirect stdout/stderr to log file
-    log_file = path / ".claude" / "dev-agents.log"
+    log_file = project_dir / ".claude" / "dev-agents.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_file, "a") as f:
@@ -136,18 +139,22 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     setup_logging(verbose)
 
     # Write PID file
-    pid_file = path / ".claude" / "dev-agents.pid"
+    pid_file = project_dir / ".claude" / "dev-agents.pid"
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
 
     print(f"Dev Agents v2 daemon started (PID: {os.getpid()})")
-    print(f"Watching: {path.absolute()}")
+    print(f"Watching: {project_dir}")
 
     # Run the async main loop (will run indefinitely)
+    # Ensure config_path is also absolute if specified
+    abs_config_path = config_path.resolve() if config_path else project_dir / ".claude" / "agents.json"
     try:
-        asyncio.run(watch_async(path, config_path))
+        asyncio.run(watch_async(project_dir, abs_config_path))
     except Exception as e:
+        import traceback
         print(f"Daemon error: {e}")
+        traceback.print_exc()
     finally:
         # Clean up PID file
         if pid_file.exists():
@@ -194,9 +201,11 @@ async def watch_async(path: Path, config_path: Path | None):
     """Async watch implementation."""
     # Load configuration
     if config_path:
-        config_manager = Config(str(config_path))
+        # Ensure it's a Path object and convert to string
+        config_manager = Config(str(Path(config_path).resolve()))
     else:
-        config_manager = Config()
+        # Default to project .claude/agents.json
+        config_manager = Config(str((path / ".claude" / "agents.json").resolve()))
     config_dict = config_manager.load()
     config = ConfigWrapper(config_dict)
 
@@ -213,8 +222,8 @@ async def watch_async(path: Path, config_path: Path | None):
     console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
     console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
 
-    # Create agent manager
-    agent_manager = AgentManager(event_bus)
+    # Create agent manager with project directory
+    agent_manager = AgentManager(event_bus, project_dir=path)
 
     # Create filesystem collector
     fs_config = {"watch_paths": [str(path)]}
