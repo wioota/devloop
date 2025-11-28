@@ -13,12 +13,51 @@ from rich.table import Table
 from dev_agents.agents import AgentHealthMonitorAgent, FormatterAgent, GitCommitAssistantAgent, LinterAgent, PerformanceProfilerAgent, SecurityScannerAgent, TestRunnerAgent, TypeCheckerAgent
 from dev_agents.collectors import FileSystemCollector
 from dev_agents.core import AgentManager, Config, ConfigWrapper, EventBus, context_store, event_store
+from dev_agents.core.amp_integration import check_agent_findings, show_agent_status
 
 app = typer.Typer(
     help="Dev Agents - Development workflow automation",
     add_completion=False
 )
 console = Console()
+
+
+@app.command()
+def amp_status():
+    """Show current agent status for Amp."""
+    import asyncio
+    result = asyncio.run(show_agent_status())
+    console.print_json(data=result)
+
+
+@app.command()
+def amp_findings():
+    """Show agent findings for Amp."""
+    import asyncio
+    result = asyncio.run(check_agent_findings())
+    console.print_json(data=result)
+
+
+@app.command()
+def amp_context():
+    """Show context store index for Amp."""
+    import asyncio
+    from pathlib import Path
+
+    # Try to read the context index
+    context_dir = Path(".claude/context")
+    index_file = context_dir / "index.json"
+
+    if index_file.exists():
+        try:
+            import json
+            with open(index_file) as f:
+                data = json.load(f)
+            console.print_json(data=data)
+        except Exception as e:
+            console.print(f"[red]Error reading context: {e}[/red]")
+    else:
+        console.print("[yellow]No context index found. Start agents with 'dev-agents watch .' first.[/yellow]")
 
 
 def setup_logging(verbose: bool = False):
