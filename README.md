@@ -9,7 +9,7 @@
 
 ## Status
 
-✅ **PRODUCTION READY** — Full implementation with Phase 1, 2, and 3 complete. [View detailed implementation status →](./IMPLEMENTATION_STATUS.md)
+✅ **PRODUCTION READY** — Full-featured development automation system. [View detailed implementation status →](./IMPLEMENTATION_STATUS.md)
 
 ---
 
@@ -95,8 +95,8 @@ devloop status
 /agent-summary today    # Today's findings
 /agent-summary --agent linter --severity error
 
-# Create a custom agent (Phase 3)
-devloop phase3 custom-create my_agent pattern_matcher
+# Create a custom agent
+devloop custom-create my_agent pattern_matcher
 ```
 
 [View all CLI commands →](./docs/cli-commands.md)
@@ -132,21 +132,24 @@ File Changes → Collectors → Event Bus → Agents → Results
 
 ## Agents
 
-DevLoop includes **8 built-in agents** out of the box:
+DevLoop includes **9 built-in agents** out of the box:
 
-### Phase 1: Core Agents
+### Code Quality
 - **Linter Agent** — Runs linters on changed files
 - **Formatter Agent** — Auto-formats code (Black, isort, etc.)
 - **Type Checker Agent** — Background type checking (mypy)
-- **Test Runner Agent** — Runs relevant tests on changes
-- **Git Commit Assistant** — Suggests commit messages
 
-### Phase 2: Extended Agents
+### Testing & Security
+- **Test Runner Agent** — Runs relevant tests on changes
 - **Security Scanner Agent** — Detects vulnerabilities (Bandit)
 - **Performance Profiler Agent** — Tracks performance metrics
+
+### Development Workflow
+- **Git Commit Assistant** — Suggests commit messages
+- **CI Monitor Agent** — Tracks GitHub Actions status
 - **Doc Lifecycle Agent** — Manages documentation organization
 
-### Phase 3: Custom Agents
+### Custom Agents
 Create your own agents without writing code:
 
 ```python
@@ -231,25 +234,25 @@ echo "x=1" > app.py  # Auto-formatted to x = 1
 
 ```bash
 # Create agent to find TODO comments
-devloop phase3 custom-create find_todos pattern_matcher \
+devloop custom-create find_todos pattern_matcher \
   --description "Find TODO comments" \
   --triggers file:created,file:modified
 
 # List your custom agents
-devloop phase3 custom-list
+devloop custom-list
 ```
 
 ### Example 4: Learn & Optimize
 
 ```bash
 # View learned patterns
-devloop phase3 learning-insights --agent linter
+devloop learning-insights --agent linter
 
 # Get recommendations
-devloop phase3 learning-recommendations linter
+devloop learning-recommendations linter
 
 # Check performance data
-devloop phase3 perf-summary --agent formatter
+devloop perf-summary --agent formatter
 ```
 
 [More examples →](./examples/)
@@ -345,7 +348,7 @@ poetry run mypy src
 - **[CLI Commands](./docs/cli-commands.md)** — Command reference
 - **[Development Guide](./docs/development.md)** — Contributing guide
 - **[Implementation Status](./IMPLEMENTATION_STATUS.md)** — What's implemented
-- **[Phase 3 Complete](./PHASE3_COMPLETE.md)** — Learning & optimization features
+- **[Learning & Optimization](./PHASE3_COMPLETE.md)** — Advanced features
 
 ---
 
@@ -399,7 +402,7 @@ Check `.devloop/agents.json`:
 
 ```bash
 # Verify they exist
-devloop phase3 custom-list
+devloop custom-list
 
 # Check storage
 ls -la .devloop/custom_agents/
@@ -423,9 +426,11 @@ All operations are async and non-blocking.
 ## Roadmap
 
 ### Completed ✅
-- Phase 1: Core agents and event system
-- Phase 2: Extended agents and advanced features
-- Phase 3: Custom agents and learning system
+- Core agents: linting, formatting, testing, type checking
+- Security & performance: vulnerability scanning, profiling
+- Workflow automation: git integration, CI monitoring, documentation
+- Custom agents: create your own without writing code
+- Learning system: pattern recognition and optimization
 
 ### In Development 🚀
 - Cloud pattern repository (opt-in)

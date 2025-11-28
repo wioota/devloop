@@ -115,25 +115,30 @@ A powerful command-line interface and Amp slash command that provides intelligen
 - **Amp Slash Command**: `/agent-summary` - registered via `.agents/commands/agent-summary` executable script
 - **JSON API**: For programmatic access and third-party integrations
 
-## Implementation Phases
+## Implementation
 
-### Phase 1: Foundation (MVP)
-- Event monitoring system
-- Basic agent framework
-- Configuration management
-- 3-5 core agents (linter, formatter, test runner, commit assistant, doc sync)
+DevLoop is a comprehensive development automation system featuring:
 
-### Phase 2: Enhanced Intelligence
-- Context engine with project understanding
-- Multi-agent coordination
-- Advanced notification system
-- 5-10 additional agents
+### Core Infrastructure
+- Event monitoring system (filesystem, git, process, system)
+- Agent framework with pub/sub coordination
+- JSON-based configuration management
+- Context store for shared development state
 
-### Phase 3: Learning & Optimization
-- Agent behavior learning from developer feedback
-- Performance optimization
-- Resource usage analytics
-- Custom agent creation framework
+### Built-in Agents
+- **Code Quality**: Linter, formatter, type checker
+- **Testing**: Test runner with smart test selection
+- **Security**: Vulnerability scanning with Bandit
+- **Performance**: Complexity analysis and profiling
+- **Workflow**: Git commit assistant, CI monitor, doc lifecycle
+- **Monitoring**: Agent health monitoring
+- **Custom**: No-code agent builder
+
+### Advanced Features
+- Learning system: Pattern recognition from developer feedback
+- Performance optimization: Resource usage analytics
+- Auto-fix engine: Safe, configurable automatic fixes
+- Context awareness: Project understanding and adaptation
 
 ## Automated Installation & Setup
 
