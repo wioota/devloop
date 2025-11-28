@@ -521,6 +521,18 @@ When creating new agents, ensure:
 - [ ] Documentation following existing patterns
 - [ ] **Commit progress** following AGENTS.md rules
 
+### 13. Standard Documentation Files
+
+**Problem:** Inconsistent naming conventions for coding agent instruction files
+**Pattern:**
+```bash
+# AGENTS.md - Primary file for coding agent instructions
+# CLAUDE.md - Symlink to AGENTS.md for backward compatibility
+ln -sf AGENTS.md CLAUDE.md
+```
+
+**Rule:** Use `AGENTS.md` as the standard file for coding agent instructions. `CLAUDE.md` should be a symlink to `AGENTS.md` to ensure all coding agents start with the same file.
+
 ## Code Review Checklist
 
 Before committing code:
@@ -533,5 +545,6 @@ Before committing code:
 - [ ] Logging is consistent and informative
 - [ ] Tests exist and pass
 - [ ] Documentation is updated
+- [ ] **AGENTS.md is the standard file** (CLAUDE.md should be symlink)
 - [ ] No hardcoded paths or assumptions about environment
 - [ ] **Follow AGENTS.md commit process** (test, lint, commit with descriptive message)
