@@ -3,6 +3,8 @@
 from dev_agents.core.auto_fix import apply_safe_fixes
 from dev_agents.core.config import config
 from dev_agents.core.context_store import context_store
+from dev_agents.core.summary_generator import SummaryGenerator
+from dev_agents.core.summary_formatter import SummaryFormatter
 
 
 async def check_agent_findings():
@@ -124,11 +126,32 @@ async def show_agent_status():
     return status
 
 
+async def generate_agent_summary(scope: str = "recent", filters: dict = None):
+    """Generate agent summary report for Amp/Claude Code slash command."""
+    if filters is None:
+        filters = {}
+
+    generator = SummaryGenerator(context_store)
+    report = await generator.generate_summary(scope, filters)
+
+    return {
+        "summary": SummaryFormatter.format_json(report),
+        "formatted_report": SummaryFormatter.format_markdown(report),
+        "quick_stats": {
+            "total_findings": report.total_findings,
+            "critical_issues": len(report.critical_issues),
+            "auto_fixable": len(report.auto_fixable),
+            "trend": report.trends.get("direction", "stable")
+        }
+    }
+
+
 # Amp subagent command mappings
 AMP_COMMANDS = {
     "check_agent_findings": check_agent_findings,
     "apply_autonomous_fixes": apply_autonomous_fixes,
     "show_agent_status": show_agent_status,
+    "generate_agent_summary": generate_agent_summary,
 }
 
 

@@ -37,6 +37,10 @@ app = typer.Typer(
 )
 console = Console()
 
+# Import and add summary command
+from .commands import summary as summary_cmd
+app.add_typer(summary_cmd.app, name="summary")
+
 
 @app.command()
 def amp_status():
@@ -208,7 +212,8 @@ async def watch_async(path: Path, config_path: Path | None):
     agent_manager = AgentManager(event_bus)
 
     # Create filesystem collector
-    fs_collector = FileSystemCollector(event_bus=event_bus, watch_paths=[str(path)])
+    fs_config = {"watch_paths": [str(path)]}
+    fs_collector = FileSystemCollector(event_bus=event_bus, config=fs_config)
 
     # Create and register agents based on configuration
     if config.is_agent_enabled("linter"):

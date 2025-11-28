@@ -79,6 +79,42 @@ A comprehensive background agent system that monitors development lifecycle even
 - **Snippet Manager**: Suggests code snippets
 - **Refactoring Suggester**: Identifies refactoring opportunities
 
+## Summary & Reporting System
+
+### Agent Summary Command (`/agent-summary`)
+
+A powerful command-line interface and Amp slash command that provides intelligent summaries of recent dev-agent findings, tailored to development context.
+
+#### Features
+
+- **Intelligent Summarization**: Groups findings by agent, severity, and category
+- **Time-based Scoping**: Filter by `recent` (24h), `today`, `session` (4h), or `all` time
+- **Advanced Filtering**: Filter by specific agents, severity levels, or categories
+- **Contextual Insights**: Provides actionable insights and trend analysis
+- **Multiple Output Formats**: Markdown reports and JSON APIs for different integrations
+
+#### Usage Examples
+
+```bash
+# Recent findings summary
+/agent-summary
+
+# Today's findings
+/agent-summary today
+
+# Filter by specific agent
+/agent-summary --agent linter
+
+# Critical issues only
+/agent-summary recent --severity error
+```
+
+#### Integration Points
+
+- **CLI Command**: `dev-agents summary agent-summary [options]`
+- **Amp Slash Command**: `/agent-summary` - registered via `.agents/commands/agent-summary` executable script
+- **JSON API**: For programmatic access and third-party integrations
+
 ## Implementation Phases
 
 ### Phase 1: Foundation (MVP)
