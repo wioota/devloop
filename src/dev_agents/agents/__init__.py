@@ -1,6 +1,7 @@
 """Built-in agents."""
 
 from .agent_health_monitor import AgentHealthMonitorAgent
+from .doc_lifecycle import DocLifecycleAgent
 from .echo import EchoAgent
 from .file_logger import FileLoggerAgent
 from .formatter import FormatterAgent
@@ -13,6 +14,7 @@ from .type_checker import TypeCheckerAgent
 
 __all__ = [
     "AgentHealthMonitorAgent",
+    "DocLifecycleAgent",
     "EchoAgent",
     "FileLoggerAgent",
     "FormatterAgent",
