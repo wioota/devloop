@@ -2,6 +2,8 @@
 
 Automated GitHub Actions CI/CD status monitoring and checks integrated into your development workflow.
 
+> ⚠️ **GitHub Actions Only**: This integration currently supports **GitHub Actions only**. If your project uses GitLab CI, Jenkins, CircleCI, or other CI systems, these tools will gracefully skip checks. See [Roadmap](#roadmap) for planned multi-CI support.
+
 ## Features
 
 ### 1. Pre-Commit CI Warning
@@ -317,8 +319,70 @@ git merge feature/new-thing
 
 ---
 
+## Roadmap
+
+### Multi-CI Platform Support
+
+**Current:** GitHub Actions only (via `gh` CLI)
+
+**Planned:**
+- GitLab CI/CD (via `glab` CLI or GitLab API)
+- Jenkins (via Jenkins API)
+- CircleCI (via CircleCI API)
+- Travis CI (via Travis API)
+- Azure DevOps Pipelines
+- Bitbucket Pipelines
+- Generic CI support (via configurable webhook/API)
+
+**Design:**
+- CI provider auto-detection (check `.github/`, `.gitlab-ci.yml`, `Jenkinsfile`, etc.)
+- Pluggable CI adapter system
+- Unified CI status API across providers
+- Configuration in `.devloop/agents.json`:
+  ```json
+  {
+    "ci-monitor": {
+      "config": {
+        "provider": "auto",  // or "github", "gitlab", "jenkins", etc.
+        "provider_config": {
+          "gitlab": { "url": "https://gitlab.com", "token": "..." },
+          "jenkins": { "url": "https://jenkins.example.com", "user": "..." }
+        }
+      }
+    }
+  }
+  ```
+
+**Contributions welcome!** If you need support for a specific CI platform, please open an issue or PR.
+
+---
+
+## Limitations
+
+### GitHub-Specific
+- All tools currently require GitHub Actions and `gh` CLI
+- Pre-commit hook checks GitHub workflow runs only
+- CI Monitor agent queries GitHub API only
+- Will gracefully skip checks if `gh` CLI not installed/authenticated
+
+### For Non-GitHub Projects
+If your project uses a different CI system:
+1. **Tools will skip gracefully** - No errors, just won't check CI
+2. **Manual workaround** - You can still use your CI platform's CLI/API manually
+3. **Future support planned** - See [Roadmap](#roadmap) above
+
+Example for GitLab projects:
+```bash
+# Manual alternative using glab CLI
+glab ci status
+glab ci view
+```
+
+---
+
 ## See Also
 
 - [GitHub CLI Documentation](https://cli.github.com/manual/)
 - [GitHub Actions Workflows](.github/workflows/ci.yml)
 - [Agent Configuration](.devloop/agents.json)
+- [DevLoop Roadmap](../ROADMAP.md)
