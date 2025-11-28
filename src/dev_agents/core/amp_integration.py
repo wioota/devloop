@@ -141,8 +141,8 @@ async def generate_agent_summary(scope: str = "recent", filters: dict = None):
             "total_findings": report.total_findings,
             "critical_issues": len(report.critical_issues),
             "auto_fixable": len(report.auto_fixable),
-            "trend": report.trends.get("direction", "stable")
-        }
+            "trend": report.trends.get("direction", "stable"),
+        },
     }
 
 

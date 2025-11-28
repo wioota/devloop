@@ -29,7 +29,9 @@ class TestDocLifecycleAgent:
         docs_file.write_text("# Guide\nThis is a guide.")
 
         complete_file = tmp_path / "complete.md"
-        complete_file.write_text("# Complete Task - COMPLETE ✅\n**Date:** November 28, 2025")
+        complete_file.write_text(
+            "# Complete Task - COMPLETE ✅\n**Date:** November 28, 2025"
+        )
 
         return tmp_path, [root_file, docs_file, complete_file]
 
@@ -59,7 +61,7 @@ class TestDocLifecycleAgent:
         """Test finding markdown files in project."""
         tmp_path, expected_files = sample_md_files
 
-        with patch.object(agent, 'project_root', tmp_path):
+        with patch.object(agent, "project_root", tmp_path):
             found_files = agent._find_markdown_files()
 
         # Should find all .md files
@@ -73,7 +75,7 @@ class TestDocLifecycleAgent:
         """Test counting markdown files."""
         tmp_path, expected_files = sample_md_files
 
-        with patch.object(agent, 'project_root', tmp_path):
+        with patch.object(agent, "project_root", tmp_path):
             count = agent._count_md_files()
 
         assert count == 3
@@ -82,7 +84,7 @@ class TestDocLifecycleAgent:
         """Test counting root directory markdown files."""
         tmp_path, expected_files = sample_md_files
 
-        with patch.object(agent, 'project_root', tmp_path):
+        with patch.object(agent, "project_root", tmp_path):
             count = agent._count_root_md_files()
 
         # Should count test.md and complete.md (in root), but not guide.md (in docs/)
@@ -106,8 +108,10 @@ class TestDocLifecycleAgent:
 
         # Set file modification time to 5 days ago
         import time
+
         five_days_ago = time.time() - (5 * 24 * 60 * 60)
         import os
+
         os.utime(test_file, (five_days_ago, five_days_ago))
 
         # Calculate expected age (should be approximately 5 days)
@@ -122,6 +126,7 @@ class TestDocLifecycleAgent:
         # Set modification time to November 2025
         nov_2025 = datetime(2025, 11, 15).timestamp()
         import os
+
         os.utime(test_file, (nov_2025, nov_2025))
 
         suggestion = agent._suggest_archive_location(test_file)
@@ -151,7 +156,7 @@ class TestDocLifecycleAgent:
             Path("readme.md"),  # Duplicate of README.md
             Path("getting-started.md"),
             Path("GETTING_STARTED.md"),  # Duplicate of getting-started.md
-            Path("unique.md")  # Unique file
+            Path("unique.md"),  # Unique file
         ]
 
         duplicates = agent._detect_duplicate_docs(files)
@@ -162,7 +167,7 @@ class TestDocLifecycleAgent:
         # Check that duplicates are properly grouped
         duplicate_names = []
         for group in duplicates:
-            group_names = [f.stem.lower().replace('_', '-') for f in group]
+            group_names = [f.stem.lower().replace("_", "-") for f in group]
             duplicate_names.extend(group_names)
 
         assert "readme" in duplicate_names
@@ -173,7 +178,9 @@ class TestDocLifecycleAgent:
         """Test analyzing file with completion marker."""
         # Create a real test file with completion marker
         test_file = tmp_path / "complete.md"
-        test_file.write_text("# Task Complete - COMPLETE ✅\n**Date:** November 28, 2025")
+        test_file.write_text(
+            "# Task Complete - COMPLETE ✅\n**Date:** November 28, 2025"
+        )
 
         findings = await agent._analyze_file(test_file)
 
@@ -190,7 +197,7 @@ class TestDocLifecycleAgent:
         test_file.write_text("# Reference Guide\nSome content.")
 
         # Mock the project root to be tmp_path
-        with patch.object(agent, 'project_root', tmp_path):
+        with patch.object(agent, "project_root", tmp_path):
             findings = await agent._analyze_file(test_file)
 
         # Should find location issue since reference.md is in root but not in keep_in_root
@@ -203,7 +210,7 @@ class TestDocLifecycleAgent:
         """Test full documentation scan."""
         tmp_path, expected_files = sample_md_files
 
-        with patch.object(agent, 'project_root', tmp_path):
+        with patch.object(agent, "project_root", tmp_path):
             findings = await agent.scan_documentation()
 
         # Should find various issues (at least completion marker and location issues)
@@ -220,10 +227,7 @@ class TestDocLifecycleAgent:
     @pytest.mark.asyncio
     async def test_handle_event(self, agent):
         """Test handling an event."""
-        event = Event(
-            type="schedule:daily",
-            payload={}
-        )
+        event = Event(type="schedule:daily", payload={})
 
         result = await agent.handle(event)
 
@@ -248,7 +252,7 @@ class TestDocLifecycleAgent:
                 "category": "archival",
                 "file": str(source_file),
                 "suggestion": "Archive to docs/archive/2025-11/test.md",
-                "auto_fixable": True
+                "auto_fixable": True,
             }
 
             success = await agent.auto_fix(finding)
@@ -266,6 +270,7 @@ class TestDocLifecycleAgent:
                 archive_path.unlink()
                 # Remove empty directories
                 import shutil
+
                 shutil.rmtree("docs/archive/2025-11", ignore_errors=True)
                 shutil.rmtree("docs/archive", ignore_errors=True)
                 shutil.rmtree("docs", ignore_errors=True)
@@ -275,10 +280,7 @@ class TestDocLifecycleAgent:
         """Test auto-fix with non-archival finding."""
         agent.config.mode = "auto-fix"
 
-        finding = {
-            "category": "location",  # Not archival
-            "file": "/tmp/test.md"
-        }
+        finding = {"category": "location", "file": "/tmp/test.md"}  # Not archival
 
         success = await agent.auto_fix(finding)
 

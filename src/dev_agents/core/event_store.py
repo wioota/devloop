@@ -27,7 +27,9 @@ class EventStore:
     def connection(self) -> sqlite3.Connection:
         """Get the database connection, raising an exception if not initialized."""
         if self._connection is None:
-            raise RuntimeError("Database connection not initialized. Call initialize() first.")
+            raise RuntimeError(
+                "Database connection not initialized. Call initialize() first."
+            )
         return self._connection
 
     async def initialize(self) -> None:
@@ -275,7 +277,8 @@ class EventStore:
 
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
-                None, lambda: self._cleanup_old_events_sync(cutoff_timestamp, days_to_keep)
+                None,
+                lambda: self._cleanup_old_events_sync(cutoff_timestamp, days_to_keep),
             )
 
     def _cleanup_old_events_sync(

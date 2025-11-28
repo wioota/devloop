@@ -11,7 +11,6 @@ from rich.table import Table
 from dev_agents.core.custom_agent import (
     AgentBuilder,
     CustomAgentStore,
-    CustomAgentType,
     get_agent_template,
 )
 
@@ -26,6 +25,7 @@ def list_agents(
     """List all custom agents."""
 
     async def _run():
+        nonlocal project_dir
         if project_dir is None:
             project_dir = Path.cwd()
 
@@ -45,9 +45,7 @@ def list_agents(
         table.add_column("Status", style="yellow")
 
         for agent_id, agent in agents.items():
-            table.add_row(
-                agent_id, agent.name, agent.agent_type, "Active"
-            )
+            table.add_row(agent_id, agent.name, agent.agent_type, "Active")
 
         console.print(table)
 
@@ -64,6 +62,7 @@ def create(
     """Create a new custom agent."""
 
     async def _run():
+        nonlocal project_dir
         if project_dir is None:
             project_dir = Path.cwd()
 
@@ -102,6 +101,7 @@ def delete(
     """Delete a custom agent."""
 
     async def _run():
+        nonlocal project_dir
         if project_dir is None:
             project_dir = Path.cwd()
 

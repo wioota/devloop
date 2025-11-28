@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, List, Tuple
 
@@ -59,9 +59,7 @@ class SummaryGenerator:
         self.context_store = context_store_instance or context_store
 
     async def generate_summary(
-        self,
-        scope: str = "recent",
-        filters: Dict[str, Any] = None
+        self, scope: str = "recent", filters: Dict[str, Any] = None
     ) -> SummaryReport:
         """Generate intelligent summary of findings.
 
@@ -94,7 +92,7 @@ class SummaryGenerator:
             trends=self._calculate_trends(findings, scope),
             critical_issues=self._get_critical_issues(findings),
             auto_fixable=self._get_auto_fixable(findings),
-            insights=self._generate_insights(findings, scope)
+            insights=self._generate_insights(findings, scope),
         )
 
         return report
@@ -120,7 +118,9 @@ class SummaryGenerator:
 
         return (start, now)
 
-    async def _get_findings_in_range(self, time_range: Tuple[datetime, datetime]) -> List[Finding]:
+    async def _get_findings_in_range(
+        self, time_range: Tuple[datetime, datetime]
+    ) -> List[Finding]:
         """Get all findings within time range."""
         start_time, end_time = time_range
 
@@ -134,7 +134,9 @@ class SummaryGenerator:
         filtered_findings = []
         for finding in all_findings:
             try:
-                finding_time = datetime.fromisoformat(finding.timestamp.replace('Z', '+00:00'))
+                finding_time = datetime.fromisoformat(
+                    finding.timestamp.replace("Z", "+00:00")
+                )
                 if start_time <= finding_time <= end_time:
                     filtered_findings.append(finding)
             except (ValueError, AttributeError):
@@ -143,7 +145,9 @@ class SummaryGenerator:
 
         return filtered_findings
 
-    def _filter_findings(self, findings: List[Finding], filters: Dict[str, Any]) -> List[Finding]:
+    def _filter_findings(
+        self, findings: List[Finding], filters: Dict[str, Any]
+    ) -> List[Finding]:
         """Apply user-specified filters."""
         if not filters:
             return findings
@@ -188,8 +192,11 @@ class SummaryGenerator:
             # Get top 3 issues by severity (errors first, then warnings, etc.)
             sorted_findings = sorted(
                 agent_findings,
-                key=lambda f: (f.severity.value == "error", f.severity.value == "warning"),
-                reverse=True
+                key=lambda f: (
+                    f.severity.value == "error",
+                    f.severity.value == "warning",
+                ),
+                reverse=True,
             )
             top_issues = sorted_findings[:3]
 
@@ -198,7 +205,7 @@ class SummaryGenerator:
                 finding_count=len(agent_findings),
                 severity_breakdown=severity_counts,
                 top_issues=top_issues,
-                improvement_trend="stable"  # TODO: Implement trend calculation
+                improvement_trend="stable",  # TODO: Implement trend calculation
             )
 
         return summaries
@@ -225,7 +232,7 @@ class SummaryGenerator:
         return {
             "comparison_period": "previous_24h",
             "change_percent": 0.0,  # No change
-            "direction": "stable"
+            "direction": "stable",
         }
 
     def _get_critical_issues(self, findings: List[Finding]) -> List[Finding]:
@@ -251,7 +258,9 @@ class SummaryGenerator:
         # Most active agent
         if agent_counts:
             top_agent = max(agent_counts.items(), key=lambda x: x[1])
-            insights.append(f"Most active agent: {top_agent[0]} ({top_agent[1]} findings)")
+            insights.append(
+                f"Most active agent: {top_agent[0]} ({top_agent[1]} findings)"
+            )
 
         # Severity breakdown insight
         error_count = sum(1 for f in findings if f.severity == Severity.ERROR)

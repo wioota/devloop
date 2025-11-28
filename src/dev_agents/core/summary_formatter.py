@@ -25,7 +25,9 @@ class SummaryFormatter:
 
         lines.append(f"## {emoji} Dev-Agent Summary ({status})")
         lines.append(f"**Scope:** {report.scope.title()}")
-        lines.append(f"**Time Range:** {report.time_range[0].strftime('%Y-%m-%d %H:%M')} - {report.time_range[1].strftime('%Y-%m-%d %H:%M')}")
+        lines.append(
+            f"**Time Range:** {report.time_range[0].strftime('%Y-%m-%d %H:%M')} - {report.time_range[1].strftime('%Y-%m-%d %H:%M')}"
+        )
         lines.append("")
 
         # Quick stats
@@ -49,16 +51,25 @@ class SummaryFormatter:
 
         # Show trend if available
         if "direction" in report.trends:
-            trend_emoji = {"improving": "📈", "worsening": "📉", "stable": "➡️"}.get(report.trends["direction"], "➡️")
-            lines.append(f"- **Trend:** {trend_emoji} {report.trends['direction'].title()}")
+            trend_emoji = {"improving": "📈", "worsening": "📉", "stable": "➡️"}.get(
+                report.trends["direction"], "➡️"
+            )
+            lines.append(
+                f"- **Trend:** {trend_emoji} {report.trends['direction'].title()}"
+            )
         lines.append("")
 
         # Agent breakdown
         if report.by_agent:
             lines.append("### 📈 Agent Performance")
             for agent_name, summary in report.by_agent.items():
-                severity_str = ", ".join(f"{count} {sev}" for sev, count in summary.severity_breakdown.items())
-                lines.append(f"- **{agent_name}:** {summary.finding_count} findings ({severity_str})")
+                severity_str = ", ".join(
+                    f"{count} {sev}"
+                    for sev, count in summary.severity_breakdown.items()
+                )
+                lines.append(
+                    f"- **{agent_name}:** {summary.finding_count} findings ({severity_str})"
+                )
             lines.append("")
 
         # Critical issues (top priority)
@@ -66,18 +77,28 @@ class SummaryFormatter:
             lines.append("### 🚨 Priority Issues")
             for i, finding in enumerate(report.critical_issues[:5], 1):  # Top 5
                 location = f"{finding.file}:{finding.line or '?'}"
-                message = finding.message[:100] + ("..." if len(finding.message) > 100 else "")
-                lines.append(f"{i}. **{finding.severity.value.title()}** in `{location}` - {message}")
+                message = finding.message[:100] + (
+                    "..." if len(finding.message) > 100 else ""
+                )
+                lines.append(
+                    f"{i}. **{finding.severity.value.title()}** in `{location}` - {message}"
+                )
             lines.append("")
 
         # Auto-fixable items
-        if report.auto_fixable and len(report.auto_fixable) > len(report.critical_issues):
-            non_critical_auto_fixable = [f for f in report.auto_fixable if f not in report.critical_issues]
+        if report.auto_fixable and len(report.auto_fixable) > len(
+            report.critical_issues
+        ):
+            non_critical_auto_fixable = [
+                f for f in report.auto_fixable if f not in report.critical_issues
+            ]
             if non_critical_auto_fixable:
                 lines.append("### 🔧 Auto-fixable Issues")
                 for i, finding in enumerate(non_critical_auto_fixable[:3], 1):  # Top 3
                     location = f"{finding.file}:{finding.line or '?'}"
-                    message = finding.message[:80] + ("..." if len(finding.message) > 80 else "")
+                    message = finding.message[:80] + (
+                        "..." if len(finding.message) > 80 else ""
+                    )
                     lines.append(f"{i}. `{location}` - {message}")
                 lines.append("")
 
@@ -91,7 +112,9 @@ class SummaryFormatter:
         # Quick actions
         if report.auto_fixable:
             lines.append("### 🛠️ Quick Actions")
-            lines.append(f"Run `dev-agents auto-fix` to apply {len(report.auto_fixable)} safe fixes automatically")
+            lines.append(
+                f"Run `dev-agents auto-fix` to apply {len(report.auto_fixable)} safe fixes automatically"
+            )
             lines.append("")
 
         return "\n".join(lines)
@@ -106,13 +129,19 @@ class SummaryFormatter:
                 "critical_count": len(report.critical_issues),
                 "auto_fixable_count": len(report.auto_fixable),
                 "trend": report.trends.get("direction", "stable"),
-                "trend_percentage": report.trends.get("change_percent", 0.0)
+                "trend_percentage": report.trends.get("change_percent", 0.0),
             },
             "by_agent": {
                 agent_name: {
                     "count": summary.finding_count,
-                    "critical": sum(1 for f in summary.top_issues if f.severity.value == "error" or f.blocking),
-                    "auto_fixable": sum(1 for f in summary.top_issues if f.auto_fixable)
+                    "critical": sum(
+                        1
+                        for f in summary.top_issues
+                        if f.severity.value == "error" or f.blocking
+                    ),
+                    "auto_fixable": sum(
+                        1 for f in summary.top_issues if f.auto_fixable
+                    ),
                 }
                 for agent_name, summary in report.by_agent.items()
             },
@@ -123,8 +152,8 @@ class SummaryFormatter:
                     "line": issue.line,
                     "severity": issue.severity.value,
                     "message": issue.message,
-                    "agent": issue.agent
+                    "agent": issue.agent,
                 }
                 for issue in report.critical_issues[:5]
-            ]
+            ],
         }

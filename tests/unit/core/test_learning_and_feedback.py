@@ -155,7 +155,9 @@ class TestPatternMatcherAgent:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             test_file = tmpdir / "test.txt"
-            test_file.write_text("hello world\nerror: something bad\nwarning: be careful")
+            test_file.write_text(
+                "hello world\nerror: something bad\nwarning: be careful"
+            )
 
             config = (
                 AgentBuilder("test", CustomAgentType.PATTERN_MATCHER)
