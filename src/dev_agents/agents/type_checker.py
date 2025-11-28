@@ -2,7 +2,7 @@
 """Type Checker Agent - Runs static type checking on code."""
 
 import logging
-import subprocess
+import subprocess  # nosec B404 - Required for running type checking tools
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -174,8 +174,8 @@ class TypeCheckerAgent(Agent):
         try:
             # Check if mypy is available
             result = subprocess.run(
-                [sys.executable, "-c", "import mypy"], capture_output=True, text=True
-            )
+            [sys.executable, "-c", "import mypy"], capture_output=True, text=True
+            )  # nosec B603 - Running trusted system Python with safe arguments
             if result.returncode != 0:
                 return TypeCheckResult(
                     "mypy", [], ["MyPy not installed - run: pip install mypy"]
@@ -199,7 +199,7 @@ class TypeCheckerAgent(Agent):
                 capture_output=True,
                 text=True,
                 cwd=file_path.parent,
-            )
+            )  # nosec B603 - Running mypy with controlled command arguments
             issues = []
 
             # Parse mypy output (line by line)

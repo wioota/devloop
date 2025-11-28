@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404 - Required for git operations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -32,12 +32,12 @@ class GitCollector(BaseCollector):
     def _is_git_repo(self) -> bool:
         """Check if current directory is a git repository."""
         try:
-            result = subprocess.run(
-                ["git", "rev-parse", "--git-dir"],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                check=True,
+            result = subprocess.run(  # nosec B603,B607
+            ["git", "rev-parse", "--git-dir"],
+            cwd=self.repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
             )
             return result.returncode == 0
         except (subprocess.CalledProcessError, FileNotFoundError):
