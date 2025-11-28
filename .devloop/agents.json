@@ -155,6 +155,19 @@
         ],
         "max_issues": 50
       }
+    },
+    "ci-monitor": {
+      "enabled": true,
+      "triggers": [
+        "time:tick",
+        "git:post-push"
+      ],
+      "config": {
+        "check_interval": 300,
+        "monitor_branches": ["main", "develop"],
+        "notify_on_failure": true,
+        "auto_check_after_push": true
+      }
     }
   },
   "global": {

@@ -1,0 +1,39 @@
+#!/bin/bash
+# Git push wrapper that checks CI status after push
+# Usage: .devloop/scripts/git-push-with-ci [git push arguments]
+
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+CI_CHECKER="$REPO_ROOT/.devloop/scripts/check-ci-status.sh"
+
+# Run git push with all arguments
+echo "📤 Pushing to remote..."
+git push "$@"
+
+PUSH_EXIT=$?
+
+if [ $PUSH_EXIT -ne 0 ]; then
+    echo "❌ Push failed"
+    exit $PUSH_EXIT
+fi
+
+echo ""
+echo "✅ Push successful!"
+
+# Check if CI checker exists
+if [ ! -f "$CI_CHECKER" ]; then
+    exit 0
+fi
+
+echo ""
+echo "🔍 Checking CI status (waiting up to 2 minutes)..."
+echo ""
+
+# Give GitHub a moment to register the push
+sleep 5
+
+# Run CI checker with wait
+"$CI_CHECKER" --wait --timeout 120
+
+exit 0
