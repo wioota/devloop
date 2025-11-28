@@ -288,8 +288,8 @@ def agent_insights(
                         else "-"
                     ),
                 )
-            except Exception:
-                # Agent might not exist or have no data
+            except (KeyError, TypeError, AttributeError):
+                # Agent might not exist, have no data, or data structure is unexpected
                 continue
 
         if table.row_count == 0:
