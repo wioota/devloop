@@ -33,11 +33,11 @@ class GitCollector(BaseCollector):
         """Check if current directory is a git repository."""
         try:
             result = subprocess.run(  # nosec
-            ["git", "rev-parse", "--git-dir"],
-            cwd=self.repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
+                ["git", "rev-parse", "--git-dir"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=True,
             )
             return result.returncode == 0
         except (subprocess.CalledProcessError, FileNotFoundError):
