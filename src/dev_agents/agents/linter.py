@@ -2,11 +2,12 @@
 
 import asyncio
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context import Finding
+from dev_agents.core.context_store import Finding, Severity
 from dev_agents.core.event import Event
 
 
@@ -337,10 +338,9 @@ class LinterAgent(Agent):
         if not result.success or not result.has_issues:
             return
 
-        from src.dev_agents.core.context import context_store
+        from dev_agents.core.context_store import context_store
 
         # Convert each linter issue to a Finding
-        findings = []
         for idx, issue in enumerate(result.issues):
             # Extract issue details (format varies by linter)
             if linter == "ruff":
@@ -372,30 +372,28 @@ class LinterAgent(Agent):
 
             # Create Finding
             finding = Finding(
-                agent_name=self.name,
-                file_path=str(path),
-                line_number=line,
-                column_number=column,
-                severity=severity,
+                id=f"{self.name}-{path}-{line}-{code}",
+                agent=self.name,
+                timestamp=str(datetime.now()),
+                file=str(path),
+                line=line,
+                column=column,
+                severity=Severity(severity),
                 message=message_text,
-                rule_id=code,
+                category=code,
                 suggestion=(
                     f"Run {linter} --fix {path}"
                     if fixable and self.config.auto_fix
-                    else None
+                    else ""
                 ),
-                metadata={
+                context={
                     "linter": linter,
                     "fixable": fixable,
                     "auto_fixable": fixable and self.config.auto_fix,
                 },
             )
 
-            findings.append(finding)
-
-        # Store all findings for this file
-        if findings:
             try:
-                context_store.store_findings(self.name, findings)
+                await context_store.add_finding(finding)
             except Exception as e:
-                self.logger.error(f"Failed to write findings to context: {e}")
+                self.logger.error(f"Failed to write finding to context: {e}")

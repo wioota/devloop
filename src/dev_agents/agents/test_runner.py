@@ -3,11 +3,12 @@
 import asyncio
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context import Finding
+from dev_agents.core.context_store import Finding, Severity
 from dev_agents.core.event import Event
 
 
@@ -238,44 +239,41 @@ class TestRunnerAgent(Agent):
         self, path: Path, test_result: TestResult, framework: str
     ) -> None:
         """Write test failures to the context store."""
-        from dev_agents.core.context import context_store
-
-        findings = []
+        from dev_agents.core.context_store import context_store
 
         if test_result.failed > 0:
             # Create a finding for test failures
             finding = Finding(
-                agent_name=self.name,
-                file_path=str(path),
-                severity="error",
+                id=f"{self.name}-{path}-failed",
+                agent=self.name,
+                timestamp=str(datetime.now()),
+                file=str(path),
+                severity=Severity.ERROR,
                 message=f"{test_result.failed} test(s) failed in {framework}",
-                rule_id=f"test_{framework}",
-                metadata={
+                context={
                     "framework": framework,
                     "failed": test_result.failed,
                     "passed": test_result.passed,
                     "blocking": True,
                 },
             )
-            findings.append(finding)
+            await context_store.add_finding(finding)
         elif test_result.error:
             # Create a finding for test errors
             finding = Finding(
-                agent_name=self.name,
-                file_path=str(path),
-                severity="error",
+                id=f"{self.name}-{path}-error",
+                agent=self.name,
+                timestamp=str(datetime.now()),
+                file=str(path),
+                severity=Severity.ERROR,
                 message=f"Test error: {test_result.error}",
-                rule_id=f"test_error_{framework}",
-                metadata={
+                context={
                     "framework": framework,
                     "error": test_result.error,
                     "blocking": True,
                 },
             )
-            findings.append(finding)
-
-        if findings:
-            context_store.store_findings(self.name, findings)
+            await context_store.add_finding(finding)
 
     def _is_test_file(self, path: Path) -> bool:
         """Check if file is a test file."""

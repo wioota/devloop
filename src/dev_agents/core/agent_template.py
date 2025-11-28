@@ -354,6 +354,8 @@ class AgentFactory:
         spec = importlib.util.spec_from_loader(
             f"custom_agent_{agent_name}", loader=None
         )
+        if spec is None:
+            return None
         module = importlib.util.module_from_spec(spec)
 
         # Execute the template code in the module
@@ -372,7 +374,11 @@ class AgentFactory:
             return None
 
         # Create and return the agent instance
-        return agent_class(agent_name, triggers, event_bus, config)
+        return agent_class(
+            name=agent_name,
+            triggers=triggers,
+            event_bus=event_bus,
+        )
 
     async def create_from_file(
         self,
@@ -407,7 +413,11 @@ class AgentFactory:
             return None
 
         # Create and return the agent instance
-        return agent_class(agent_name, triggers, event_bus, config or {})
+        return agent_class(
+            name=agent_name,
+            triggers=triggers,
+            event_bus=event_bus,
+        )
 
 
 class AgentMarketplace:

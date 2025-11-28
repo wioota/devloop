@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 from ..core.agent import Agent, AgentResult
-from ..core.context_store import context_store
+from ..core.context_store import context_store, Finding
 from ..core.event import Event
 
 
@@ -86,6 +86,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
+                duration=0.0,
                 message=f"Unsupported event type: {event_type}",
             )
 
@@ -98,6 +99,7 @@ class GitCommitAssistantAgent(Agent):
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
+                    duration=0.0,
                     message="No staged files to analyze",
                 )
 
@@ -110,6 +112,7 @@ class GitCommitAssistantAgent(Agent):
             agent_result = AgentResult(
                 agent_name=self.name,
                 success=True,
+                duration=0.0,
                 message=f"Generated {len(suggestions)} commit message suggestions",
                 data={
                     "staged_files": staged_files,
@@ -120,7 +123,19 @@ class GitCommitAssistantAgent(Agent):
             )
 
             # Write to context store for Claude Code integration
-            context_store.write_finding(agent_result)
+            if suggestions:
+                top_suggestion = suggestions[0]
+                await context_store.add_finding(
+                    Finding(
+                        id=f"{self.name}-suggestion",
+                        agent=self.name,
+                        timestamp=str(event.timestamp),
+                        file="",
+                        message=f"Suggested commit message: {top_suggestion.message}",
+                        suggestion=top_suggestion.message,
+                        context=top_suggestion.to_dict(),
+                    )
+                )
 
             return agent_result
 
@@ -128,6 +143,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
+                duration=0.0,
                 message=f"Failed to generate commit suggestions: {str(e)}",
             )
 
@@ -138,6 +154,7 @@ class GitCommitAssistantAgent(Agent):
             return AgentResult(
                 agent_name=self.name,
                 success=False,
+                duration=0.0,
                 message="No commit message to validate",
             )
 
@@ -146,6 +163,7 @@ class GitCommitAssistantAgent(Agent):
         return AgentResult(
             agent_name=self.name,
             success=is_valid,
+            duration=0.0,
             message=f"Commit message validation: {'valid' if is_valid else 'invalid'}",
             data={"message": commit_msg, "is_valid": is_valid, "feedback": feedback},
         )
@@ -173,7 +191,7 @@ class GitCommitAssistantAgent(Agent):
 
     async def _analyze_changes(self, files: List[str]) -> Dict[str, Any]:
         """Analyze the changes in staged files."""
-        analysis = {
+        analysis: Dict[str, Any] = {
             "files_changed": len(files),
             "file_types": {},
             "change_types": [],
@@ -186,30 +204,19 @@ class GitCommitAssistantAgent(Agent):
             path = Path(file)
             ext = path.suffix
 
+            file_types = analysis["file_types"]
             if ext == ".py":
-                analysis["file_types"]["python"] = (
-                    analysis["file_types"].get("python", 0) + 1
-                )
+                file_types["python"] = file_types.get("python", 0) + 1
             elif ext in [".js", ".ts", ".jsx", ".tsx"]:
-                analysis["file_types"]["javascript"] = (
-                    analysis["file_types"].get("javascript", 0) + 1
-                )
+                file_types["javascript"] = file_types.get("javascript", 0) + 1
             elif ext in [".md", ".rst", ".txt"]:
-                analysis["file_types"]["documentation"] = (
-                    analysis["file_types"].get("documentation", 0) + 1
-                )
+                file_types["documentation"] = file_types.get("documentation", 0) + 1
             elif ext in [".yml", ".yaml", ".json", ".toml"]:
-                analysis["file_types"]["config"] = (
-                    analysis["file_types"].get("config", 0) + 1
-                )
+                file_types["config"] = file_types.get("config", 0) + 1
             elif ext in [".sh", ".bat", ".ps1"]:
-                analysis["file_types"]["scripts"] = (
-                    analysis["file_types"].get("scripts", 0) + 1
-                )
+                file_types["scripts"] = file_types.get("scripts", 0) + 1
             else:
-                analysis["file_types"]["other"] = (
-                    analysis["file_types"].get("other", 0) + 1
-                )
+                file_types["other"] = file_types.get("other", 0) + 1
 
             # Extract module/area from path
             parts = path.parts
@@ -218,22 +225,23 @@ class GitCommitAssistantAgent(Agent):
                 analysis["affected_modules"].add(module)
 
         # Determine change types based on files
+        change_types = analysis["change_types"]
         if analysis["file_types"].get("documentation", 0) > 0:
-            analysis["change_types"].append("docs")
+            change_types.append("docs")
         if analysis["file_types"].get("config", 0) > 0:
-            analysis["change_types"].append("ci")
+            change_types.append("ci")
         if analysis["file_types"].get("scripts", 0) > 0:
-            analysis["change_types"].append("ci")
+            change_types.append("ci")
 
         # Try to determine primary change type
         if "test_" in " ".join(files).lower() or "spec" in " ".join(files).lower():
-            analysis["change_types"].append("test")
+            change_types.append("test")
         elif any("fix" in f.lower() or "bug" in f.lower() for f in files):
-            analysis["change_types"].append("fix")
+            change_types.append("fix")
         elif any("feature" in f.lower() or "feat" in f.lower() for f in files):
-            analysis["change_types"].append("feat")
+            change_types.append("feat")
         else:
-            analysis["change_types"].append("refactor")  # Default assumption
+            change_types.append("refactor")  # Default assumption
 
         analysis["affected_modules"] = list(analysis["affected_modules"])
 
@@ -397,7 +405,7 @@ class GitCommitAssistantAgent(Agent):
         else:
             type_only = type_part
 
-        if type_only not in self.config.common_types:
+        if self.config.common_types and type_only not in self.config.common_types:
             return (
                 False,
                 f"Unknown commit type '{type_only}'. Use one of: {', '.join(self.config.common_types)}",

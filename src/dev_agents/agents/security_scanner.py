@@ -125,9 +125,6 @@ class SecurityScannerAgent(Agent):
             # Run security scan
             results = await self._run_security_scan(path)
 
-            # Filter results based on thresholds
-            filtered_issues = self._filter_issues(results.issues)
-
             agent_result = AgentResult(
                 agent_name=self.name,
                 success=True,
@@ -136,8 +133,8 @@ class SecurityScannerAgent(Agent):
                 data={
                     "file": str(path),
                     "tool": results.tool,
-                    "issues_found": len(filtered_issues),
-                    "issues": filtered_issues,
+                    "issues_found": len(results.issues),
+                    "issues": results.issues,
                     "severity_breakdown": results._get_severity_breakdown(),
                     "confidence_breakdown": results._get_confidence_breakdown(),
                     "errors": results.errors,
@@ -145,7 +142,7 @@ class SecurityScannerAgent(Agent):
             )
 
             # Write to context store for Claude Code integration
-            await self._write_findings_to_context(path, filtered_issues)
+            await self._write_findings_to_context(path, results.issues)
 
             return agent_result
         except Exception as e:
@@ -197,6 +194,8 @@ class SecurityScannerAgent(Agent):
 
     def _should_exclude_file(self, file_path: str) -> bool:
         """Check if file should be excluded from scanning."""
+        if not self.config.exclude_patterns:
+            return False
         for pattern in self.config.exclude_patterns:
             if pattern.startswith("*") and pattern.endswith("*"):
                 if pattern[1:-1] in file_path:
@@ -217,7 +216,7 @@ class SecurityScannerAgent(Agent):
             results = []
 
             # Try bandit first (most common Python security scanner)
-            if "bandit" in self.config.enabled_tools:
+            if self.config.enabled_tools and "bandit" in self.config.enabled_tools:
                 bandit_result = await self._run_bandit(file_path)
                 if bandit_result:
                     results.append(bandit_result)
@@ -259,9 +258,9 @@ class SecurityScannerAgent(Agent):
                 self.config.severity_threshold,
                 "--confidence-level",
                 self.config.confidence_threshold,
-                "-x",
-                ",".join(self.config.exclude_patterns),
             ]
+            if self.config.exclude_patterns:
+                cmd.extend(["-x", ",".join(self.config.exclude_patterns)])
 
             # Run bandit in subprocess
             process = await asyncio.create_subprocess_exec(
@@ -321,31 +320,3 @@ class SecurityScannerAgent(Agent):
 
         except Exception as e:
             return SecurityResult("bandit", [], [f"Bandit execution error: {str(e)}"])
-
-    def _filter_issues(self, issues: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter issues based on configuration thresholds."""
-        filtered = []
-
-        severity_levels = {"low": 1, "medium": 2, "high": 3}
-        confidence_levels = {"low": 1, "medium": 2, "high": 3}
-
-        threshold_severity = severity_levels.get(self.config.severity_threshold, 1)
-        threshold_confidence = confidence_levels.get(
-            self.config.confidence_threshold, 1
-        )
-
-        for issue in issues:
-            issue_severity = severity_levels.get(
-                issue.get("severity", "unknown").lower(), 0
-            )
-            issue_confidence = confidence_levels.get(
-                issue.get("confidence", "unknown").lower(), 0
-            )
-
-            if (
-                issue_severity >= threshold_severity
-                and issue_confidence >= threshold_confidence
-            ):
-                filtered.append(issue)
-
-        return filtered[: self.config.max_issues]

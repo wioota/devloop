@@ -80,7 +80,11 @@ class AgentManager:
     async def start_all(self) -> None:
         """Start all registered agents."""
         # Subscribe to agent completion events for consolidated results
-        await self.event_bus.subscribe("agent:*:completed", self._on_agent_completed)
+        queue: asyncio.Queue = asyncio.Queue()
+        await self.event_bus.subscribe("agent:*:completed", queue)
+        self.completion_listener_task = asyncio.create_task(
+            self._listen_for_agent_completion(queue)
+        )
 
         tasks = [agent.start() for agent in self.agents.values() if agent.enabled]
         await asyncio.gather(*tasks)
@@ -90,6 +94,7 @@ class AgentManager:
 
     async def stop_all(self) -> None:
         """Stop all agents."""
+        self.completion_listener_task.cancel()
         tasks = [agent.stop() for agent in self.agents.values()]
         await asyncio.gather(*tasks)
         self.logger.info("Stopped all agents")
@@ -201,10 +206,14 @@ class AgentManager:
         """List all registered agent names."""
         return list(self.agents.keys())
 
-    async def _on_agent_completed(self, event: Event) -> None:
-        """Handle agent completion events and update consolidated results."""
-        try:
-            # Update consolidated results for Claude Code integration
-            context_store.write_consolidated_results()
-        except Exception as e:
-            self.logger.error(f"Failed to write consolidated results: {e}")
+    async def _listen_for_agent_completion(self, queue: asyncio.Queue):
+        """Listen for agent completion events and update consolidated results."""
+        while True:
+            event = await queue.get()
+            try:
+                # Update consolidated results for Claude Code integration
+                await context_store._update_index()
+            except Exception as e:
+                self.logger.error(f"Failed to write consolidated results: {e}")
+            finally:
+                queue.task_done()

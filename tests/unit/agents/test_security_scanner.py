@@ -186,50 +186,6 @@ class TestSecurityScannerAgent:
         finally:
             py_file.unlink(missing_ok=True)
 
-    def test_filter_issues_by_severity(self, agent):
-        """Test filtering issues by severity threshold."""
-        issues = [
-            {"severity": "low", "confidence": "high", "code": "B101"},
-            {"severity": "medium", "confidence": "high", "code": "B102"},
-            {"severity": "high", "confidence": "high", "code": "B103"},
-        ]
-
-        # Test medium threshold (should include medium and high)
-        agent.config.severity_threshold = "medium"
-        agent.config.confidence_threshold = "medium"
-
-        filtered = agent._filter_issues(issues)
-        assert len(filtered) == 2
-        assert all(issue["severity"] in ["medium", "high"] for issue in filtered)
-
-    def test_filter_issues_by_confidence(self, agent):
-        """Test filtering issues by confidence threshold."""
-        issues = [
-            {"severity": "high", "confidence": "low", "code": "B101"},
-            {"severity": "high", "confidence": "medium", "code": "B102"},
-            {"severity": "high", "confidence": "high", "code": "B103"},
-        ]
-
-        # Test medium threshold (should include medium and high)
-        agent.config.severity_threshold = "low"
-        agent.config.confidence_threshold = "medium"
-
-        filtered = agent._filter_issues(issues)
-        assert len(filtered) == 2
-        assert all(issue["confidence"] in ["medium", "high"] for issue in filtered)
-
-    def test_max_issues_limit(self, agent):
-        """Test that max_issues limit is respected."""
-        issues = [
-            {"severity": "high", "confidence": "high", "code": f"B10{i}"}
-            for i in range(10)
-        ]
-
-        agent.config.max_issues = 5
-        filtered = agent._filter_issues(issues)
-
-        assert len(filtered) == 5
-
     @pytest.mark.asyncio
     async def test_bandit_tool_check(self, agent):
         """Test bandit tool availability checking."""

@@ -184,7 +184,7 @@ class SummaryGenerator:
         summaries = {}
         for agent_name, agent_findings in agent_groups.items():
             # Count by severity
-            severity_counts = {}
+            severity_counts: Dict[str, int] = {}
             for finding in agent_findings:
                 severity = finding.severity.value
                 severity_counts[severity] = severity_counts.get(severity, 0) + 1
@@ -212,7 +212,7 @@ class SummaryGenerator:
 
     def _count_by_severity(self, findings: List[Finding]) -> Dict[str, int]:
         """Count findings by severity."""
-        counts = {}
+        counts: Dict[str, int] = {}
         for finding in findings:
             severity = finding.severity.value
             counts[severity] = counts.get(severity, 0) + 1
@@ -220,7 +220,7 @@ class SummaryGenerator:
 
     def _count_by_category(self, findings: List[Finding]) -> Dict[str, int]:
         """Count findings by category."""
-        counts = {}
+        counts: Dict[str, int] = {}
         for finding in findings:
             counts[finding.category] = counts.get(finding.category, 0) + 1
         return counts
@@ -251,7 +251,7 @@ class SummaryGenerator:
             return ["No findings in the selected scope"]
 
         # Count by agent
-        agent_counts = {}
+        agent_counts: Dict[str, int] = {}
         for finding in findings:
             agent_counts[finding.agent] = agent_counts.get(finding.agent, 0) + 1
 

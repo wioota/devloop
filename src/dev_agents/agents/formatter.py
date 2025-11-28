@@ -1,11 +1,12 @@
 """Formatter agent - auto-formats code on save."""
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dev_agents.core.agent import Agent, AgentResult
-from dev_agents.core.context import Finding
+from dev_agents.core.context_store import Finding, Severity
 from dev_agents.core.event import Event
 
 
@@ -298,22 +299,23 @@ class FormatterAgent(Agent):
         auto_fixable: bool = False,
     ) -> None:
         """Write a formatting finding to the context store."""
-        from dev_agents.core.context import context_store
+        from dev_agents.core.context_store import context_store
 
         finding = Finding(
-            agent_name=self.name,
-            file_path=str(path),
-            severity=severity,
+            id=f"{self.name}-{path}-{formatter}",
+            agent=self.name,
+            timestamp=str(datetime.now()),
+            file=str(path),
+            severity=Severity(severity),
             message=message,
-            rule_id=f"format_{formatter}",
-            suggestion=f"Run {formatter} on {path}" if auto_fixable else None,
-            metadata={
+            suggestion=f"Run {formatter} on {path}" if auto_fixable else "",
+            auto_fixable=auto_fixable,
+            context={
                 "formatter": formatter,
-                "auto_fixable": auto_fixable,
                 "blocking": blocking,
             },
         )
-        context_store.store_findings(self.name, [finding])
+        await context_store.add_finding(finding)
 
     async def _run_formatter(
         self, formatter: str, path: Path
