@@ -1,5 +1,20 @@
 # Development Background Agents System
 
+## ⚠️ IMPORTANT: Task Management with Beads
+
+**Use Beads (`bd`) instead of markdown for all task management.** Beads provides proper dependency tracking, ready work detection, and long-term memory for agents.
+
+Quick reference:
+- `bd create "Task description" -p 1` - Create new issue
+- `bd ready` - See what's ready to work on
+- `bd update <id> --status in_progress` - Update status
+- `bd close <id>` - Complete an issue
+- See `.beads/beads.jsonl` in git for synced state
+
+Run `bd quickstart` for interactive tutorial.
+
+---
+
 ## Overview
 
 A comprehensive background agent system that monitors development lifecycle events and provides intelligent assistance during software development. These agents operate autonomously, responding to filesystem changes, git operations, build events, and other SDLC triggers to enhance developer productivity.
