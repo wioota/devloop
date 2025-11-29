@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from devloop.core.agent import Agent
 from devloop.core.context_store import context_store
-from devloop.core.event import Event, EventBus
+from devloop.core.event import EventBus
 from devloop.core.feedback import FeedbackAPI, FeedbackStore
 from devloop.core.performance import PerformanceMonitor
 
@@ -209,7 +209,7 @@ class AgentManager:
     async def _listen_for_agent_completion(self, queue: asyncio.Queue):
         """Listen for agent completion events and update consolidated results."""
         while True:
-            event = await queue.get()
+            await queue.get()
             try:
                 # Update consolidated results for Claude Code integration
                 await context_store._update_index()
