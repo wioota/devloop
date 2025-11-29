@@ -1,1 +1,1 @@
-"""Tests for dev-agents."""
+"""Tests for devloop."""

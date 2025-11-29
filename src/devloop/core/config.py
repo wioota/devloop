@@ -1,4 +1,4 @@
-"""Configuration management for dev-agents."""
+"""Configuration management for devloop."""
 
 import json
 from pathlib import Path

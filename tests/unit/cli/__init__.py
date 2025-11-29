@@ -1,1 +1,1 @@
-"""CLI tests for dev-agents."""
+"""CLI tests for devloop."""

@@ -23,7 +23,7 @@ class SummaryFormatter:
             emoji = "🔍"
             status = "Findings Summary"
 
-        lines.append(f"## {emoji} Dev-Agent Summary ({status})")
+        lines.append(f"## {emoji} DevLoop Summary ({status})")
         lines.append(f"**Scope:** {report.scope.title()}")
         lines.append(
             f"**Time Range:** {report.time_range[0].strftime('%Y-%m-%d %H:%M')} - {report.time_range[1].strftime('%Y-%m-%d %H:%M')}"
@@ -113,7 +113,7 @@ class SummaryFormatter:
         if report.auto_fixable:
             lines.append("### 🛠️ Quick Actions")
             lines.append(
-                f"Run `dev-agents auto-fix` to apply {len(report.auto_fixable)} safe fixes automatically"
+                f"Run `devloop auto-fix` to apply {len(report.auto_fixable)} safe fixes automatically"
             )
             lines.append("")
 

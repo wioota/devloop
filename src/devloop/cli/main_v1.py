@@ -120,7 +120,7 @@ def events(
 
 @app.command()
 def init(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
-    """Initialize dev-agents in a project."""
+    """Initialize devloop in a project."""
     claude_dir = path / ".devloop"
 
     if claude_dir.exists():
@@ -129,7 +129,7 @@ def init(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
 
     claude_dir.mkdir(exist_ok=True)
     console.print(f"[green]✓[/green] Created: {claude_dir}")
-    console.print(f"\nRun [cyan]dev-agents watch {path}[/cyan] to start watching!")
+    console.print(f"\nRun [cyan]devloop watch {path}[/cyan] to start watching!")
 
 
 @app.command()

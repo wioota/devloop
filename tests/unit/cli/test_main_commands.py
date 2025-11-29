@@ -1,4 +1,4 @@
-"""Comprehensive tests for dev-agents CLI commands."""
+"""Comprehensive tests for devloop CLI commands."""
 
 import json
 import os
@@ -163,7 +163,7 @@ class TestStopCommand:
         claude_dir = temp_project_dir / ".devloop"
         claude_dir.mkdir()
 
-        pid_file = claude_dir / "dev-agents.pid"
+        pid_file = claude_dir / "devloop.pid"
         pid_file.write_text("99999")  # Non-existent PID
 
         result = cli_runner.invoke(app, ["stop", str(temp_project_dir)])

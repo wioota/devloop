@@ -11,15 +11,15 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from dev_agents.core.event import Event, EventBus, Priority
-from dev_agents.core.agent import AgentConfig
-from dev_agents.collectors import CollectorManager
-from dev_agents.agents.echo import EchoAgent
-from dev_agents.agents.file_logger import FileLoggerAgent
+from devloop.core.event import Event, EventBus, Priority
+from devloop.core.agent import AgentConfig
+from devloop.collectors import CollectorManager
+from devloop.agents.echo import EchoAgent
+from devloop.agents.file_logger import FileLoggerAgent
 
 # Import real agents - they might fail if linters aren't installed, that's OK
 try:
-    from dev_agents.agents.linter import LinterAgent
+    from devloop.agents.linter import LinterAgent
     LINTER_AVAILABLE = True
 except ImportError as e:
     print(f"Note: LinterAgent requires dependencies: {e}")

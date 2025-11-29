@@ -7,9 +7,9 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from dev_agents.core.event import EventBus
-from dev_agents.collectors import CollectorManager
-from dev_agents.agents import LinterAgent, FormatterAgent
+from devloop.core.event import EventBus
+from devloop.collectors import CollectorManager
+from devloop.agents import LinterAgent, FormatterAgent
 
 
 async def demo():

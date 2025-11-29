@@ -36,7 +36,7 @@ from devloop.core import (
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
 
 app = typer.Typer(
-    help="Dev Agents - Development workflow automation", add_completion=False
+    help="DevLoop - Development workflow automation", add_completion=False
 )
 console = Console()
 
@@ -83,7 +83,7 @@ def amp_context():
             console.print(f"[red]Error reading context: {e}[/red]")
     else:
         console.print(
-            "[yellow]No context index found. Start agents with 'dev-agents watch .' first.[/yellow]"
+            "[yellow]No context index found. Start agents with 'devloop watch .' first.[/yellow]"
         )
 
 
@@ -99,7 +99,7 @@ def setup_logging(verbose: bool = False):
 
 
 def run_daemon(path: Path, config_path: Path | None, verbose: bool):
-    """Run dev-agents in daemon/background mode."""
+    """Run devloop in daemon/background mode."""
     import os
     import sys
 
@@ -109,9 +109,9 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
         if pid > 0:
             # Parent process - exit
             console.print(
-                f"[green]✓[/green] Dev Agents started in background (PID: {pid})"
+                f"[green]✓[/green] DevLoop started in background (PID: {pid})"
             )
-            console.print("[dim]Run 'dev-agents stop' to stop the daemon[/dim]")
+            console.print("[dim]Run 'devloop stop' to stop the daemon[/dim]")
             sys.exit(0)
     except OSError as e:
         console.print(f"[red]✗[/red] Failed to start daemon: {e}")
@@ -126,7 +126,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     os.umask(0)
 
     # Redirect stdout/stderr to log file
-    log_file = project_dir / ".devloop" / "dev-agents.log"
+    log_file = project_dir / ".devloop" / "devloop.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_file, "a") as f:
@@ -137,7 +137,7 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     setup_logging(verbose)
 
     # Write PID file
-    pid_file = project_dir / ".devloop" / "dev-agents.pid"
+    pid_file = project_dir / ".devloop" / "devloop.pid"
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
 
@@ -335,7 +335,7 @@ def init(
         False, "--skip-config", help="Skip creating configuration file"
     ),
 ):
-    """Initialize dev-agents in a project."""
+    """Initialize devloop in a project."""
     claude_dir = path / ".devloop"
 
     if claude_dir.exists():
@@ -358,7 +358,7 @@ def init(
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
-    console.print(f"  2. Run: [cyan]dev-agents watch {path}[/cyan]")
+    console.print(f"  2. Run: [cyan]devloop watch {path}[/cyan]")
 
 
 @app.command()
@@ -385,11 +385,11 @@ def status():
 
 @app.command()
 def stop(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
-    """Stop the background dev-agents daemon."""
+    """Stop the background devloop daemon."""
     import os
     import signal
 
-    pid_file = path / ".devloop" / "dev-agents.pid"
+    pid_file = path / ".devloop" / "devloop.pid"
 
     if not pid_file.exists():
         console.print(f"[yellow]No daemon running in {path}[/yellow]")
@@ -404,11 +404,11 @@ def stop(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
 
         # Send SIGTERM to gracefully stop
         os.kill(pid, signal.SIGTERM)
-        console.print(f"[green]✓[/green] Stopped dev-agents daemon (PID: {pid})")
+        console.print(f"[green]✓[/green] Stopped devloop daemon (PID: {pid})")
 
         # Clean up files
         pid_file.unlink()
-        log_file = path / ".devloop" / "dev-agents.log"
+        log_file = path / ".devloop" / "devloop.log"
         if log_file.exists():
             console.print(f"[dim]Logs available at: {log_file}[/dim]")
 

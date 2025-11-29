@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Demo script showing the context store integration with dev-agents."""
+"""Demo script showing the context store integration with devloop."""
 
 import asyncio
 import tempfile
 from pathlib import Path
 
-from src.dev_agents.core.context_reader import ContextReader, get_context_summary
-from src.dev_agents.core.event import Event
+from src.devloop.core.context_reader import ContextReader, get_context_summary
+from src.devloop.core.event import Event
 
 
 async def demo_context_store():
@@ -36,12 +36,12 @@ class MyClass:
         print(test_code)
         print()
 
-        # Start dev-agents watching this file
-        print("🚀 Starting dev-agents to analyze the file...")
+        # Start devloop watching this file
+        print("🚀 Starting devloop to analyze the file...")
 
         # Import here to avoid circular imports
-        from src.dev_agents.core.context import context_store
-        from src.dev_agents.agents.linter import LinterAgent
+        from src.devloop.core.context import context_store
+        from src.devloop.agents.linter import LinterAgent
 
         # Temporarily change context store path for demo
         original_path = context_store.base_path
