@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-11-29T22:51:24.143475+00:00Z",
+  "last_updated": "2025-11-29T22:53:02.425350+00:00Z",
   "check_now": {
     "count": 0,
     "severity_breakdown": {},
@@ -9,9 +9,10 @@
   "mention_if_relevant": {
     "count": 3,
     "categories": {
-      "F401": 3
+      "F401": 2,
+      "F841": 1
     },
-    "summary": "3 F401"
+    "summary": "2 F401, 1 F841"
   },
   "deferred": {
     "count": 0,
