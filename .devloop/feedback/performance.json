@@ -1,13 +1,33 @@
 {
-  "linter": {
+  "test-runner": {
     "total_executions": 1,
     "successful_executions": 1,
-    "average_duration": 0.00010824203491210938,
+    "average_duration": 8.821487426757812e-05,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764456522.5758152
+    "last_updated": 1764456699.292766
   }
-} }
+}
+  "security-scanner": {
+    "total_executions": 1,
+    "successful_executions": 0,
+    "average_duration": 0.00011920928955078125,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764456699.257331
+  },
+  "performance-profiler": {
+    "total_executions": 1,
+    "successful_executions": 0,
+    "average_duration": 0.00012254714965820312,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764456699.284323
+  }
 }

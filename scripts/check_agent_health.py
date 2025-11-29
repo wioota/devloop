@@ -69,15 +69,16 @@ class AgentHealthCheck:
             # Initialize context store
             await context_store.initialize()
 
-            # Try to get summary
-            summary = context_store.get_summary()
-            assert summary is not None
+            # Try to read index
+            index = await context_store.read_index()
+            assert index is not None
+            assert "check_now" in index
 
             duration = (datetime.now(UTC) - start).total_seconds()
             return HealthCheckResult(
                 "context_store_initialized",
                 passed=True,
-                message=f"Context store ready at {context_store.base_path}",
+                message=f"Context store ready at {context_store.context_dir}",
                 duration=duration,
             )
         except Exception as e:
@@ -95,7 +96,16 @@ class AgentHealthCheck:
         try:
             self.log("Checking linter agent...")
 
-            agent = LinterAgent()
+            # Create event bus
+            event_bus = EventBus()
+            
+            # Create linter agent with required arguments
+            agent = LinterAgent(
+                name="linter",
+                triggers=["file:modify"],
+                event_bus=event_bus,
+                config={"enabled": True, "filePatterns": ["**/*.py"]},
+            )
             assert agent is not None
             assert agent.name == "linter"
 
@@ -126,11 +136,16 @@ class AgentHealthCheck:
                 test_file = Path(tmpdir) / "test.py"
                 test_file.write_text("import os\nimport sys\n")  # Unused imports
 
-                # Create linter agent
-                agent = LinterAgent()
+                # Create event bus and linter agent
+                event_bus = EventBus()
+                agent = LinterAgent(
+                    name="linter",
+                    triggers=["file:modify"],
+                    event_bus=event_bus,
+                    config={"enabled": True, "filePatterns": ["**/*.py"]},
+                )
 
                 # Run check on test file
-                # Note: This is a simplified test - actual implementation may differ
                 self.log(f"Checking file: {test_file}")
 
                 # If we can get here without errors, basic functionality works
@@ -157,26 +172,27 @@ class AgentHealthCheck:
         try:
             self.log("Checking context store persistence...")
 
-            # Create test finding
+            # Create test finding with correct field names
             test_finding = Finding(
-                agent_name="test-agent",
-                file_path="test.py",
-                line_number=1,
-                column_number=1,
+                id="test-finding-001",
+                agent="test-agent",
+                timestamp=datetime.now(UTC).isoformat(),
+                file="test.py",
+                line=1,
+                column=1,
                 severity=Severity.WARNING,
                 message="Test finding",
-                rule_id="TEST-001",
-                timestamp=datetime.now(UTC),
+                category="TEST-001",
             )
 
             # Store it
-            context_store.add_finding(test_finding)
+            await context_store.add_finding(test_finding)
 
             # Retrieve it
-            findings = context_store.get_findings()
+            findings = await context_store.get_findings()
 
             # Verify it's there
-            test_findings = [f for f in findings if f.rule_id == "TEST-001"]
+            test_findings = [f for f in findings if f.category == "TEST-001"]
 
             if test_findings:
                 duration = (datetime.now(UTC) - start).total_seconds()
@@ -204,17 +220,18 @@ class AgentHealthCheck:
         try:
             self.log("Checking summary generation...")
 
-            # Get summary
-            summary = context_store.get_summary()
+            # Get index summary
+            index = await context_store.read_index()
 
             # Verify structure
-            assert "total_findings" in summary or "check_now" in summary
+            assert "check_now" in index
+            check_now_count = index["check_now"].get("count", 0)
 
             duration = (datetime.now(UTC) - start).total_seconds()
             return HealthCheckResult(
                 "summary_generation",
                 passed=True,
-                message=f"Summary generated with {summary.get('total_findings', 0)} findings",
+                message=f"Summary generated with {check_now_count} immediate findings",
                 duration=duration,
             )
 
