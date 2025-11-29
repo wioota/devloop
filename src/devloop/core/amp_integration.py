@@ -157,8 +157,6 @@ AMP_COMMANDS: Dict[str, Callable[..., Coroutine[Any, Any, Any]]] = {
 }
 
 
-from typing import Any, Callable, Coroutine
-
 async def execute_amp_command(command: str, **kwargs) -> Any:
     """Execute an Amp integration command."""
     if command not in AMP_COMMANDS:

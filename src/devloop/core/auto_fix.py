@@ -24,7 +24,10 @@ class AutoFix:
         """
         # Check if autonomous fixes are enabled
         global_config = config.get_global_config()
-        if not global_config.autonomous_fixes or not global_config.autonomous_fixes.enabled:
+        if (
+            not global_config.autonomous_fixes
+            or not global_config.autonomous_fixes.enabled
+        ):
             logger.info("Autonomous fixes are disabled in configuration")
             return {}
 
@@ -43,7 +46,10 @@ class AutoFix:
         return applied_fixes
 
     async def _apply_single_fix(
-        self, agent_type: str, finding: Finding, autonomous_fixes_config: AutonomousFixesConfig
+        self,
+        agent_type: str,
+        finding: Finding,
+        autonomous_fixes_config: AutonomousFixesConfig,
     ) -> bool:
         """Apply a single fix if it's safe to do so."""
         if finding.id in self._fix_history:

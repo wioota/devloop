@@ -3,6 +3,7 @@ name = "devloop"
 version = "0.2.0"
 description = "Background agents for development workflow automation"
 authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
 readme = "README.md"
 packages = [{include = "devloop", from = "src"}]
 

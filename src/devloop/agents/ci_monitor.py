@@ -1,11 +1,9 @@
 """CI Monitor Agent - Monitors GitHub Actions CI status."""
 
-import asyncio
 import json
 import subprocess
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from devloop.core.agent import Agent, AgentResult
 from devloop.core.context_store import Finding, Severity
@@ -15,14 +13,23 @@ from devloop.core.event import Event
 class CIMonitorAgent(Agent):
     """Monitors GitHub Actions CI status and reports failures."""
 
-    def __init__(self, check_interval: int = 300):  # 5 minutes default
+    def __init__(
+        self,
+        name: str,
+        triggers: List[str],
+        event_bus: Any,
+        check_interval: int = 300,
+    ):  # 5 minutes default
         """
         Initialize CI monitor agent.
 
         Args:
+            name: Agent name
+            triggers: Event triggers for this agent
+            event_bus: Event bus for publishing events
             check_interval: How often to check CI status (in seconds)
         """
-        super().__init__("ci-monitor")
+        super().__init__(name, triggers, event_bus)
         self.check_interval = check_interval
         self.last_check: Optional[datetime] = None
         self.last_status: Optional[dict] = None
@@ -39,7 +46,12 @@ class CIMonitorAgent(Agent):
             should_check = True
 
         if not should_check:
-            return AgentResult.skip("Not time to check CI yet")
+            return AgentResult(
+                agent_name=self.name,
+                success=True,
+                duration=0,
+                message="Not time to check CI yet",
+            )
 
         # Check CI status
         try:
@@ -48,21 +60,39 @@ class CIMonitorAgent(Agent):
             self.last_status = status
 
             if not status:
-                return AgentResult.skip("No CI runs found")
+                return AgentResult(
+                    agent_name=self.name,
+                    success=True,
+                    duration=0,
+                    message="No CI runs found",
+                )
 
             # Analyze status and create findings
             findings = self._analyze_ci_status(status)
 
             if findings:
-                return AgentResult.failure(
-                    f"CI issues detected: {len(findings)} workflows need attention",
-                    findings=findings,
+                return AgentResult(
+                    agent_name=self.name,
+                    success=False,
+                    duration=0,
+                    message=f"CI issues detected: {len(findings)} workflows need attention",
+                    data={"findings": findings},
                 )
             else:
-                return AgentResult.success("CI status: All checks passing")
+                return AgentResult(
+                    agent_name=self.name,
+                    success=True,
+                    duration=0,
+                    message="CI status: All checks passing",
+                )
 
         except Exception as e:
-            return AgentResult.error(f"Failed to check CI status: {e}")
+            return AgentResult(
+                agent_name=self.name,
+                success=False,
+                duration=0,
+                error=f"Failed to check CI status: {e}",
+            )
 
     def _should_check_now(self) -> bool:
         """Determine if we should check CI now based on interval."""
@@ -145,7 +175,11 @@ class CIMonitorAgent(Agent):
                     "runs": runs,
                     "checked_at": datetime.now().isoformat(),
                 }
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        except (
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            json.JSONDecodeError,
+        ):
             return None
 
         return None
@@ -157,7 +191,7 @@ class CIMonitorAgent(Agent):
         branch = status.get("branch", "unknown")
 
         # Group runs by workflow
-        workflows = {}
+        workflows: Dict[str, list] = {}
         for run in runs:
             workflow_name = run.get("workflowName", run.get("name", "Unknown"))
             if workflow_name not in workflows:
@@ -174,12 +208,13 @@ class CIMonitorAgent(Agent):
             if conclusion == "failure":
                 findings.append(
                     Finding(
+                        id=f"ci-{run_id}",
                         agent="ci-monitor",
+                        timestamp=datetime.now().isoformat(),
+                        file=".github/workflows/ci.yml",
                         category="ci",
                         severity=Severity.ERROR,
-                        message=f"CI workflow '{workflow_name}' failed on branch '{branch}'",
-                        file_path=".github/workflows/",
-                        location=f"Run #{run_id}",
+                        message=f"CI workflow '{workflow_name}' failed on branch '{branch}' (Run #{run_id})",
                         suggestion=f"View details: gh run view {run_id}\nRerun: gh run rerun {run_id}",
                         auto_fixable=False,
                     )
@@ -187,12 +222,13 @@ class CIMonitorAgent(Agent):
             elif status_val == "in_progress":
                 findings.append(
                     Finding(
+                        id=f"ci-{run_id}",
                         agent="ci-monitor",
+                        timestamp=datetime.now().isoformat(),
+                        file=".github/workflows/ci.yml",
                         category="ci",
                         severity=Severity.INFO,
-                        message=f"CI workflow '{workflow_name}' is running on branch '{branch}'",
-                        file_path=".github/workflows/",
-                        location=f"Run #{run_id}",
+                        message=f"CI workflow '{workflow_name}' is running on branch '{branch}' (Run #{run_id})",
                         suggestion=f"Watch progress: gh run watch {run_id}",
                         auto_fixable=False,
                     )
