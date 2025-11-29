@@ -84,7 +84,13 @@
         "exclude_patterns": [
           "test_*",
           "*_test.py",
-          "*/tests/*"
+          "*/tests/*",
+          "*/.mypy_cache/*",
+          "*/__pycache__/*",
+          "*/.pytest_cache/*",
+          ".mypy_cache/*",
+          "__pycache__/*",
+          ".pytest_cache/*"
         ],
         "max_issues": 50
       }
