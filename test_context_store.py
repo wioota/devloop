@@ -5,7 +5,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from src.dev_agents.core.context import ContextStore, Finding
+from src.devloop.core.context import ContextStore, Finding
 
 
 def test_context_store():

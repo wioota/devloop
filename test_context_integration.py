@@ -5,9 +5,9 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from src.dev_agents.agents.linter import LinterAgent
-from src.dev_agents.core.context_reader import ContextReader
-from src.dev_agents.core.event import Event
+from src.devloop.agents.linter import LinterAgent
+from src.devloop.core.context_reader import ContextReader
+from src.devloop.core.event import Event
 
 
 async def test_agent_context_integration():
@@ -28,7 +28,7 @@ print("hello")
         context_dir.mkdir(parents=True, exist_ok=True)
 
         # Create linter agent with context store path
-        from src.dev_agents.core.context import context_store
+        from src.devloop.core.context import context_store
         # Temporarily change context store path
         original_path = context_store.base_path
         context_store.base_path = context_dir

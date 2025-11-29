@@ -12,12 +12,12 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from dev_agents.core.event import Event, EventBus
-from dev_agents.collectors import CollectorManager
-from dev_agents.agents.echo import EchoAgent
-from dev_agents.agents.linter import LinterAgent
-from dev_agents.agents.formatter import FormatterAgent
-from dev_agents.agents.test_runner import TestRunnerAgent
+from devloop.core.event import Event, EventBus
+from devloop.collectors import CollectorManager
+from devloop.agents.echo import EchoAgent
+from devloop.agents.linter import LinterAgent
+from devloop.agents.formatter import FormatterAgent
+from devloop.agents.test_runner import TestRunnerAgent
 
 
 async def integration_demo():
@@ -305,7 +305,7 @@ async def main():
         print("\nNext steps:")
         print("  • Try the quick demo: python quick_demo.py")
         print("  • Run full demo: python demo.py")
-        print("  • Watch a directory: python -m dev_agents.cli.main watch /path/to/dir")
+        print("  • Watch a directory: python -m devloop.cli.main watch /path/to/dir")
         return 0
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")

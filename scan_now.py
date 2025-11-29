@@ -8,7 +8,7 @@ import sys
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from dev_agents.agents import (
+from devloop.agents import (
     LinterAgent,
     FormatterAgent,
     TypeCheckerAgent,
@@ -16,7 +16,7 @@ from dev_agents.agents import (
     TestRunnerAgent,
     PerformanceProfilerAgent,
 )
-from dev_agents.core import EventBus, context_store
+from devloop.core import EventBus, context_store
 
 async def scan():
     """Run all agents on the codebase."""
