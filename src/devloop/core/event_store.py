@@ -43,7 +43,7 @@ class EventStore:
 
     def _init_db(self) -> None:
         """Initialize database schema (runs in thread pool)."""
-        self._connection = sqlite3.connect(str(self.db_path))
+        self._connection = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.connection.execute(
             """
         CREATE TABLE IF NOT EXISTS events (
