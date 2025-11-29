@@ -5,7 +5,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Tests Passing](https://img.shields.io/badge/tests-112%20passing-green.svg)](#testing)
 [![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen.svg)](#status)
-[![License](https://img.shields.io/badge/license-TBD-blue.svg)](#license)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## Status
 
@@ -492,7 +492,9 @@ poetry run pytest --cov=devloop
 
 ## License
 
-TBD
+DevLoop is released under the [MIT License](LICENSE).
+
+This means you can freely use, modify, and distribute this software for any purpose, including commercial use, as long as you include the original copyright notice and license text.
 
 ---
 
