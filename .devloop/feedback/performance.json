@@ -1,12 +1,12 @@
 {
-  "security-scanner": {
+  "test-runner": {
     "total_executions": 1,
-    "successful_executions": 0,
-    "average_duration": 0.00015306472778320312,
+    "successful_executions": 1,
+    "average_duration": 0.00011324882507324219,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764456784.9712973
+    "last_updated": 1764456848.738543
   }
 }
