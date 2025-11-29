@@ -3,7 +3,7 @@
 > **Intelligent background agents for development workflow automation** — automate code quality checks, testing, documentation, and more while you code.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests Passing](https://img.shields.io/badge/tests-112%20passing-green.svg)](#testing)
+[![Tests Passing](https://img.shields.io/badge/tests-167%20passing-green.svg)](#testing)
 [![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen.svg)](#status)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
