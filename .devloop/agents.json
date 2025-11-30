@@ -193,6 +193,26 @@
         ],
         "debounce": 500
       }
+    },
+    "snyk": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "apiToken": "${SNYK_TOKEN}",
+        "severity": "high",
+        "filePatterns": [
+          "**/package.json",
+          "**/requirements.txt",
+          "**/Gemfile",
+          "**/pom.xml",
+          "**/go.mod",
+          "**/Cargo.toml"
+        ],
+        "debounce": 500
+      }
     }
   },
   "global": {
