@@ -132,12 +132,13 @@ File Changes → Collectors → Event Bus → Agents → Results
 
 ## Agents
 
-DevLoop includes **9 built-in agents** out of the box:
+DevLoop includes **10 built-in agents** out of the box:
 
 ### Code Quality
 - **Linter Agent** — Runs linters on changed files
 - **Formatter Agent** — Auto-formats code (Black, isort, etc.)
 - **Type Checker Agent** — Background type checking (mypy)
+- **Code Rabbit Agent** — AI-powered code analysis and insights
 
 ### Testing & Security
 - **Test Runner Agent** — Runs relevant tests on changes
@@ -166,6 +167,48 @@ config = (
 ```
 
 [View agent documentation →](./docs/agents.md)
+
+### Code Rabbit Integration
+
+Code Rabbit Agent provides AI-powered code analysis with insights on code quality, style, and best practices.
+
+**Setup:**
+
+```bash
+# 1. Install code-rabbit CLI
+npm install -g @code-rabbit/cli
+# or
+pip install code-rabbit
+
+# 2. Set your API key
+export CODE_RABBIT_API_KEY="your-api-key-here"
+
+# 3. Agent runs automatically on file changes
+# Results appear in agent findings and context store
+```
+
+**Configuration:**
+
+```json
+{
+  "code-rabbit": {
+    "enabled": true,
+    "triggers": ["file:modified", "file:created"],
+    "config": {
+      "apiKey": "${CODE_RABBIT_API_KEY}",
+      "minSeverity": "warning",
+      "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"]
+    }
+  }
+}
+```
+
+**Features:**
+- Real-time code analysis as you type
+- AI-generated insights on code improvements
+- Integration with DevLoop context store
+- Configurable severity filtering
+- Automatic debouncing to avoid excessive runs
 
 ---
 
