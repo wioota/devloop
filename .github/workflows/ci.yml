@@ -135,7 +135,6 @@ jobs:
 
   snyk:
     runs-on: ubuntu-latest
-    if: secrets.SNYK_TOKEN != ''
 
     steps:
     - uses: actions/checkout@v4
@@ -148,12 +147,23 @@ jobs:
     - name: Install Snyk CLI
       run: npm install -g snyk
 
+    - name: Check if Snyk token is available
+      id: snyk-token-check
+      run: |
+        if [ -z "${{ secrets.SNYK_TOKEN }}" ]; then
+          echo "available=false" >> $GITHUB_OUTPUT
+        else
+          echo "available=true" >> $GITHUB_OUTPUT
+        fi
+
     - name: Authenticate with Snyk
+      if: steps.snyk-token-check.outputs.available == 'true'
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: snyk auth $SNYK_TOKEN
 
     - name: Run Snyk test (scan dependencies)
+      if: steps.snyk-token-check.outputs.available == 'true'
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
@@ -164,6 +174,7 @@ jobs:
       continue-on-error: true
 
     - name: Check for high/critical vulnerabilities
+      if: steps.snyk-token-check.outputs.available == 'true'
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
@@ -179,6 +190,10 @@ jobs:
         fi
         
         echo "✅ No high/critical vulnerabilities found"
+
+    - name: Skip Snyk (token not configured)
+      if: steps.snyk-token-check.outputs.available == 'false'
+      run: echo "⚠️  Snyk token not configured. Skipping security scan. To enable, add SNYK_TOKEN to GitHub Secrets."
 
     - name: Upload Snyk report
       if: always()
