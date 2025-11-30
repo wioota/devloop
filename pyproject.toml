@@ -1,10 +1,38 @@
 [tool.poetry]
 name = "devloop"
 version = "0.2.0"
-description = "Background agents for development workflow automation"
-authors = ["Your Name <your.email@example.com>"]
+description = "Intelligent background agents for development workflow automation"
+long-description = "DevLoop is a comprehensive system of background agents that autonomously monitor your development environment and assist with code quality, testing, security scanning, and documentation management. Agents run non-intrusively in the background, responding to file changes, git operations, and other SDLC events to enhance developer productivity."
+authors = ["DevLoop Contributors <devloop@example.com>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/wioota/devloop"
+homepage = "https://github.com/wioota/devloop"
+documentation = "https://github.com/wioota/devloop#readme"
+keywords = [
+    "agents",
+    "development",
+    "automation",
+    "code-quality",
+    "testing",
+    "linting",
+    "security",
+    "continuous-integration",
+    "devops"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Utilities"
+]
 packages = [{include = "devloop", from = "src"}]
 
 [tool.poetry.dependencies]
