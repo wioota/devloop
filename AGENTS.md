@@ -4,12 +4,14 @@
 
 **Use Beads (`bd`) instead of markdown for all task management.** Beads provides proper dependency tracking, ready work detection, and long-term memory for agents.
 
+**FORBIDDEN:** Do NOT create markdown task files (.md files for TODO lists, plans, checklists, etc). All work must be tracked in Beads.
+
 Quick reference:
 - `bd create "Task description" -p 1` - Create new issue
 - `bd ready` - See what's ready to work on
 - `bd update <id> --status in_progress` - Update status
 - `bd close <id>` - Complete an issue
-- See `.beads/beads.jsonl` in git for synced state
+- See `.beads/issues.jsonl` in git for synced state
 
 Run `bd quickstart` for interactive tutorial.
 
@@ -226,6 +228,53 @@ See [INSTALLATION_AUTOMATION.md](./INSTALLATION_AUTOMATION.md) for complete tech
 ---
 
 ## Development Discipline
+
+### Task Management with Beads (REQUIRED)
+
+**All work must be tracked in Beads, NOT in markdown files.**
+
+Beads provides:
+- ✅ Persistent issue tracking synced via git
+- ✅ Dependency tracking (blocks, related, parent-child, discovered-from)
+- ✅ Ready work detection (unblocked issues only)
+- ✅ Long-term memory across sessions
+- ✅ Multi-agent coordination without conflicts
+
+**Agent Workflow:**
+
+1. **Start of session:**
+   ```bash
+   bd ready              # See what's ready to work on
+   bd show <issue-id>    # Review issue details
+   ```
+
+2. **During work:**
+   ```bash
+   bd update <id> --status in_progress   # Claim the issue
+   bd create "Bug found" -p 1             # File discovered issues
+   bd dep add <new-id> <parent-id> --type discovered-from
+   ```
+
+3. **End of session (MANDATORY):**
+   ```bash
+   bd close <id> --reason "Implemented in PR #42"
+   bd update <other-id> --status in_progress  # Update ongoing work
+   git add .beads/                             # Commit beads changes
+   git commit -m "Work session update"
+   git push origin main
+   ```
+
+**DO NOT:**
+- ❌ Create `.md` files for task tracking
+- ❌ Use markdown headers for planning
+- ❌ Leave issues without status updates
+- ❌ Forget to push `.beads/issues.jsonl` at session end
+
+**Benefits:**
+- Agents can find their next task immediately with `bd ready`
+- Dependencies prevent duplicate work
+- Full history and traceability
+- Works across branches and machines
 
 ### Commit & Push After Every Task
 
