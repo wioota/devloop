@@ -313,6 +313,50 @@ Configure agent behavior in `.devloop/agents.json`:
 
 ---
 
+## CI/CD Integration
+
+DevLoop includes GitHub Actions integration with automated security scanning.
+
+### GitHub Actions Workflow
+
+The default CI pipeline includes:
+
+1. **Tests** — Run pytest on Python 3.11 & 3.12
+2. **Lint** — Check code formatting (Black) and style (Ruff)
+3. **Type Check** — Verify type safety with mypy
+4. **Security (Bandit)** — Scan code for security issues
+5. **Security (Snyk)** — Scan dependencies for vulnerabilities
+
+### Setting Up Snyk in CI
+
+To enable Snyk scanning in your CI pipeline:
+
+**1. Get a Snyk API Token:**
+```bash
+# Create account at https://snyk.io
+# Get token from https://app.snyk.io/account/
+```
+
+**2. Add token to GitHub secrets:**
+```bash
+# In your GitHub repository:
+# Settings → Secrets and variables → Actions
+# Add new secret: SNYK_TOKEN = your-token
+```
+
+**3. Snyk job runs automatically:**
+- Scans all dependencies for known vulnerabilities
+- Fails build if high/critical vulnerabilities found
+- Uploads report as artifact for review
+- Works with all supported package managers
+
+**Configuration:**
+- **Severity threshold:** high (fails on critical or high)
+- **Supported managers:** npm, pip, Ruby, Maven, Go, Rust
+- **Report:** `snyk-report.json` available as artifact
+
+---
+
 ## Usage Examples
 
 ### Example 1: Auto-Format on Save
