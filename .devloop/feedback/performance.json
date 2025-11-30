@@ -1,63 +1,32 @@
 {
-  "type-checker": {
-    "total_executions": 2,
-    "successful_executions": 2,
-    "average_duration": 8.213520050048828e-05,
-    "feedback_count": 0,
-    "thumbs_up_count": 0,
-    "thumbs_down_count": 0,
-    "average_rating": 0.0,
-    "last_updated": 1764463909.4025245
-  },
-  "performance-profiler": {
+  "linter": {
     "total_executions": 1,
-    "successful_executions": 0,
-    "average_duration": 0.00010800361633300781,
+    "successful_executions": 1,
+    "average_duration": 8.296966552734375e-05,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764463908.229441
-  },
-  "security-scanner": {
-    "total_executions": 2,
-    "successful_executions": 0,
-    "average_duration": 8.177757263183594e-05,
-    "feedback_count": 0,
-    "thumbs_up_count": 0,
-    "thumbs_down_count": 0,
-    "average_rating": 0.0,
-    "last_updated": 1764463910.0759645
+    "last_updated": 1764464318.3142369
   },
   "formatter": {
     "total_executions": 1,
     "successful_executions": 1,
-    "average_duration": 0.0002071857452392578,
+    "average_duration": 0.43320369720458984,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764463908.6801238
+    "last_updated": 1764464318.5782285
   },
-  "linter": {
-    "total_executions": 1,
-    "successful_executions": 1,
-    "average_duration": 5.459785461425781e-05,
+  "performance-profiler": {
+    "total_executions": 3,
+    "successful_executions": 0,
+    "average_duration": 0.00013375282287597656,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764463908.96766
-  },
-  "test-runner": {
-    "total_executions": 1,
-    "successful_executions": 1,
-    "average_duration": 5.936622619628906e-05,
-    "feedback_count": 0,
-    "thumbs_up_count": 0,
-    "thumbs_down_count": 0,
-    "average_rating": 0.0,
-    "last_updated": 1764463909.7706208
+    "last_updated": 1764464319.0169442
   }
-}
 }

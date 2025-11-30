@@ -18,7 +18,9 @@ class CodeRabbitConfig:
         self.enabled = config.get("enabled", True)
         self.api_key = config.get("apiKey")
         self.min_severity = config.get("minSeverity", "warning")
-        self.file_patterns = config.get("filePatterns", ["**/*.py", "**/*.js", "**/*.ts"])
+        self.file_patterns = config.get(
+            "filePatterns", ["**/*.py", "**/*.js", "**/*.ts"]
+        )
         self.debounce = config.get("debounce", 500)  # ms
 
 

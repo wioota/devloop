@@ -135,6 +135,7 @@ jobs:
 
   snyk:
     runs-on: ubuntu-latest
+    if: secrets.SNYK_TOKEN != ''
 
     steps:
     - uses: actions/checkout@v4

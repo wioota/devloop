@@ -61,9 +61,7 @@ class SnykResult:
     def high_count(self) -> int:
         """Get count of high severity vulnerabilities."""
         return sum(
-            1
-            for v in self.vulnerabilities
-            if v.get("severity", "").lower() == "high"
+            1 for v in self.vulnerabilities if v.get("severity", "").lower() == "high"
         )
 
 

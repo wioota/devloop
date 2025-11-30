@@ -44,7 +44,9 @@ class ExecutionTrace:
     def end(self, result: Any = None, exception: Exception = None):
         """Mark end of execution"""
         self.end_time = time.time()
-        self.duration = self.end_time - self.start_time
+        self.duration = (
+            self.end_time - self.start_time if self.start_time is not None else None
+        )
         self.result = result
         self.exception = exception
         self.success = exception is None
@@ -255,9 +257,7 @@ class FailureDetector:
     def get_status(self) -> Dict[str, Any]:
         """Get overall failure status"""
         failing_agents = {
-            name: count
-            for name, count in self.agent_failures.items()
-            if count > 0
+            name: count for name, count in self.agent_failures.items() if count > 0
         }
 
         return {
