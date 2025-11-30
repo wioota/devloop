@@ -174,6 +174,25 @@
         "notify_on_failure": true,
         "auto_check_after_push": true
       }
+    },
+    "code-rabbit": {
+      "enabled": true,
+      "triggers": [
+        "file:modified",
+        "file:created"
+      ],
+      "config": {
+        "apiKey": "${CODE_RABBIT_API_KEY}",
+        "minSeverity": "warning",
+        "filePatterns": [
+          "**/*.py",
+          "**/*.js",
+          "**/*.ts",
+          "**/*.jsx",
+          "**/*.tsx"
+        ],
+        "debounce": 500
+      }
     }
   },
   "global": {
