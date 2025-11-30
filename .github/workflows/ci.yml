@@ -132,3 +132,56 @@ jobs:
       with:
         name: bandit-security-report
         path: bandit-report.json
+
+  snyk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js (for Snyk CLI)
+      uses: actions/setup-node@v4
+      with:
+        node-version: "18"
+
+    - name: Install Snyk CLI
+      run: npm install -g snyk
+
+    - name: Authenticate with Snyk
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: snyk auth $SNYK_TOKEN
+
+    - name: Run Snyk test (scan dependencies)
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        # Scan for vulnerabilities, fail on high/critical
+        snyk test \
+          --severity-threshold=high \
+          --json-file-output=snyk-report.json || true
+      continue-on-error: true
+
+    - name: Check for high/critical vulnerabilities
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        # Count vulnerabilities by severity
+        CRITICAL=$(snyk test --json 2>/dev/null | jq '.vulnerabilities[] | select(.severity=="critical")' | jq -s 'length' || echo 0)
+        HIGH=$(snyk test --json 2>/dev/null | jq '.vulnerabilities[] | select(.severity=="high")' | jq -s 'length' || echo 0)
+        
+        echo "Found $CRITICAL critical and $HIGH high severity vulnerabilities"
+        
+        if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+          echo "❌ Build failed: Critical or high severity vulnerabilities detected"
+          exit 1
+        fi
+        
+        echo "✅ No high/critical vulnerabilities found"
+
+    - name: Upload Snyk report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: snyk-report
+        path: snyk-report.json
