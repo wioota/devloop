@@ -132,7 +132,7 @@ File Changes → Collectors → Event Bus → Agents → Results
 
 ## Agents
 
-DevLoop includes **10 built-in agents** out of the box:
+DevLoop includes **11 built-in agents** out of the box:
 
 ### Code Quality
 - **Linter Agent** — Runs linters on changed files
@@ -142,7 +142,8 @@ DevLoop includes **10 built-in agents** out of the box:
 
 ### Testing & Security
 - **Test Runner Agent** — Runs relevant tests on changes
-- **Security Scanner Agent** — Detects vulnerabilities (Bandit)
+- **Security Scanner Agent** — Detects code vulnerabilities (Bandit)
+- **Snyk Agent** — Scans dependencies for known vulnerabilities
 - **Performance Profiler Agent** — Tracks performance metrics
 
 ### Development Workflow
@@ -209,6 +210,67 @@ export CODE_RABBIT_API_KEY="your-api-key-here"
 - Integration with DevLoop context store
 - Configurable severity filtering
 - Automatic debouncing to avoid excessive runs
+
+### Snyk Integration
+
+Snyk Agent provides security vulnerability scanning for project dependencies across multiple package managers.
+
+**Setup:**
+
+```bash
+# 1. Install snyk CLI
+npm install -g snyk
+# or
+brew install snyk
+
+# 2. Authenticate with Snyk (creates ~/.snyk token)
+snyk auth
+
+# 3. Set your API token for DevLoop
+export SNYK_TOKEN="your-snyk-token"
+
+# 4. Agent runs automatically on dependency file changes
+# Results appear in agent findings and context store
+```
+
+**Configuration:**
+
+```json
+{
+  "snyk": {
+    "enabled": true,
+    "triggers": ["file:modified", "file:created"],
+    "config": {
+      "apiToken": "${SNYK_TOKEN}",
+      "severity": "high",
+      "filePatterns": [
+        "**/package.json",
+        "**/requirements.txt",
+        "**/Gemfile",
+        "**/pom.xml",
+        "**/go.mod",
+        "**/Cargo.toml"
+      ]
+    }
+  }
+}
+```
+
+**Features:**
+- Scans all major package managers (npm, pip, Ruby, Maven, Go, Rust)
+- Detects known security vulnerabilities in dependencies
+- Shows CVSS scores and fix availability
+- Integration with DevLoop context store
+- Configurable severity filtering (critical/high/medium/low)
+- Automatic debouncing to avoid excessive scans
+
+**Supported Package Managers:**
+- **npm** / **yarn** / **pnpm** (JavaScript/Node.js)
+- **pip** / **pipenv** / **poetry** (Python)
+- **bundler** (Ruby)
+- **maven** / **gradle** (Java)
+- **go mod** (Go)
+- **cargo** (Rust)
 
 ---
 
