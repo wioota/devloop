@@ -2,7 +2,6 @@
 name = "devloop"
 version = "0.2.0"
 description = "Intelligent background agents for development workflow automation"
-long-description = "DevLoop is a comprehensive system of background agents that autonomously monitor your development environment and assist with code quality, testing, security scanning, and documentation management. Agents run non-intrusively in the background, responding to file changes, git operations, and other SDLC events to enhance developer productivity."
 authors = ["DevLoop Contributors <devloop@example.com>"]
 license = "MIT"
 readme = "README.md"
