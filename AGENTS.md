@@ -293,6 +293,40 @@ See CODING_RULES.md for detailed protocol.
 # Should show: ✅ PASS: All checks successful
 ```
 
+### CI Verification (Pre-Push Hook)
+
+**Automatic:** The `.git/hooks/pre-push` hook automatically checks CI status before allowing pushes.
+
+**Workflow:**
+1. Make changes and commit: `git add . && git commit -m "..."`
+2. Push: `git push origin main`
+3. **Pre-push hook runs automatically:**
+   - Checks if `gh` CLI is installed
+   - Gets the latest CI run status for your branch
+   - If CI failed: blocks push and shows error
+   - If CI passed: allows push to proceed
+   - If no runs yet: allows push
+
+**Manual CI check (if needed):**
+```bash
+# View recent CI runs
+gh run list --limit 10
+
+# View a specific run
+gh run view <run-id>
+
+# View failed run details
+gh run view <run-id> --log-failed
+```
+
+**If push is blocked:**
+1. Check what failed: `gh run view <run-id> --log-failed`
+2. Fix the issues locally
+3. Commit and push again
+4. Pre-push hook will verify the new CI run before allowing push
+
+**Why this matters:** CI failures catch issues before they merge (formatting, type errors, broken tests, security issues). The pre-push hook ensures developers are aware of CI status before code reaches the repository.
+
 ---
 
 ## Configuration
