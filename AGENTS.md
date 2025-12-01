@@ -466,6 +466,68 @@ gh run view <run-id> --log-failed
 
 **Why this matters:** CI failures catch issues before they merge (formatting, type errors, broken tests, security issues). The pre-push hook ensures developers are aware of CI status before code reaches the repository.
 
+### Publishing & Security Considerations
+
+**For public/published software**, add extra care to your DevLoop workflow:
+
+#### Secrets Management
+- ❌ Never commit API keys, tokens, credentials, or private configuration
+- ✅ Use environment variables and CI/CD secrets (GitHub Secrets, etc.)
+- ✅ Scan commits for accidentally leaked secrets before pushing
+- **Agent support**: Security scanner agents should flag hardcoded credentials
+
+#### Version Consistency
+- ✅ Keep version numbers synchronized across `pyproject.toml`, `setup.py`, `__version__`, release tags
+- ✅ Use semantic versioning (MAJOR.MINOR.PATCH)
+- ✅ Tag releases with matching version numbers (`git tag v1.2.3`)
+- **Automated**: Consider a version-bump script in your agent configuration
+
+#### Breaking Changes
+- ✅ Document all breaking changes clearly in `CHANGELOG.md`
+- ✅ Include migration guides in release notes
+- ✅ Consider deprecation warnings before breaking changes
+- **Agent support**: Add agents to detect API/interface changes and prompt for documentation
+
+#### Dependency Security
+- ✅ Run security audits: `pip audit`, `poetry audit`, Dependabot
+- ✅ Monitor for CVE updates in dependencies
+- ✅ Update vulnerable dependencies promptly
+- ✅ Review new dependency versions before merging
+- **Agent support**: Security scanner agents should flag vulnerable dependencies
+
+#### Documentation Accuracy
+- ✅ Test all installation instructions on a clean environment
+- ✅ Verify all code examples actually work
+- ✅ Keep README, API docs, and examples current with code changes
+- **Agent support**: Doc-sync agent should flag outdated documentation
+
+#### Security Policy
+- ✅ Add `SECURITY.md` with vulnerability disclosure procedures
+- ✅ Provide a secure reporting channel (don't report exploits publicly)
+- ✅ Acknowledge and credit security researchers
+- ✅ Establish response timeline (e.g., 30 days before public disclosure)
+
+#### Changelog Maintenance
+- ✅ Keep detailed `CHANGELOG.md` with every release
+- ✅ Group changes by type (features, fixes, security, breaking)
+- ✅ Link to related issues/PRs
+- ✅ Include version-specific migration notes
+- **Agent support**: Commit assistant can suggest changelog entries based on commit messages
+
+#### Pre-Release Checklist
+Before publishing to registries (PyPI, npm, crates.io, etc.):
+1. ✅ All CI tests pass
+2. ✅ All code quality checks pass (linting, type checking, formatting)
+3. ✅ Security scan shows no vulnerabilities
+4. ✅ Documentation is current and tested
+5. ✅ CHANGELOG updated with release notes
+6. ✅ Version numbers consistent across files
+7. ✅ No accidental secrets in commit history
+8. ✅ Manual smoke test on clean environment
+9. ✅ Release notes written with migration guides (if breaking changes)
+
+**Agent setup**: Create a pre-release agent that validates these checks before allowing deployment.
+
 ---
 
 ## Configuration
