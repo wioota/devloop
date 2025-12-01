@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2025-12-01
+
+### Fixed
+- **Log Rotation**: Configure log rotation in agents.json to prevent unbounded disk usage
+  - Logs now rotate at 100MB with compression
+  - Old logs (>7 days) automatically cleaned up
+  - Added LOG_ROTATION.md documentation with configuration examples
+
+### Added
+- Publishing & Security Considerations guide in AGENTS.md
+  - Secrets management best practices
+  - Version consistency requirements
+  - Breaking changes documentation
+  - Dependency security guidelines
+  - Pre-release checklist
+
+### Improved
+- Installation instructions: Added PyPI installation option to README
+- Agent documentation: Enhanced with public software considerations
+
+---
+
 ## [0.2.0] - 2025-11-29
 
 ### Changed - Project Rename: dev-agents → DevLoop
