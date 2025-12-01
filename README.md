@@ -4,12 +4,32 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Tests Passing](https://img.shields.io/badge/tests-167%20passing-green.svg)](#testing)
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen.svg)](#status)
+[![Alpha Release](https://img.shields.io/badge/status-alpha-orange.svg)](#status)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+## ⚠️ ALPHA SOFTWARE - NOT FOR PRODUCTION
+
+**DevLoop is currently in active development and is not recommended for production use.**
+
+This is **research-quality software**. Use at your own risk. See [Known Limitations & Risks](./history/RISK_ASSESSMENT.md) for details on:
+
+- ✗ Subprocess execution not sandboxed (security risk)
+- ✗ Auto-fix may corrupt code (enable only if willing to review changes)
+- ✗ Race conditions possible in file operations (concurrent agent modifications)
+- ✗ Limited error recovery (daemon may not restart automatically)
+- ✗ Configuration migrations not yet supported
+- ✗ No process supervision (manual daemon management)
+
+**Suitable for:** Development on side projects, testing automation, research  
+**Not suitable for:** Critical code, production systems, untrusted projects
+
+[View complete risk assessment →](./history/RISK_ASSESSMENT.md)
+
+---
 
 ## Status
 
-✅ **PRODUCTION READY** — Full-featured development automation system. [View detailed implementation status →](./IMPLEMENTATION_STATUS.md)
+🔬 **ALPHA** — Full-featured development automation system in active development. [View detailed implementation status →](./IMPLEMENTATION_STATUS.md)
 
 ---
 
@@ -33,6 +53,15 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 ---
 
 ## Quick Start
+
+### ⚠️ Before You Start
+
+**ALPHA SOFTWARE DISCLAIMER:**
+- This is research-quality code. Data loss is possible.
+- Only use on projects you can afford to lose or easily recover.
+- Make sure to commit your code to git before enabling DevLoop.
+- Do not enable auto-fix on important code.
+- Some agents may fail silently (see logs for details).
 
 ### Installation
 
@@ -290,7 +319,7 @@ Configure agent behavior in `.devloop/agents.json`:
 {
   "global": {
     "autonomousFixes": {
-      "enabled": true,
+      "enabled": false,
       "safetyLevel": "safe_only"
     },
     "maxConcurrentAgents": 5,
@@ -312,10 +341,12 @@ Configure agent behavior in `.devloop/agents.json`:
 }
 ```
 
-**Safety levels:**
-- `safe_only` — Only fix whitespace/indentation
+**Safety levels (Auto-fix):**
+- `safe_only` — Only fix whitespace/indentation (default, recommended)
 - `medium_risk` — Include import/formatting fixes
 - `all` — Apply all fixes (use with caution)
+
+⚠️ **Auto-fix Warning:** Currently auto-fixes run without backups or review. **DO NOT enable auto-fix in production** or on critical code. Track [secure auto-fix with backups issue](https://github.com/wioota/devloop/issues/emc).
 
 [Full configuration reference →](./docs/configuration.md)
 
@@ -526,17 +557,26 @@ DevLoop follows these core principles:
 
 ## Troubleshooting
 
+### ⚠️ If Something Goes Wrong
+
+**Recovery steps:**
+1. Stop the daemon: `devloop stop .`
+2. Check the logs: `tail -100 .devloop/devloop.log`
+3. Verify your code in git: `git status`
+4. Recover from git if files were modified: `git checkout <file>`
+5. Report the issue: [GitHub Issues](https://github.com/wioota/devloop/issues)
+
 ### Agents not running
 
 ```bash
 # Check status
 devloop status
 
-# View logs
-tail -f .devloop/agent.log
+# View logs (useful for debugging)
+tail -f .devloop/devloop.log
 
-# Enable verbose mode
-devloop watch . --verbose
+# Enable verbose mode for more details
+devloop watch . --foreground --verbose
 ```
 
 ### Performance issues
@@ -564,6 +604,13 @@ devloop custom-list
 # Check storage
 ls -la .devloop/custom_agents/
 ```
+
+### Agent modified my files unexpectedly
+
+1. Check git diff: `git diff`
+2. Revert changes: `git checkout -- .`
+3. Disable the problematic agent in `.devloop/agents.json`
+4. Report issue with: `git show HEAD:.devloop/agents.json`
 
 [Full troubleshooting guide →](./docs/troubleshooting.md)
 
