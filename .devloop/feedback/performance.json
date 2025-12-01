@@ -1,0 +1,33 @@
+{
+  "formatter": {
+    "total_executions": 1,
+    "successful_executions": 1,
+    "average_duration": 0.0002624988555908203,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764580787.8694894
+  }
+}},
+  "type-checker": {
+    "total_executions": 1,
+    "successful_executions": 0,
+    "average_duration": 0.000125885009765625,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764580787.8368607
+  },
+  "security-scanner": {
+    "total_executions": 1,
+    "successful_executions": 0,
+    "average_duration": 0.00016260147094726562,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764580787.8610423
+  }
+}

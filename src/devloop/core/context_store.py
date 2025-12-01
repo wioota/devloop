@@ -525,6 +525,48 @@ class ContextStore:
                     logger.error(f"Failed to load {tier_file}: {e}")
                     # Continue with other tiers
 
+    async def cleanup_old_findings(self, hours_to_keep: int = 168) -> int:
+        """
+        Clean up findings older than specified hours.
+
+        Args:
+            hours_to_keep: Number of hours to retain findings (default: 7 days = 168 hours)
+
+        Returns:
+            Number of findings removed
+        """
+        from datetime import datetime, UTC, timedelta
+
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours_to_keep)
+        cutoff_iso = cutoff_time.isoformat()
+
+        count = 0
+        async with self._lock:
+            for tier in Tier:
+                original_count = len(self._findings[tier])
+
+                # Filter out old findings
+                self._findings[tier] = [
+                    f
+                    for f in self._findings[tier]
+                    if f.timestamp > cutoff_iso  # ISO strings compare correctly
+                ]
+
+                count += original_count - len(self._findings[tier])
+
+                # Write cleaned tier to disk
+                await self._write_tier(tier)
+
+            # Update index after cleanup
+            await self._update_index()
+
+        if count > 0:
+            logger.info(
+                f"Cleaned up {count} findings older than {hours_to_keep} hours"
+            )
+
+        return count
+
 
 # Global instance
 context_store = ContextStore()

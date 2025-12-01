@@ -98,10 +98,44 @@ def setup_logging(verbose: bool = False):
     )
 
 
+def setup_logging_with_rotation(verbose: bool = False, project_dir: Path | None = None):
+    """Setup logging configuration with file rotation for daemon mode."""
+    from logging.handlers import RotatingFileHandler
+
+    if project_dir is None:
+        project_dir = Path.cwd()
+
+    level = logging.DEBUG if verbose else logging.INFO
+    log_file = project_dir / ".devloop" / "devloop.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create rotating file handler
+    # maxBytes: 10MB per file
+    # backupCount: keep 3 rotated files (total ~40MB max)
+    rotating_handler = RotatingFileHandler(
+        filename=str(log_file),
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=3,
+    )
+
+    # Format: timestamp | level | logger | message
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    rotating_handler.setFormatter(formatter)
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.addHandler(rotating_handler)
+
+
 def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     """Run devloop in daemon/background mode."""
     import os
     import sys
+    from logging.handlers import RotatingFileHandler
 
     # Fork to background
     try:
@@ -125,16 +159,11 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     os.setsid()
     os.umask(0)
 
-    # Redirect stdout/stderr to log file
-    log_file = project_dir / ".devloop" / "devloop.log"
-    log_file.parent.mkdir(parents=True, exist_ok=True)
+    # Setup logging with rotation BEFORE redirecting file descriptors
+    setup_logging_with_rotation(verbose, project_dir)
 
-    with open(log_file, "a") as f:
-        os.dup2(f.fileno(), sys.stdout.fileno())
-        os.dup2(f.fileno(), sys.stderr.fileno())
-
-    # Setup logging for daemon
-    setup_logging(verbose)
+    # Don't redirect stdout/stderr - let logging handlers manage it
+    # This prevents unbounded log file growth
 
     # Write PID file
     pid_file = project_dir / ".devloop" / "devloop.pid"
@@ -200,6 +229,42 @@ def watch(
         console.print("\n[yellow]Shutting down...[/yellow]")
 
 
+async def _cleanup_old_data(context_store, event_store, interval_hours: int = 1):
+    """Periodically clean up old findings and events to prevent disk fill-up.
+    
+    Args:
+        context_store: Context store instance
+        event_store: Event store instance
+        interval_hours: How often to run cleanup (default: 1 hour)
+    """
+    cleanup_interval = interval_hours * 60 * 60  # Convert to seconds
+    context_retention_hours = 7 * 24  # Keep 7 days of findings
+    event_retention_days = 30  # Keep 30 days of events
+
+    while True:
+        try:
+            await asyncio.sleep(cleanup_interval)
+            
+            # Clean up old context findings
+            findings_removed = await context_store.cleanup_old_findings(
+                hours_to_keep=context_retention_hours
+            )
+            
+            # Clean up old events
+            events_removed = await event_store.cleanup_old_events(
+                days_to_keep=event_retention_days
+            )
+            
+            console.print(
+                f"[dim]Cleanup: removed {findings_removed} old findings, {events_removed} old events[/dim]"
+            )
+            
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            console.print(f"[yellow]Cleanup error: {e}[/yellow]")
+
+
 async def watch_async(path: Path, config_path: Path | None):
     """Async watch implementation."""
     # Load configuration
@@ -231,6 +296,9 @@ async def watch_async(path: Path, config_path: Path | None):
     # Create filesystem collector
     fs_config = {"watch_paths": [str(path)]}
     fs_collector = FileSystemCollector(event_bus=event_bus, config=fs_config)
+
+    # Start cleanup task (run every hour to remove old findings/events)
+    cleanup_task = asyncio.create_task(_cleanup_old_data(context_store, event_store))
 
     # Create and register agents based on configuration
     if config.is_agent_enabled("linter"):
@@ -324,8 +392,15 @@ async def watch_async(path: Path, config_path: Path | None):
     await shutdown_event.wait()
 
     # Stop everything
+    cleanup_task.cancel()
     await agent_manager.stop_all()
     await fs_collector.stop()
+    
+    # Wait for cleanup task to finish
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
 
 
 @app.command()
