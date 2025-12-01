@@ -224,7 +224,9 @@ class TestAmpStatusCommand:
         mock_result = {"status": "ok", "agents": []}
         mock_show_status.return_value = mock_result
 
-        with patch("asyncio.run", return_value=mock_result) as mock_asyncio:  # noqa: F841
+        with patch(
+            "asyncio.run", return_value=mock_result
+        ) as mock_asyncio:  # noqa: F841
             result = cli_runner.invoke(app, ["amp-status"])
 
             assert result.exit_code == 0
