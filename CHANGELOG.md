@@ -11,6 +11,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.2] - 2025-12-01
+
+### ⚠️ ALPHA SOFTWARE NOTICE
+This is research-quality software. Not recommended for production use. See [Risk Assessment](./history/RISK_ASSESSMENT.md) for details on known limitations and risks.
+
+### Fixed
+- **Unbounded Disk Growth**: Implement automatic log rotation and context cleanup
+  - RotatingFileHandler: 10MB per file, keep 3 backups (40MB max logs)
+  - Automatic context cleanup: Remove findings older than 7 days
+  - Automatic event cleanup: Remove events older than 30 days
+  - Background cleanup task runs hourly
+  - Prevents silent disk exhaustion from log file growth
+
+### Added
+- Comprehensive Risk Assessment document (`history/RISK_ASSESSMENT.md`)
+  - 7 major risk categories, 17 identified risks
+  - CRITICAL risks: subprocess sandboxing, auto-fix safety
+  - HIGH risks: resource limits, audit logging, race conditions
+  - 20 tracked mitigation tasks in beads
+- Risk Fix Progress tracking (`history/RISK_FIX_PROGRESS.md`)
+  - Complete task list with priorities
+  - Implementation roadmap
+
+### Changed
+- **README**: Updated with clear alpha software warnings
+  - Badge changed from "production ready" to "alpha"
+  - Added prominent ⚠️ warning section
+  - Listed known limitations and risks
+  - Clarified use cases (suitable for research/side projects only)
+  - Set `autonomousFixes.enabled` default to `false`
+  - Added auto-fix safety warnings
+  - Improved troubleshooting with recovery steps
+
+### Documentation
+- Added pre-start disclaimer in Quick Start
+- Added recovery procedures for unexpected file modifications
+- Added issue reporting guidance
+- Clarified that some agents may fail silently
+
+---
+
 ## [0.2.1] - 2025-12-01
 
 ### Fixed
