@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-11-30T00:55:32.399312+00:00Z",
+  "last_updated": "2025-11-30T01:51:14.182871+00:00Z",
   "check_now": {
     "count": 0,
     "severity_breakdown": {},
@@ -7,15 +7,15 @@
     "preview": "No immediate issues"
   },
   "mention_if_relevant": {
-    "count": 135,
+    "count": 74,
     "categories": {
-      "E402": 44,
-      "F401": 31,
-      "F841": 32,
-      "F541": 8,
-      "general": 20
+      "general": 11,
+      "F401": 21,
+      "E402": 12,
+      "F841": 26,
+      "F541": 4
     },
-    "summary": "44 E402, 31 F401, 32 F841, 8 F541, 20 general"
+    "summary": "11 general, 21 F401, 12 E402, 26 F841, 4 F541"
   },
   "deferred": {
     "count": 0,
