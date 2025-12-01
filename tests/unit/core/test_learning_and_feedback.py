@@ -3,23 +3,18 @@
 import asyncio
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 import tempfile
-import json
-import time
 
 from devloop.core.custom_agent import (
     AgentBuilder,
-    CustomAgentConfig,
     CustomAgentStore,
     CustomAgentType,
     PatternMatcherAgent,
     FileProcessorAgent,
     OutputAnalyzerAgent,
-    get_agent_template,
 )
 from devloop.core.learning import LearningSystem, AdaptiveAgentConfig
-from devloop.core.feedback import FeedbackStore, FeedbackAPI, FeedbackType, Feedback
+from devloop.core.feedback import FeedbackStore, FeedbackType, Feedback
 from devloop.core.performance import PerformanceMonitor, PerformanceOptimizer
 
 

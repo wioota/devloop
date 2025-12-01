@@ -135,7 +135,6 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     """Run devloop in daemon/background mode."""
     import os
     import sys
-    from logging.handlers import RotatingFileHandler
 
     # Fork to background
     try:
@@ -231,7 +230,7 @@ def watch(
 
 async def _cleanup_old_data(context_store, event_store, interval_hours: int = 1):
     """Periodically clean up old findings and events to prevent disk fill-up.
-    
+
     Args:
         context_store: Context store instance
         event_store: Event store instance
@@ -244,21 +243,21 @@ async def _cleanup_old_data(context_store, event_store, interval_hours: int = 1)
     while True:
         try:
             await asyncio.sleep(cleanup_interval)
-            
+
             # Clean up old context findings
             findings_removed = await context_store.cleanup_old_findings(
                 hours_to_keep=context_retention_hours
             )
-            
+
             # Clean up old events
             events_removed = await event_store.cleanup_old_events(
                 days_to_keep=event_retention_days
             )
-            
+
             console.print(
                 f"[dim]Cleanup: removed {findings_removed} old findings, {events_removed} old events[/dim]"
             )
-            
+
         except asyncio.CancelledError:
             break
         except Exception as e:
@@ -395,7 +394,7 @@ async def watch_async(path: Path, config_path: Path | None):
     cleanup_task.cancel()
     await agent_manager.stop_all()
     await fs_collector.stop()
-    
+
     # Wait for cleanup task to finish
     try:
         await cleanup_task

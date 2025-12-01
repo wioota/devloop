@@ -561,9 +561,7 @@ class ContextStore:
             await self._update_index()
 
         if count > 0:
-            logger.info(
-                f"Cleaned up {count} findings older than {hours_to_keep} hours"
-            )
+            logger.info(f"Cleaned up {count} findings older than {hours_to_keep} hours")
 
         return count
 

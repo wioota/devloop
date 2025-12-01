@@ -1,7 +1,5 @@
 """Tests for the summary subcommand."""
 
-import json
-from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
 from typer.testing import CliRunner

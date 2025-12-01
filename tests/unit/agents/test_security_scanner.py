@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from devloop.agents.security_scanner import SecurityScannerAgent, SecurityConfig
 from devloop.core.event import Event
 

@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from devloop.agents.type_checker import TypeCheckerAgent, TypeCheckerConfig
 from devloop.core.event import Event
 
@@ -196,7 +196,7 @@ class TestTypeCheckerAgent:
         mypy_output = """test.py:5: error: Argument 1 to "len" has incompatible type "int"; expected "Sized"  [arg-type]
 test.py:10: note: Revealed type is "builtins.int"
 Found 1 error in 1 file (checked 1 source file)
-"""
+"""  # noqa: F841
 
         with patch.object(agent, "_run_mypy") as mock_run_mypy:
             # Mock the _run_mypy method directly to return parsed result
@@ -238,7 +238,7 @@ Found 1 error in 1 file (checked 1 source file)
 
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-            result = agent._run_mypy(Path("test.py"))
+            result = agent._run_mypy(Path("test.py"))  # noqa: F841
 
             # Check that subprocess.run was called (should be called twice: availability check + mypy run)
             assert mock_run.call_count >= 2

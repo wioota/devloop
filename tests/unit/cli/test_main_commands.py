@@ -2,26 +2,16 @@
 
 import json
 import os
-import signal
-import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from devloop.cli.main import (
     app,
-    init,
-    status,
-    stop,
-    version,
-    amp_status,
-    amp_findings,
-    amp_context,
 )
-from devloop.core import Config, ConfigWrapper
 
 
 @pytest.fixture
@@ -234,7 +224,7 @@ class TestAmpStatusCommand:
         mock_result = {"status": "ok", "agents": []}
         mock_show_status.return_value = mock_result
 
-        with patch("asyncio.run", return_value=mock_result) as mock_asyncio:
+        with patch("asyncio.run", return_value=mock_result) as mock_asyncio:  # noqa: F841
             result = cli_runner.invoke(app, ["amp-status"])
 
             assert result.exit_code == 0
