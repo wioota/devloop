@@ -36,7 +36,15 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 
 ### Installation
 
-**Prerequisites:** Python 3.11+, Poetry
+**Prerequisites:** Python 3.11+
+
+#### Option 1: From PyPI (Recommended)
+
+```bash
+pip install devloop
+```
+
+#### Option 2: From Source
 
 ```bash
 # Clone the repository
