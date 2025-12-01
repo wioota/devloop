@@ -532,6 +532,31 @@ Before publishing to registries (PyPI, npm, crates.io, etc.):
 
 ## Configuration
 
+### Log Rotation
+
+By default, DevLoop logs can grow unbounded. **Configure log rotation** to prevent disk space issues:
+
+```json
+{
+  "global": {
+    "logging": {
+      "level": "info",
+      "rotation": {
+        "enabled": true,
+        "maxSize": "100MB",
+        "maxBackups": 3,
+        "maxAgeDays": 7,
+        "compress": true
+      }
+    }
+  }
+}
+```
+
+This keeps logs under control while preserving recent history. See [LOG_ROTATION.md](./docs/LOG_ROTATION.md) for details.
+
+### Agents Configuration
+
 Agents are configured via `.devloop/agents.json`:
 
 ```json

@@ -220,7 +220,16 @@
     "maxConcurrentAgents": 5,
     "notificationLevel": "summary",
     "resourceLimits": {},
-    "logging": {},
+    "logging": {
+      "level": "info",
+      "rotation": {
+        "enabled": true,
+        "maxSize": "100MB",
+        "maxBackups": 3,
+        "maxAgeDays": 7,
+        "compress": true
+      }
+    },
     "contextStore": {
       "enabled": true,
       "path": ".claude/context"
