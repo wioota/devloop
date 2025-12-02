@@ -7,8 +7,8 @@ Claude-agents now provides seamless integration with Claude Code, allowing backg
 ## How It Works
 
 1. **Background Agents Run**: Agents automatically analyze your code on file changes
-2. **Results Stored**: Each agent writes findings to `.claude/context/{agent-name}.json`
-3. **Consolidated View**: System creates `.claude/context/agent-results.json` with unified results
+2. **Results Stored**: Each agent writes findings to `.devloop/context/{agent-name}.json`
+3. **Consolidated View**: System creates `.devloop/context/agent-results.json` with unified results
 4. **Claude Code Access**: Use adapter to query agent insights during coding sessions
 
 ## Setup
@@ -26,12 +26,12 @@ Use the Claude Code adapter to check background agent findings:
 
 ```bash
 # Check all agent results
-python3 .claude/integration/claude-code-adapter.py check_results
+python3 .devloop/integration/claude-code-adapter.py check_results
 
 # Get specific insights
-python3 .claude/integration/claude-code-adapter.py insights --query-type lint
-python3 .claude/integration/claude-code-adapter.py insights --query-type test
-python3 .claude/integration/claude-code-adapter.py insights --query-type security
+python3 .devloop/integration/claude-code-adapter.py insights --query-type lint
+python3 .devloop/integration/claude-code-adapter.py insights --query-type test
+python3 .devloop/integration/claude-code-adapter.py insights --query-type security
 ```
 
 ## Using with Claude Code
@@ -58,7 +58,7 @@ Add to your Claude Code settings to automatically check agent results after file
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/integration/claude-code-adapter.py check_results"
+            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
           }
         ]
       }
@@ -72,17 +72,17 @@ Add to your Claude Code settings to automatically check agent results after file
 ### Individual Agent Results
 
 Each agent writes to its own file:
-- `.claude/context/linter.json` - Linting issues
-- `.claude/context/formatter.json` - Formatting suggestions
-- `.claude/context/test-runner.json` - Test results
-- `.claude/context/type-checker.json` - Type errors
-- `.claude/context/security-scanner.json` - Security vulnerabilities
-- `.claude/context/performance-profiler.json` - Performance insights
-- `.claude/context/git-commit-assistant.json` - Commit message suggestions
+- `.devloop/context/linter.json` - Linting issues
+- `.devloop/context/formatter.json` - Formatting suggestions
+- `.devloop/context/test-runner.json` - Test results
+- `.devloop/context/type-checker.json` - Type errors
+- `.devloop/context/security-scanner.json` - Security vulnerabilities
+- `.devloop/context/performance-profiler.json` - Performance insights
+- `.devloop/context/git-commit-assistant.json` - Commit message suggestions
 
 ### Consolidated Results
 
-`.claude/context/agent-results.json` provides unified view:
+`.devloop/context/agent-results.json` provides unified view:
 
 ```json
 {
@@ -159,7 +159,7 @@ Returns specific insights:
 ```
 You: "I'm ready to commit. Check if there are any issues."
 
-Claude Code: [Reads .claude/context/agent-results.json]
+Claude Code: [Reads .devloop/context/agent-results.json]
 "The linter found 2 auto-fixable issues in auth.py.
 All 15 tests are passing. No security issues detected.
 Let me fix the linting issues first..."
@@ -205,8 +205,8 @@ Let me examine the auth.py code..."
 
 **No results showing**:
 - Ensure `devloop watch` is running
-- Check `.claude/context/` directory exists
-- Verify agents are enabled in `.claude/agents.json`
+- Check `.devloop/context/` directory exists
+- Verify agents are enabled in `.devloop/agents.json`
 
 **Outdated results**:
 - Agent results update on file changes
@@ -242,7 +242,7 @@ Use agent results in CI/CD, git hooks, or custom scripts:
 
 ```bash
 # In git pre-commit hook
-results=$(python3 .claude/integration/claude-code-adapter.py check_results)
+results=$(python3 .devloop/integration/claude-code-adapter.py check_results)
 if echo "$results" | grep -q '"priority": "high"'; then
   echo "High priority issues found!"
   exit 1

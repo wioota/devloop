@@ -7,7 +7,7 @@ This project uses background agents that enhance Claude Code's capabilities thro
 
 **IMPORTANT**: Claude Code should proactively check background agent findings and surface them to users:
 
-1. **After Edit/Write operations**: Check `.claude/AGENT_STATUS.md` for immediate issues
+1. **After Edit/Write operations**: Check `.devloop/AGENT_STATUS.md` for immediate issues
 2. **When starting tasks**: Check for existing findings that might be relevant
 3. **Before commits**: Always surface any blocking issues
 

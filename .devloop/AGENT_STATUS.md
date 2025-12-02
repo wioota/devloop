@@ -15,4 +15,4 @@ No immediate issues found by background agents.
 ---
 
 _This file is auto-generated from background agent findings._
-_To get detailed insights, run: `python3 .claude/integration/claude-code-adapter.py insights --format text`_
+_To get detailed insights, run: `python3 .devloop/integration/claude-code-adapter.py insights --format text`_

@@ -65,7 +65,7 @@ When working with Amp, leverage background agents using subagent patterns for op
 
 ### Context Location
 
-Background agents write structured findings to: `.claude/context/`
+Background agents write structured findings to: `.devloop/context/`
 
 **Key files for Amp integration:**
 - `index.json` - **Read this first** - Summary of all findings with urgency levels
@@ -184,7 +184,7 @@ For enhanced integration, consider adding these Amp hooks to your `.vscode/setti
     },
     "action": {
       "type": "send-user-message",
-      "message": "Before editing files, check .claude/context/index.json for any background agent findings that might be relevant to your current task."
+      "message": "Before editing files, check .devloop/context/index.json for any background agent findings that might be relevant to your current task."
     }
   },
   {
