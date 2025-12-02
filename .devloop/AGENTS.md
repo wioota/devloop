@@ -11,7 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/wioota/devloop/main/install.sh | ba
 ```
 
 This will:
-- Install Claude Agents to `~/.devloop`
+- Install DevLoop to `~/.devloop`
 - Set up Python virtual environment
 - Add `devloop` and `ca` to your PATH
 - Configure shell integration
