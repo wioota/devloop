@@ -12,12 +12,12 @@ This project uses background agents that enhance Claude Code's capabilities thro
 3. **Before commits**: Always surface any blocking issues
 
 ### How to Check
-- Read `.claude/AGENT_STATUS.md` - auto-updated summary of findings
+- Read `.devloop/AGENT_STATUS.md` - auto-updated summary of findings
 - If immediate issues exist (⚠️ status), surface them to the user with:
   - File names and line numbers
   - Issue severity and count
   - Suggestion to address before proceeding
-- For detailed analysis, run: `python3 .claude/integration/claude-code-adapter.py insights --format text`
+- For detailed analysis, run: `python3 .devloop/integration/claude-code-adapter.py insights --format text`
 
 ### When to Surface
 - **Always surface** if 🔴 errors exist in files user just edited
@@ -46,7 +46,7 @@ Add these hooks to your Claude Code settings for automatic integration:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/integration/claude-code-adapter.py check_results"
+            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
           }
         ]
       }
@@ -66,7 +66,7 @@ Use these prompts with Claude Code for background agent integration:
 
 ### Context Access
 
-Background agents write results to: `.claude/context/agent-results.json`
+Background agents write results to: `.devloop/context/agent-results.json`
 
 Claude Code can read this file to access current status and findings.
 

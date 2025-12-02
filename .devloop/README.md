@@ -1,18 +1,18 @@
-# Claude Agents Integration
+# DevLoop Integration
 
 This directory contains the integration layer that allows Claude Code and Amp to work with background agents.
 
 ## Overview
 
 The integration provides:
-- **Tool-agnostic context sharing** via JSON files in `.claude/context/`
+- **Tool-agnostic context sharing** via JSON files in `.devloop/context/`
 - **Tool-specific adapters** for optimal integration with each coding assistant
 - **Registration files** (CLAUDE.md and AGENTS.md) with tool-specific instructions
 
 ## Directory Structure
 
 ```
-.claude/
+.devloop/
 ├── CLAUDE.md              # Claude Code integration instructions
 ├── AGENTS.md              # Amp integration instructions
 ├── README.md              # This file
@@ -51,19 +51,19 @@ The Amp adapter can be called directly for testing:
 
 ```bash
 # Get status summary
-python3 .claude/integration/amp-adapter.py status
+python3 .devloop/integration/amp-adapter.py status
 
 # Get specific agent results
-python3 .claude/integration/amp-adapter.py results --agent linter
+python3 .devloop/integration/amp-adapter.py results --agent linter
 
 # Get recent activity
-python3 .claude/integration/amp-adapter.py activity --minutes 60
+python3 .devloop/integration/amp-adapter.py activity --minutes 60
 
 # Check auto-fixable issues
-python3 .claude/integration/amp-adapter.py auto-fixes
+python3 .devloop/integration/amp-adapter.py auto-fixes
 
 # Apply fixes automatically
-python3 .claude/integration/amp-adapter.py apply-fixes --safety safe_only
+python3 .devloop/integration/amp-adapter.py apply-fixes --safety safe_only
 ```
 
 ## For Claude Code Users
@@ -83,7 +83,7 @@ Add to your Claude Code settings:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/integration/claude-code-adapter.py check_results"
+            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
           }
         ]
       }
@@ -111,18 +111,18 @@ The Claude Code adapter can be called directly for testing:
 
 ```bash
 # Check recent results
-python3 .claude/integration/claude-code-adapter.py check_results
+python3 .devloop/integration/claude-code-adapter.py check_results
 
 # Get lint insights
-python3 .claude/integration/claude-code-adapter.py insights --query-type lint
+python3 .devloop/integration/claude-code-adapter.py insights --query-type lint
 
 # Get general insights
-python3 .claude/integration/claude-code-adapter.py insights
+python3 .devloop/integration/claude-code-adapter.py insights
 ```
 
 ## Context File Format
 
-Background agents write results to `context/agent-results.json`:
+Background agents write results to `.devloop/context/agent-results.json`:
 
 ```json
 {
@@ -156,11 +156,11 @@ Background agents write results to `context/agent-results.json`:
 
 ```bash
 # Test both adapters
-python3 .claude/integration/amp-adapter.py status
-python3 .claude/integration/claude-code-adapter.py check_results
+python3 .devloop/integration/amp-adapter.py status
+python3 .devloop/integration/claude-code-adapter.py check_results
 
 # Verify context files exist and are readable
-cat .claude/context/agent-results.json | jq .
+cat .devloop/context/agent-results.json | jq .
 ```
 
 ## Troubleshooting
@@ -176,6 +176,6 @@ cat .claude/context/agent-results.json | jq .
 - Verify CLAUDE.md is present
 
 ### General Issues
-- Check file permissions on `.claude/` directory
+- Check file permissions on `.devloop/` directory
 - Verify JSON context files are valid
 - Ensure background agents are writing results correctly
