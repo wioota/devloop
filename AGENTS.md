@@ -114,43 +114,78 @@ Then use `mcp__beads__*` functions instead of CLI commands.
 
 ### Managing AI-Generated Planning Documents
 
-AI assistants often create planning and design documents during development:
+**CRITICAL**: This project distinguishes between permanent documentation, ephemeral planning documents, and active work.
+
+#### Permanent Documentation (Root Level ONLY)
+Keep ONLY essential, permanent documentation in the repository root:
+- **README.md** - Project overview, quick start, links to docs
+- **CHANGELOG.md** - Release notes and version history
+- **AGENTS.md** - Architecture and development guidelines (this file)
+- **CODING_RULES.md** - Development standards
+- **LICENSE** - License file
+- **.github/copilot-instructions.md** - GitHub Copilot instructions
+
+#### Ephemeral Planning Documents (history/ Directory)
+All AI-generated planning and design documents go in `history/`:
 - PLAN.md, IMPLEMENTATION.md, ARCHITECTURE.md
 - DESIGN.md, CODEBASE_SUMMARY.md, INTEGRATION_PLAN.md
-- TESTING_GUIDE.md, TECHNICAL_DESIGN.md, and similar files
+- TESTING_GUIDE.md, TECHNICAL_DESIGN.md
+- Risk assessments, release planning notes
+- Any working documents created during development sessions
 
-**Best Practice: Use a dedicated directory for these ephemeral files**
+#### Active Work MUST Use Beads (NOT Markdown)
+**CRITICAL**: Do NOT create markdown files for active work tracking:
+- ❌ Status reports (IMPLEMENTATION_STATUS.md, etc.)
+- ❌ Verification reports (SYSTEM_VERIFICATION.md, etc.)
+- ❌ Implementation plans as standalone docs (use issue descriptions instead)
+- ❌ Checklists or progress tracking documents
+- ❌ Quality commitment docs or review checklists
 
-**Recommended approach:**
-- Create a `history/` directory in the project root
-- Store ALL AI-generated planning/design docs in `history/`
-- Keep the repository root clean and focused on permanent project files
-- Only access `history/` when explicitly asked to review past planning
-
-**Example .gitignore entry (optional):**
+**INSTEAD**: Create Beads issues for all active work:
+```bash
+bd create "Feature/task title" -t task|feature|epic -p 0-4 -d "Full description of work"
 ```
-# AI planning documents (ephemeral)
-history/
+
+#### Directory Structure
+```
+project-root/
+├── README.md                    # Permanent (system overview)
+├── CHANGELOG.md                 # Permanent (version history)
+├── AGENTS.md                    # Permanent (architecture & dev guidelines)
+├── CODING_RULES.md              # Permanent (development standards)
+├── LICENSE                      # Permanent
+├── .github/
+│   └── copilot-instructions.md  # Permanent (AI assistant instructions)
+├── history/                     # Ephemeral planning documents ONLY
+│   ├── RISK_ASSESSMENT.md       # Example: prior analysis
+│   ├── RELEASE_PLAN.md          # Example: release notes draft
+│   └── DESIGN_NOTES.md          # Example: architecture exploration
+├── .beads/
+│   └── issues.jsonl             # ACTIVE WORK TRACKING (only source of truth)
+└── src/
 ```
 
-**Benefits:**
+#### Benefits
 - ✅ Clean repository root
-- ✅ Clear separation between ephemeral and permanent documentation
-- ✅ Easy to exclude from version control if desired
-- ✅ Preserves planning history for archeological research
-- ✅ Reduces noise when browsing the project
+- ✅ Clear separation between permanent, ephemeral, and active
+- ✅ Single source of truth for active work (Beads - synced via git)
+- ✅ Prevents duplicate tracking systems
+- ✅ Easier to sync work across branches/machines
+- ✅ Preserved planning history without cluttering active work
 
 ### Important Rules
 
-- ✅ Use bd for ALL task tracking
+- ✅ Use bd for ALL task tracking (MANDATORY)
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
 - ✅ Check `bd ready` before asking "what should I work on?"
-- ✅ Store AI planning docs in `history/` directory
+- ✅ Store ephemeral planning docs in `history/` directory
+- ✅ Put issue descriptions in Beads, not separate markdown files
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT clutter repo root with planning documents
+- ❌ Do NOT create status/implementation/plan markdown files (use Beads instead)
 
 For more details, see README.md and QUICKSTART.md.
 
