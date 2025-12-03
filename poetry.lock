@@ -838,7 +838,13 @@ files = [
 [package.extras]
 watchmedo = ["PyYAML (>=3.10)"]
 
+[extras]
+all-optional = []
+ci-monitor = []
+code-rabbit = []
+snyk = []
+
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "6f20de9dfab32440e90b76f2aaa277fa7762f7ae82493eff30233c22c384db1e"
+content-hash = "4a7e411e080d6b561fc57a1e5eb6f810de1d4c91919350f6849a3e9222f76f4c"
