@@ -113,12 +113,18 @@ These agents are packaged but not in default config:
 
 ## Proposed Changes Priority
 
-### Phase 1: Quick Wins (No Risk)
-Remove unused demo/internal agents:
-- [ ] **echo.py** - Save 715 bytes
-- [ ] **file_logger.py** - Save 1.4 KB
+### Phase 1: Keep as Learning Examples (Documentation)
+Keep demo agents but feature prominently in documentation:
+- [x] **echo.py** - Simple agent template for learning
+- [x] **file_logger.py** - File I/O and logging example
 
-**Total Savings**: ~2 KB (minimal but cleaner)
+**Rationale**: These agents serve as reference implementations for developers building custom agents. Feature them in:
+- `/docs/agent-development-guide.md`
+- `CONTRIBUTING.md` 
+- Example comments in agent code
+- Getting Started guide
+
+**Total Savings**: ~0 KB (but adds documentation value)
 
 ### Phase 2: Optional Plugins (Medium Risk)
 Extract external tool integrations to `plugins/` directory:
@@ -183,8 +189,8 @@ Before making changes:
 
 | Agent | Lines | Enabled | Recommendation | Priority |
 |-------|-------|---------|-----------------|----------|
-| echo | 20 | No | ❌ Remove | P1 |
-| file_logger | 40 | No | ❌ Remove | P1 |
+| echo | 20 | No | 📚 Keep (Learning Example) | P1 |
+| file_logger | 40 | No | 📚 Keep (Learning Example) | P1 |
 | code_rabbit | 250+ | No | 🔌 Plugin | P2 |
 | snyk | 292 | No | 🔌 Plugin | P2 |
 | ci_monitor | 250+ | No | ❓ Review | P3 |
@@ -203,7 +209,16 @@ Before making changes:
 ## Conclusion
 
 The installation is reasonably lean already, but can be improved by:
-1. Removing the 2 demo/internal agents (quick win, no risk)
-2. Optionally moving external tool integrations to plugins (better user experience)
 
-This would reduce the default installation from 112 KB to ~87 KB without sacrificing core functionality.
+1. **Phase 1**: Keep echo and file_logger agents as learning examples for custom agent development
+   - Feature them prominently in documentation
+   - Create agent development guide showing how they work
+   - Link from README and CONTRIBUTING.md
+   - No package size impact, but adds significant educational value
+
+2. **Phase 2**: Optionally move external tool integrations to plugins (better user experience)
+   - Users only install what they need
+   - Reduces default installation from 112 KB to ~87 KB
+   - Better separation of concerns
+
+This balanced approach maintains learning resources while keeping core installations lean.
