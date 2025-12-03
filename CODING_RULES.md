@@ -60,6 +60,45 @@ git status  # Should show: "working tree clean" and "branch is even with origin"
 
 ---
 
+## Special Cases: High-Risk Changes
+
+### Poetry & Dependency Changes
+
+**Problem:** Modifying `pyproject.toml` without updating `poetry.lock` causes CI failure with:
+```
+pyproject.toml changed significantly since poetry.lock was last generated. Run 'poetry lock' to fix the lock file.
+```
+
+**Pattern:** When you modify `pyproject.toml`:
+
+1. **Update lock file immediately:**
+   ```bash
+   poetry lock
+   ```
+
+2. **Stage both files:**
+   ```bash
+   git add pyproject.toml poetry.lock
+   ```
+
+3. **Test locally before committing:**
+   ```bash
+   poetry run pytest
+   poetry run ruff check src tests
+   poetry run mypy src
+   ```
+
+4. **Commit both files together:**
+   ```bash
+   git commit -m "deps: Add new dependency or update config"
+   ```
+
+**Enforcement:** Pre-commit hook will reject commits if `pyproject.toml` changes without `poetry.lock` being updated.
+
+**Why this matters:** Poetry's lock file ensures reproducible builds. CI runs will fail if lock isn't updated, blocking all commits until fixed.
+
+---
+
 ## Core Patterns
 
 ### 1. Tool Availability & Graceful Degradation
