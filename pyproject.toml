@@ -53,6 +53,12 @@ bandit = "^1.7"
 radon = "^6.0"
 types-aiofiles = "^23.2"
 
+[tool.poetry.extras]
+snyk = []
+code-rabbit = []
+ci-monitor = []
+all-optional = []
+
 [tool.poetry.scripts]
 devloop = "devloop.cli.main:app"
 

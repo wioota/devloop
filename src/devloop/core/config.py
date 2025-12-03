@@ -97,120 +97,161 @@ class Config:
         with open(path, "w") as f:
             json.dump(self._config, f, indent=2)
 
-    def _get_default_config(self) -> Dict[str, Any]:
-        """Get default configuration."""
-        return {
-            "version": "1.0.0",
-            "enabled": True,
-            "agents": {
-                "linter": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "autoFix": False,
-                        "reportOnly": True,
-                        "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
-                        "linters": {
-                            "python": "ruff",
-                            "javascript": "eslint",
-                            "typescript": "eslint",
-                        },
-                    },
-                },
-                "formatter": {
-                    "enabled": True,
-                    "triggers": ["file:modified"],
-                    "config": {
-                        "formatOnSave": False,
-                        "reportOnly": True,
-                        "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
-                        "formatters": {
-                            "python": "black",
-                            "javascript": "prettier",
-                            "typescript": "prettier",
-                        },
-                    },
-                },
-                "test-runner": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "runOnSave": True,
-                        "relatedTestsOnly": True,
-                        "testFrameworks": {
-                            "python": "pytest",
-                            "javascript": "jest",
-                            "typescript": "jest",
-                        },
-                    },
-                },
-                "agent-health-monitor": {
-                    "enabled": True,
-                    "triggers": ["agent:*:completed"],
-                    "config": {"monitorAllAgents": True, "autoFixOnFailure": True},
-                },
-                "type-checker": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "enabled_tools": ["mypy"],
-                        "strict_mode": False,
-                        "show_error_codes": True,
-                        "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
-                        "max_issues": 50,
-                    },
-                },
-                "security-scanner": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "enabled_tools": ["bandit"],
-                        "severity_threshold": "medium",
-                        "confidence_threshold": "medium",
-                        "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
-                        "max_issues": 50,
-                    },
-                },
-                "git-commit-assistant": {
-                    "enabled": True,
-                    "triggers": ["git:pre-commit", "git:commit"],
-                    "config": {
-                        "conventional_commits": True,
-                        "max_message_length": 72,
-                        "include_breaking_changes": True,
-                        "analyze_file_changes": True,
-                        "auto_generate_scope": True,
-                        "common_types": [
-                            "feat",
-                            "fix",
-                            "docs",
-                            "style",
-                            "refactor",
-                            "test",
-                            "chore",
-                            "perf",
-                            "ci",
-                            "build",
-                        ],
-                    },
-                },
-                "performance-profiler": {
-                    "enabled": True,
-                    "triggers": ["file:modified", "file:created"],
-                    "config": {
-                        "complexity_threshold": 10,
-                        "min_lines_threshold": 50,
-                        "enabled_tools": ["radon"],
-                        "exclude_patterns": [
-                            "test_*",
-                            "*_test.py",
-                            "*/tests/*",
-                            "__init__.py",
-                        ],
-                        "max_issues": 50,
+    def _get_default_config(self, optional_agents: Optional[Dict[str, bool]] = None) -> Dict[str, Any]:
+        """Get default configuration.
+        
+        Args:
+            optional_agents: Dict mapping optional agent names to whether they should be enabled.
+                           Supported: {"snyk": bool, "code-rabbit": bool, "ci-monitor": bool}
+        """
+        if optional_agents is None:
+            optional_agents = {}
+        
+        agents = {
+            "linter": {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "autoFix": False,
+                    "reportOnly": True,
+                    "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
+                    "linters": {
+                        "python": "ruff",
+                        "javascript": "eslint",
+                        "typescript": "eslint",
                     },
                 },
             },
+            "formatter": {
+                "enabled": True,
+                "triggers": ["file:modified"],
+                "config": {
+                    "formatOnSave": False,
+                    "reportOnly": True,
+                    "filePatterns": ["**/*.py", "**/*.js", "**/*.ts"],
+                    "formatters": {
+                        "python": "black",
+                        "javascript": "prettier",
+                        "typescript": "prettier",
+                    },
+                },
+            },
+            "test-runner": {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "runOnSave": True,
+                    "relatedTestsOnly": True,
+                    "testFrameworks": {
+                        "python": "pytest",
+                        "javascript": "jest",
+                        "typescript": "jest",
+                    },
+                },
+            },
+            "agent-health-monitor": {
+                "enabled": True,
+                "triggers": ["agent:*:completed"],
+                "config": {"monitorAllAgents": True, "autoFixOnFailure": True},
+            },
+            "type-checker": {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "enabled_tools": ["mypy"],
+                    "strict_mode": False,
+                    "show_error_codes": True,
+                    "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
+                    "max_issues": 50,
+                },
+            },
+            "security-scanner": {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "enabled_tools": ["bandit"],
+                    "severity_threshold": "medium",
+                    "confidence_threshold": "medium",
+                    "exclude_patterns": ["test_*", "*_test.py", "*/tests/*"],
+                    "max_issues": 50,
+                },
+            },
+            "git-commit-assistant": {
+                "enabled": True,
+                "triggers": ["git:pre-commit", "git:commit"],
+                "config": {
+                    "conventional_commits": True,
+                    "max_message_length": 72,
+                    "include_breaking_changes": True,
+                    "analyze_file_changes": True,
+                    "auto_generate_scope": True,
+                    "common_types": [
+                        "feat",
+                        "fix",
+                        "docs",
+                        "style",
+                        "refactor",
+                        "test",
+                        "chore",
+                        "perf",
+                        "ci",
+                        "build",
+                    ],
+                },
+            },
+            "performance-profiler": {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "complexity_threshold": 10,
+                    "min_lines_threshold": 50,
+                    "enabled_tools": ["radon"],
+                    "exclude_patterns": [
+                        "test_*",
+                        "*_test.py",
+                        "*/tests/*",
+                        "__init__.py",
+                    ],
+                    "max_issues": 50,
+                },
+            },
+        }
+        
+        # Add optional agents if enabled
+        if optional_agents.get("snyk", False):
+            agents["snyk"] = {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "severity_threshold": "medium",
+                    "api_token_env_var": "SNYK_TOKEN",
+                },
+            }
+        
+        if optional_agents.get("code-rabbit", False):
+            agents["code-rabbit"] = {
+                "enabled": True,
+                "triggers": ["file:modified", "file:created"],
+                "config": {
+                    "api_key_env_var": "CODE_RABBIT_API_KEY",
+                    "min_severity": "medium",
+                },
+            }
+        
+        if optional_agents.get("ci-monitor", False):
+            agents["ci-monitor"] = {
+                "enabled": True,
+                "triggers": ["git:post-push"],
+                "config": {
+                    "check_interval_seconds": 30,
+                    "ci_platform": "github",
+                },
+            }
+        
+        return {
+            "version": "1.0.0",
+            "enabled": True,
+            "agents": agents,
             "global": {
                 "mode": "report-only",
                 "maxConcurrentAgents": 5,
