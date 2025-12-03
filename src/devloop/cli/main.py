@@ -420,7 +420,7 @@ def init(
     else:
         claude_dir.mkdir(exist_ok=True)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
-    
+
     # Create default configuration
     if not skip_config:
         config_file = claude_dir / "agents.json"
@@ -430,36 +430,40 @@ def init(
             )
         else:
             optional_agents = {}
-            
+
             # Interactive prompts for optional agents (unless non-interactive mode)
             if not non_interactive:
                 console.print("\n[cyan]Optional Agents Setup[/cyan]")
                 console.print("The following optional agents can be enabled:\n")
-                
+
                 # Snyk prompt
                 if typer.confirm(
                     "Enable [yellow]Snyk[/yellow] agent for security vulnerability scanning?",
-                    default=False
+                    default=False,
                 ):
                     optional_agents["snyk"] = True
-                    console.print("  [green]✓[/green] Snyk agent enabled (requires SNYK_TOKEN env var)")
-                
+                    console.print(
+                        "  [green]✓[/green] Snyk agent enabled (requires SNYK_TOKEN env var)"
+                    )
+
                 # Code Rabbit prompt
                 if typer.confirm(
                     "Enable [yellow]Code Rabbit[/yellow] agent for code analysis insights?",
-                    default=False
+                    default=False,
                 ):
                     optional_agents["code-rabbit"] = True
-                    console.print("  [green]✓[/green] Code Rabbit agent enabled (requires CODE_RABBIT_API_KEY env var)")
-                
+                    console.print(
+                        "  [green]✓[/green] Code Rabbit agent enabled (requires CODE_RABBIT_API_KEY env var)"
+                    )
+
                 # CI Monitor prompt
                 if typer.confirm(
                     "Enable [yellow]CI Monitor[/yellow] agent to track CI/CD pipeline status?",
-                    default=False
+                    default=False,
                 ):
                     optional_agents["ci-monitor"] = True
                     console.print("  [green]✓[/green] CI Monitor agent enabled")
-            
+
             config = Config()
             config._config = config._get_default_config(optional_agents=optional_agents)
             config.save(config_file)

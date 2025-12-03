@@ -97,16 +97,18 @@ class Config:
         with open(path, "w") as f:
             json.dump(self._config, f, indent=2)
 
-    def _get_default_config(self, optional_agents: Optional[Dict[str, bool]] = None) -> Dict[str, Any]:
+    def _get_default_config(
+        self, optional_agents: Optional[Dict[str, bool]] = None
+    ) -> Dict[str, Any]:
         """Get default configuration.
-        
+
         Args:
             optional_agents: Dict mapping optional agent names to whether they should be enabled.
                            Supported: {"snyk": bool, "code-rabbit": bool, "ci-monitor": bool}
         """
         if optional_agents is None:
             optional_agents = {}
-        
+
         agents = {
             "linter": {
                 "enabled": True,
@@ -216,7 +218,7 @@ class Config:
                 },
             },
         }
-        
+
         # Add optional agents if enabled
         if optional_agents.get("snyk", False):
             agents["snyk"] = {
@@ -227,7 +229,7 @@ class Config:
                     "api_token_env_var": "SNYK_TOKEN",
                 },
             }
-        
+
         if optional_agents.get("code-rabbit", False):
             agents["code-rabbit"] = {
                 "enabled": True,
@@ -237,7 +239,7 @@ class Config:
                     "min_severity": "medium",
                 },
             }
-        
+
         if optional_agents.get("ci-monitor", False):
             agents["ci-monitor"] = {
                 "enabled": True,
@@ -247,7 +249,7 @@ class Config:
                     "ci_platform": "github",
                 },
             }
-        
+
         return {
             "version": "1.0.0",
             "enabled": True,
