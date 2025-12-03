@@ -70,8 +70,24 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 #### Option 1: From PyPI (Recommended)
 
 ```bash
+# Basic installation (all default agents)
 pip install devloop
+
+# With optional agents (Snyk security scanning)
+pip install devloop[snyk]
+
+# With multiple optional agents
+pip install devloop[snyk,code-rabbit]
+
+# With all optional agents
+pip install devloop[all-optional]
 ```
+
+**Available extras:**
+- `snyk` — Dependency vulnerability scanning via Snyk CLI
+- `code-rabbit` — AI-powered code analysis
+- `ci-monitor` — CI/CD pipeline monitoring
+- `all-optional` — All of the above
 
 #### Option 2: From Source
 
@@ -93,17 +109,24 @@ poetry shell
 ### Initialize & Run (Fully Automated)
 
 ```bash
-# 1. Initialize in your project (handles everything automatically)
+# 1. Initialize in your project (interactive setup)
 devloop init /path/to/your/project
 ```
 
-The `init` command automatically:
-- ✅ Sets up .devloop directory and configuration
-- ✅ Creates AGENTS.md and CODING_RULES.md
-- ✅ Sets up git hooks (if git repo)
+The `init` command will:
+- ✅ Set up .devloop directory with default agents
+- ✅ Ask which optional agents you want to enable:
+  - **Snyk** — Scan dependencies for vulnerabilities
+  - **Code Rabbit** — AI-powered code analysis
+  - **CI Monitor** — Track CI/CD pipeline status
+- ✅ Create configuration file with your selections
+- ✅ Set up git hooks (if git repo)
 - ✅ Registers Amp integration (if in Amp)
-- ✅ Configures commit/push discipline enforcement
-- ✅ Verifies everything works
+
+```bash
+# 1a. Alternative: Non-interactive setup (skip optional agent prompts)
+devloop init /path/to/your/project --non-interactive
+```
 
 Then just:
 ```bash
