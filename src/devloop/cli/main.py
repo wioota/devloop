@@ -418,7 +418,7 @@ def init(
     if claude_dir.exists():
         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
     else:
-        claude_dir.mkdir(exist_ok=True)
+        claude_dir.mkdir(parents=True, exist_ok=True)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
 
     # Create default configuration
@@ -472,10 +472,10 @@ def init(
     # Check for and manage AGENTS.md with Beads integration
     agents_md = path / "AGENTS.md"
     beads_template = claude_dir / "beads_template.md"
-    
+
     if beads_template.exists():
         beads_content = beads_template.read_text()
-        
+
         if agents_md.exists():
             # Check if AGENTS.md already has Beads section
             content = agents_md.read_text()
@@ -487,7 +487,7 @@ def init(
                     if line.startswith("# ") and i > 0:
                         insert_pos = i + 1
                         break
-                
+
                 # Insert Beads section
                 new_content = (
                     "\n".join(lines[:insert_pos])
@@ -516,17 +516,15 @@ This project uses background agents and Beads for task management.
         if claude_md.is_symlink():
             target = claude_md.resolve()
             if target.name == "AGENTS.md":
-                console.print(f"\n[green]✓[/green] Claude symlink already set up")
+                console.print("\n[green]✓[/green] Claude symlink already set up")
             else:
                 console.print(
-                    f"\n[yellow]Warning:[/yellow] CLAUDE.md exists but doesn't point to AGENTS.md"
+                    "\n[yellow]Warning:[/yellow] CLAUDE.md exists but doesn't point to AGENTS.md"
                 )
         else:
-            console.print(
-                f"\n[yellow]Note:[/yellow] CLAUDE.md exists as a regular file"
-            )
+            console.print("\n[yellow]Note:[/yellow] CLAUDE.md exists as a regular file")
             console.print("  [cyan]Consider replacing it with a symlink:[/cyan]")
-            console.print(f"    rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md")
+            console.print("    rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md")
     else:
         # Create symlink for Claude
         try:

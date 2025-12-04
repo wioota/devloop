@@ -32,7 +32,9 @@ class TestInitCommand:
 
     def test_init_creates_claude_directory(self, cli_runner, temp_project_dir):
         """Test that init creates .devloop directory."""
-        result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
+        result = cli_runner.invoke(
+            app, ["init", str(temp_project_dir), "--non-interactive"]
+        )
 
         assert result.exit_code == 0
         assert (temp_project_dir / ".devloop").exists()
@@ -42,7 +44,9 @@ class TestInitCommand:
 
     def test_init_creates_config_file(self, cli_runner, temp_project_dir):
         """Test that init creates agents.json config file."""
-        result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
+        result = cli_runner.invoke(
+            app, ["init", str(temp_project_dir), "--non-interactive"]
+        )
 
         assert result.exit_code == 0
         config_file = temp_project_dir / ".devloop" / "agents.json"
@@ -56,7 +60,7 @@ class TestInitCommand:
     def test_init_skip_config_flag(self, cli_runner, temp_project_dir):
         """Test that init --skip-config doesn't create config."""
         result = cli_runner.invoke(
-            app, ["init", str(temp_project_dir), "--skip-config"]
+            app, ["init", str(temp_project_dir), "--skip-config", "--non-interactive"]
         )
 
         assert result.exit_code == 0
@@ -67,11 +71,15 @@ class TestInitCommand:
     def test_init_idempotent(self, cli_runner, temp_project_dir):
         """Test that init can be run multiple times safely."""
         # First init
-        result1 = cli_runner.invoke(app, ["init", str(temp_project_dir)])
+        result1 = cli_runner.invoke(
+            app, ["init", str(temp_project_dir), "--non-interactive"]
+        )
         assert result1.exit_code == 0
 
         # Second init
-        result2 = cli_runner.invoke(app, ["init", str(temp_project_dir)])
+        result2 = cli_runner.invoke(
+            app, ["init", str(temp_project_dir), "--non-interactive"]
+        )
         assert result2.exit_code == 0
 
         # Directory should still exist
@@ -395,7 +403,9 @@ class TestCLIIntegration:
     def test_init_then_status_workflow(self, cli_runner, temp_project_dir):
         """Test the init -> status workflow."""
         # Initialize
-        init_result = cli_runner.invoke(app, ["init", str(temp_project_dir)])
+        init_result = cli_runner.invoke(
+            app, ["init", str(temp_project_dir), "--non-interactive"]
+        )
         assert init_result.exit_code == 0
 
         # Change to that directory and check status

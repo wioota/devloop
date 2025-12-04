@@ -41,7 +41,7 @@ def agent_summary(
         filters["category"] = str(category)
 
     generator = SummaryGenerator(context_store)
-    
+
     # Try to find devloop directory for operational health
     # Check: cwd, parent, and context_store's base path
     devloop_dir = None
@@ -49,11 +49,11 @@ def agent_summary(
         Path.cwd() / ".devloop",
         Path.cwd().parent / ".devloop",
     ]
-    
+
     # Also check if context_store has a devloop directory hint
-    if hasattr(context_store, 'base_path'):
+    if hasattr(context_store, "base_path"):
         search_paths.append(Path(context_store.base_path).parent / ".devloop")
-    
+
     for path_candidate in search_paths:
         if path_candidate.exists():
             devloop_dir = path_candidate
@@ -61,14 +61,14 @@ def agent_summary(
 
     try:
         report = asyncio.run(generator.generate_summary(scope, filters))
-        
+
         # If we couldn't find devloop_dir, try to infer from context store paths
         if not devloop_dir:
             # Check if context directory exists and infer .devloop from it
             context_dir = Path.cwd() / ".devloop" / "context"
             if context_dir.exists():
                 devloop_dir = context_dir.parent
-        
+
         markdown_output = SummaryFormatter.format_markdown(report, devloop_dir)
         console.print(markdown_output)
     except Exception as e:

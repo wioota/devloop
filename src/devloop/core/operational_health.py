@@ -1,15 +1,16 @@
 """Operational health and performance analytics for DevLoop."""
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
 
 @dataclass
 class HealthStatus:
     """System health status."""
+
     overall_status: str  # HEALTHY, DEGRADED, UNHEALTHY
     passed_checks: int
     failed_checks: int
@@ -21,6 +22,7 @@ class HealthStatus:
 @dataclass
 class AgentPerformance:
     """Per-agent performance metrics."""
+
     agent_name: str
     total_executions: int
     successful_executions: int
@@ -32,6 +34,7 @@ class AgentPerformance:
 @dataclass
 class ActivityTimeline:
     """Activity and run frequency metrics."""
+
     last_run: Optional[datetime]
     time_since_last_run: str
     estimated_frequency: str  # e.g., "~5 runs/day"
@@ -56,7 +59,7 @@ class OperationalHealthAnalyzer:
                 failed_checks=0,
                 total_checks=0,
                 last_check=None,
-                check_details=[]
+                check_details=[],
             )
 
         try:
@@ -79,7 +82,7 @@ class OperationalHealthAnalyzer:
                 failed_checks=summary.get("failed", 0),
                 total_checks=summary.get("total_checks", 0),
                 last_check=last_check,
-                check_details=data.get("details", [])
+                check_details=data.get("details", []),
             )
         except Exception as e:
             return HealthStatus(
@@ -88,7 +91,7 @@ class OperationalHealthAnalyzer:
                 failed_checks=0,
                 total_checks=0,
                 last_check=None,
-                check_details=[{"error": str(e)}]
+                check_details=[{"error": str(e)}],
             )
 
     def get_agent_performance(self) -> Dict[str, AgentPerformance]:
@@ -114,7 +117,7 @@ class OperationalHealthAnalyzer:
                     successful_executions=successful,
                     failed_executions=failed,
                     average_duration=avg_duration,
-                    success_rate=success_rate
+                    success_rate=success_rate,
                 )
 
             return performance
@@ -153,7 +156,9 @@ class OperationalHealthAnalyzer:
 
                 # Estimate daily frequency (assuming logs are from past ~30 days)
                 daily_estimate = max(1, estimated_runs // 7)  # Conservative estimate
-                frequency = f"~{daily_estimate} run{'s' if daily_estimate > 1 else ''}/day"
+                frequency = (
+                    f"~{daily_estimate} run{'s' if daily_estimate > 1 else ''}/day"
+                )
 
             except Exception:
                 pass
@@ -161,19 +166,14 @@ class OperationalHealthAnalyzer:
         return ActivityTimeline(
             last_run=last_run,
             time_since_last_run=time_since,
-            estimated_frequency=frequency
+            estimated_frequency=frequency,
         )
 
     def get_findings_summary(self) -> Dict[str, Any]:
         """Get summary of findings by urgency level."""
         index_file = self.context_dir / "index.json"
         if not index_file.exists():
-            return {
-                "immediate": 0,
-                "relevant": 0,
-                "deferred": 0,
-                "by_agent": {}
-            }
+            return {"immediate": 0, "relevant": 0, "deferred": 0, "by_agent": {}}
 
         try:
             with open(index_file) as f:
@@ -203,7 +203,7 @@ class OperationalHealthAnalyzer:
             with open(relevant_file) as f:
                 data = json.load(f)
 
-            breakdown = {}
+            breakdown: dict[str, int] = {}
             for finding in data.get("findings", []):
                 agent = finding.get("agent", "unknown")
                 breakdown[agent] = breakdown.get(agent, 0) + 1
@@ -227,13 +227,15 @@ class OperationalHealthAnalyzer:
             "HEALTHY": "✅",
             "DEGRADED": "⚠️",
             "UNHEALTHY": "❌",
-            "UNKNOWN": "❓"
+            "UNKNOWN": "❓",
         }.get(health.overall_status, "❓")
 
         lines.append(f"### {health_emoji} System Health: {health.overall_status}")
         lines.append(f"- Checks: {health.passed_checks}/{health.total_checks} passed")
         if health.last_check:
-            lines.append(f"- Last check: {health.last_check.strftime('%Y-%m-%d %H:%M:%S')}")
+            lines.append(
+                f"- Last check: {health.last_check.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
         lines.append("")
 
         # Activity
@@ -257,7 +259,9 @@ class OperationalHealthAnalyzer:
             lines.append("")
 
         # Findings summary
-        total_findings = findings["immediate"] + findings["relevant"] + findings["deferred"]
+        total_findings = (
+            findings["immediate"] + findings["relevant"] + findings["deferred"]
+        )
         lines.append("### 📋 Findings")
         lines.append(f"- **Immediate:** {findings['immediate']} (critical)")
         lines.append(f"- **Relevant:** {findings['relevant']} (should review)")
@@ -268,7 +272,9 @@ class OperationalHealthAnalyzer:
         if agent_breakdown:
             lines.append("")
             lines.append("### 📊 Findings by Agent")
-            for agent, count in sorted(agent_breakdown.items(), key=lambda x: x[1], reverse=True):
+            for agent, count in sorted(
+                agent_breakdown.items(), key=lambda x: x[1], reverse=True
+            ):
                 lines.append(f"- **{agent}:** {count}")
 
         lines.append("")
