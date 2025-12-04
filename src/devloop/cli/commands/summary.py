@@ -43,8 +43,18 @@ def agent_summary(
     generator = SummaryGenerator(context_store)
     
     # Try to find devloop directory for operational health
+    # Check: cwd, parent, and context_store's base path
     devloop_dir = None
-    for path_candidate in [Path.cwd() / ".devloop", Path.cwd().parent / ".devloop"]:
+    search_paths = [
+        Path.cwd() / ".devloop",
+        Path.cwd().parent / ".devloop",
+    ]
+    
+    # Also check if context_store has a devloop directory hint
+    if hasattr(context_store, 'base_path'):
+        search_paths.append(Path(context_store.base_path).parent / ".devloop")
+    
+    for path_candidate in search_paths:
         if path_candidate.exists():
             devloop_dir = path_candidate
             break

@@ -34,9 +34,13 @@ class SummaryFormatter:
 
         # Add operational health if devloop_dir provided
         if devloop_dir and devloop_dir.exists():
-            analyzer = OperationalHealthAnalyzer(devloop_dir)
-            health_report = analyzer.generate_health_report()
-            lines.append(health_report)
+            try:
+                analyzer = OperationalHealthAnalyzer(devloop_dir)
+                health_report = analyzer.generate_health_report()
+                lines.append(health_report)
+            except Exception as e:
+                # If health analysis fails, still show summary
+                lines.append(f"(Health analysis skipped: {str(e)})")
 
         # Quick stats
         lines.append("### 📊 Quick Stats")
