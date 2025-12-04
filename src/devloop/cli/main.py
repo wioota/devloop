@@ -469,10 +469,67 @@ def init(
             config.save(config_file)
             console.print(f"\n[green]✓[/green] Created: {config_file}")
 
+    # Check for and manage AGENTS.md with Beads integration
+    agents_md = path / "AGENTS.md"
+    if agents_md.exists():
+        # Check if AGENTS.md already has Beads section
+        content = agents_md.read_text()
+        if "Task Management with Beads" not in content:
+            console.print(
+                f"\n[yellow]Note:[/yellow] {agents_md} exists but may need Beads section"
+            )
+            console.print(
+                "  [cyan]Run this to integrate Beads instructions:[/cyan]"
+            )
+            console.print(
+                f"    # Use your AI coding tool to add content from .devloop/beads_template.md to AGENTS.md"
+            )
+    else:
+        # Create AGENTS.md if missing
+        console.print(f"\n[yellow]Note:[/yellow] Creating {agents_md}")
+        console.print(
+            "  [cyan]Use your AI coding tool to generate AGENTS.md from:[/cyan]"
+        )
+        console.print(f"    - Template: .devloop/beads_template.md")
+        console.print(f"    - Reference: .devloop/AGENTS.md")
+
+    # Handle Claude.md symlink for Claude code tools
+    claude_md = path / "CLAUDE.md"
+    if claude_md.exists():
+        if claude_md.is_symlink():
+            target = claude_md.resolve()
+            if target.name == "AGENTS.md":
+                console.print(f"\n[green]✓[/green] Claude symlink already set up")
+            else:
+                console.print(
+                    f"\n[yellow]Warning:[/yellow] CLAUDE.md exists but doesn't point to AGENTS.md"
+                )
+        else:
+            console.print(
+                f"\n[yellow]Note:[/yellow] CLAUDE.md exists as a regular file"
+            )
+            console.print("  [cyan]Consider replacing it with a symlink:[/cyan]")
+            console.print(f"    rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md")
+    else:
+        # Create symlink for Claude
+        try:
+            claude_md.symlink_to("AGENTS.md")
+            console.print(f"[green]✓[/green] Created: {claude_md} -> AGENTS.md")
+        except Exception as e:
+            console.print(
+                f"[yellow]Warning:[/yellow] Could not create CLAUDE.md symlink: {e}"
+            )
+
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
-    console.print(f"  2. Run: [cyan]devloop watch {path}[/cyan]")
+    if not agents_md.exists():
+        console.print(
+            f"  2. Generate: [cyan]{agents_md}[/cyan] (use AI tool with .devloop/beads_template.md)"
+        )
+        console.print(f"  3. Run: [cyan]devloop watch {path}[/cyan]")
+    else:
+        console.print(f"  2. Run: [cyan]devloop watch {path}[/cyan]")
 
 
 @app.command()
