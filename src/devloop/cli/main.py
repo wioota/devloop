@@ -471,27 +471,44 @@ def init(
 
     # Check for and manage AGENTS.md with Beads integration
     agents_md = path / "AGENTS.md"
-    if agents_md.exists():
-        # Check if AGENTS.md already has Beads section
-        content = agents_md.read_text()
-        if "Task Management with Beads" not in content:
-            console.print(
-                f"\n[yellow]Note:[/yellow] {agents_md} exists but may need Beads section"
-            )
-            console.print(
-                "  [cyan]Run this to integrate Beads instructions:[/cyan]"
-            )
-            console.print(
-                f"    # Use your AI coding tool to add content from .devloop/beads_template.md to AGENTS.md"
-            )
-    else:
-        # Create AGENTS.md if missing
-        console.print(f"\n[yellow]Note:[/yellow] Creating {agents_md}")
-        console.print(
-            "  [cyan]Use your AI coding tool to generate AGENTS.md from:[/cyan]"
-        )
-        console.print(f"    - Template: .devloop/beads_template.md")
-        console.print(f"    - Reference: .devloop/AGENTS.md")
+    beads_template = claude_dir / "beads_template.md"
+    
+    if beads_template.exists():
+        beads_content = beads_template.read_text()
+        
+        if agents_md.exists():
+            # Check if AGENTS.md already has Beads section
+            content = agents_md.read_text()
+            if "Task Management with Beads" not in content:
+                # Inject Beads section after first heading
+                lines = content.split("\n")
+                insert_pos = 0
+                for i, line in enumerate(lines):
+                    if line.startswith("# ") and i > 0:
+                        insert_pos = i + 1
+                        break
+                
+                # Insert Beads section
+                new_content = (
+                    "\n".join(lines[:insert_pos])
+                    + "\n\n"
+                    + beads_content
+                    + "\n\n"
+                    + "\n".join(lines[insert_pos:])
+                )
+                agents_md.write_text(new_content)
+                console.print(
+                    f"[green]✓[/green] Injected Beads section into {agents_md}"
+                )
+        else:
+            # Create AGENTS.md from template
+            template_header = """# Development Workflow
+
+This project uses background agents and Beads for task management.
+
+"""
+            agents_md.write_text(template_header + beads_content)
+            console.print(f"[green]✓[/green] Created: {agents_md}")
 
     # Handle Claude.md symlink for Claude code tools
     claude_md = path / "CLAUDE.md"
@@ -523,13 +540,7 @@ def init(
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
-    if not agents_md.exists():
-        console.print(
-            f"  2. Generate: [cyan]{agents_md}[/cyan] (use AI tool with .devloop/beads_template.md)"
-        )
-        console.print(f"  3. Run: [cyan]devloop watch {path}[/cyan]")
-    else:
-        console.print(f"  2. Run: [cyan]devloop watch {path}[/cyan]")
+    console.print(f"  2. Run: [cyan]devloop watch {path}[/cyan]")
 
 
 @app.command()
