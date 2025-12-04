@@ -125,26 +125,27 @@ Keep ONLY essential, permanent documentation in the repository root:
 - **LICENSE** - License file
 - **.github/copilot-instructions.md** - GitHub Copilot instructions
 
-#### Ephemeral Planning Documents (history/ Directory)
-All AI-generated planning and design documents go in `history/`:
-- PLAN.md, IMPLEMENTATION.md, ARCHITECTURE.md
-- DESIGN.md, CODEBASE_SUMMARY.md, INTEGRATION_PLAN.md
-- TESTING_GUIDE.md, TECHNICAL_DESIGN.md
-- Risk assessments, release planning notes
-- Any working documents created during development sessions
+#### All Work MUST Use Beads (NOT Markdown)
+**CRITICAL**: Do NOT create ANY markdown files for planning, tracking, or status. Everything goes in Beads.
 
-#### Active Work MUST Use Beads (NOT Markdown)
-**CRITICAL**: Do NOT create markdown files for active work tracking:
-- ❌ Status reports (IMPLEMENTATION_STATUS.md, etc.)
-- ❌ Verification reports (SYSTEM_VERIFICATION.md, etc.)
-- ❌ Implementation plans as standalone docs (use issue descriptions instead)
-- ❌ Checklists or progress tracking documents
-- ❌ Quality commitment docs or review checklists
-
-**INSTEAD**: Create Beads issues for all active work:
+**INSTEAD**: Create Beads issues for all work:
 ```bash
-bd create "Feature/task title" -t task|feature|epic -p 0-4 -d "Full description of work"
+bd create "Task title" -t task|feature|epic|bug -p 0-4 -d "Full description and details"
 ```
+
+Beads provides all needed structure:
+- Task/epic/feature/bug/chore types
+- Priority levels (0-4)
+- Descriptions for details and planning
+- Dependencies (blocks, related, parent-child, discovered-from)
+- Status tracking (open, in_progress, closed)
+- Synced to git for persistence
+
+**Examples:**
+- Planning feature? `bd create "Feature XYZ design" -t epic -d "Requirements: ... Design: ..."`
+- Status update? `bd update <id> --status in_progress`
+- Found issue during work? `bd create "Bug found" -p 1 --deps discovered-from:<parent-id>`
+- Documenting decision? Add to issue description with `bd update <id> -d "Decision: ..."`
 
 #### Directory Structure
 ```
@@ -156,36 +157,31 @@ project-root/
 ├── LICENSE                      # Permanent
 ├── .github/
 │   └── copilot-instructions.md  # Permanent (AI assistant instructions)
-├── history/                     # Ephemeral planning documents ONLY
-│   ├── RISK_ASSESSMENT.md       # Example: prior analysis
-│   ├── RELEASE_PLAN.md          # Example: release notes draft
-│   └── DESIGN_NOTES.md          # Example: architecture exploration
 ├── .beads/
-│   └── issues.jsonl             # ACTIVE WORK TRACKING (only source of truth)
+│   └── issues.jsonl             # ACTIVE WORK TRACKING (only source of truth for all tasks)
 └── src/
 ```
 
 #### Benefits
 - ✅ Clean repository root
-- ✅ Clear separation between permanent, ephemeral, and active
-- ✅ Single source of truth for active work (Beads - synced via git)
-- ✅ Prevents duplicate tracking systems
-- ✅ Easier to sync work across branches/machines
-- ✅ Preserved planning history without cluttering active work
+- ✅ Single source of truth for all work (Beads - synced via git)
+- ✅ No duplicate tracking systems
+- ✅ Easy to sync work across branches/machines
+- ✅ All planning/design documented in Beads issue descriptions
+- ✅ Prevents AI agents from creating orphaned markdown files
 
 ### Important Rules
 
-- ✅ Use bd for ALL task tracking (MANDATORY)
+- ✅ Use bd for ALL task tracking (MANDATORY - planning, design, status, everything)
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
 - ✅ Check `bd ready` before asking "what should I work on?"
-- ✅ Store ephemeral planning docs in `history/` directory
-- ✅ Put issue descriptions in Beads, not separate markdown files
-- ❌ Do NOT create markdown TODO lists
+- ✅ Put all planning/design in issue descriptions via `bd create`
+- ✅ Update status with `bd update <id> --status in_progress`
+- ❌ Do NOT create ANY markdown files for planning, tracking, status, or design
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
-- ❌ Do NOT clutter repo root with planning documents
-- ❌ Do NOT create status/implementation/plan markdown files (use Beads instead)
+- ❌ Do NOT clutter repo root with any planning documents
 
 For more details, see README.md and QUICKSTART.md.
 
