@@ -3,15 +3,12 @@
 Amp slash command: /agent-summary
 
 Generates intelligent summaries of recent dev-agent findings.
-Standalone version with no external dependencies.
+Calls the devloop CLI for full operational health and analytics.
 """
 
 import sys
-import json
-import argparse
+import subprocess
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
 
 
 def get_repo_root() -> Path:
@@ -19,124 +16,41 @@ def get_repo_root() -> Path:
     return Path(__file__).parent.parent.parent
 
 
-def load_context_files(context_dir: Path) -> Dict[str, Any]:
-    """Load all context files from the context directory."""
-    context = {}
-    
-    if not context_dir.exists():
-        return context
-    
-    for json_file in context_dir.glob("*.json"):
-        try:
-            with open(json_file) as f:
-                context[json_file.stem] = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-    
-    return context
-
-
-def format_summary(context: Dict[str, Any], scope: str, filters: Dict[str, str]) -> str:
-    """Format the summary as markdown."""
-    output = []
-    output.append("# Agent Summary")
-    output.append("")
-    
-    output.append(f"**Scope:** {scope}")
-    if filters:
-        output.append(f"**Filters:** {', '.join(f'{k}={v}' for k, v in filters.items())}")
-    output.append("")
-    
-    # Count actual findings from all categories
-    total_findings = 0
-    for category in ["immediate", "relevant", "background"]:
-        if category in context and isinstance(context[category], dict):
-            findings = context[category].get("findings", [])
-            if isinstance(findings, list):
-                total_findings += len(findings)
-    
-    output.append(f"**Total Findings:** {total_findings}")
-    output.append("")
-    
-    # Show immediate issues
-    if "immediate" in context and context["immediate"]:
-        immediate = context["immediate"]
-        if isinstance(immediate, dict) and immediate.get("findings"):
-            output.append("## 🚨 Immediate Issues")
-            output.append("")
-            for finding in immediate.get("findings", [])[:5]:
-                if isinstance(finding, dict):
-                    agent = finding.get("agent", "unknown")
-                    message = finding.get("message", "No message")
-                    output.append(f"- **{agent}**: {message}")
-            output.append("")
-    
-    # Show relevant issues
-    if "relevant" in context and context["relevant"]:
-        relevant = context["relevant"]
-        if isinstance(relevant, dict) and relevant.get("findings"):
-            output.append("## ⚠️ Relevant Issues")
-            output.append("")
-            for finding in relevant.get("findings", [])[:5]:
-                if isinstance(finding, dict):
-                    agent = finding.get("agent", "unknown")
-                    message = finding.get("message", "No message")
-                    output.append(f"- **{agent}**: {message}")
-            output.append("")
-    
-    # Show background items
-    if scope in ("all", "session"):
-        if "background" in context and context["background"]:
-            background = context["background"]
-            if isinstance(background, dict) and background.get("findings"):
-                output.append("## ℹ️ Background Items")
-                output.append("")
-                for finding in background.get("findings", [])[:3]:
-                    if isinstance(finding, dict):
-                        agent = finding.get("agent", "unknown")
-                        message = finding.get("message", "No message")
-                        output.append(f"- **{agent}**: {message}")
-                output.append("")
-    
-    if not output or len(output) <= 3:
-        output.append("No findings available for the selected scope and filters.")
-    
-    return "\n".join(output)
-
-
 def main():
     """Main entry point for the slash command."""
     repo_root = get_repo_root()
-    context_dir = repo_root / ".claude" / "context"
     
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Generate agent summary")
-    parser.add_argument("scope", nargs="?", default="recent",
-                       help="Time scope: recent, today, session, all")
-    parser.add_argument("--agent", help="Filter by agent name")
-    parser.add_argument("--severity", help="Filter by severity")
-    parser.add_argument("--category", help="Filter by category")
+    # Parse scope from command line
+    # Usage: /agent-summary [scope] [--agent=X] [--severity=X] [--category=X]
+    scope = sys.argv[1] if len(sys.argv) > 1 else "recent"
     
-    # Parse known args, ignore unknown ones
-    args, unknown = parser.parse_known_args()
+    # Build devloop command with remaining args
+    cmd = ["poetry", "run", "devloop", "summary", "agent-summary", scope]
+    
+    # Pass through any additional arguments
+    for arg in sys.argv[2:]:
+        if arg.startswith("--"):
+            cmd.append(arg)
     
     try:
-        # Load context
-        context = load_context_files(context_dir)
+        # Run devloop summary command
+        result = subprocess.run(
+            cmd,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
         
-        # Build filters
-        filters = {}
-        if args.agent:
-            filters["agent"] = args.agent
-        if args.severity:
-            filters["severity"] = args.severity
-        if args.category:
-            filters["category"] = args.category
-        
-        # Generate and print summary
-        summary = format_summary(context, args.scope, filters)
-        print(summary)
+        if result.returncode == 0:
+            print(result.stdout)
+        else:
+            print(f"Error running devloop summary: {result.stderr}")
+            sys.exit(1)
     
+    except subprocess.TimeoutExpired:
+        print("Error: devloop summary command timed out")
+        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
