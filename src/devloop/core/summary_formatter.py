@@ -1,14 +1,16 @@
 """Format summary reports for different outputs."""
 
 from typing import Dict, Any
+from pathlib import Path
 from .summary_generator import SummaryReport
+from .operational_health import OperationalHealthAnalyzer
 
 
 class SummaryFormatter:
     """Format summary reports for different output formats."""
 
     @staticmethod
-    def format_markdown(report: SummaryReport) -> str:
+    def format_markdown(report: SummaryReport, devloop_dir: Path = None) -> str:
         """Format summary report as markdown."""
         lines = []
 
@@ -29,6 +31,12 @@ class SummaryFormatter:
             f"**Time Range:** {report.time_range[0].strftime('%Y-%m-%d %H:%M')} - {report.time_range[1].strftime('%Y-%m-%d %H:%M')}"
         )
         lines.append("")
+
+        # Add operational health if devloop_dir provided
+        if devloop_dir and devloop_dir.exists():
+            analyzer = OperationalHealthAnalyzer(devloop_dir)
+            health_report = analyzer.generate_health_report()
+            lines.append(health_report)
 
         # Quick stats
         lines.append("### 📊 Quick Stats")
