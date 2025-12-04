@@ -61,6 +61,14 @@ def agent_summary(
 
     try:
         report = asyncio.run(generator.generate_summary(scope, filters))
+        
+        # If we couldn't find devloop_dir, try to infer from context store paths
+        if not devloop_dir:
+            # Check if context directory exists and infer .devloop from it
+            context_dir = Path.cwd() / ".devloop" / "context"
+            if context_dir.exists():
+                devloop_dir = context_dir.parent
+        
         markdown_output = SummaryFormatter.format_markdown(report, devloop_dir)
         console.print(markdown_output)
     except Exception as e:
