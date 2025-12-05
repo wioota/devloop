@@ -33,6 +33,10 @@ classifiers = [
     "Topic :: Utilities"
 ]
 packages = [{include = "devloop", from = "src"}]
+include = [
+    "src/devloop/security/package.json",
+    "src/devloop/security/pyodide_runner.js",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
