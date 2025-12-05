@@ -540,6 +540,27 @@ This project uses background agents and Beads for task management.
                 f"[yellow]Warning:[/yellow] Could not create CLAUDE.md symlink: {e}"
             )
 
+    # Set up Claude Code slash commands
+    claude_commands_dir = path / ".claude" / "commands"
+    template_commands_dir = Path(__file__).parent / "templates" / "claude_commands"
+
+    if template_commands_dir.exists():
+        claude_commands_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy command templates
+        import shutil
+        commands_copied = []
+        for template_file in template_commands_dir.glob("*.md"):
+            dest_file = claude_commands_dir / template_file.name
+            if not dest_file.exists():
+                shutil.copy2(template_file, dest_file)
+                commands_copied.append(template_file.stem)
+
+        if commands_copied:
+            console.print(f"\n[green]✓[/green] Created Claude Code slash commands:")
+            for cmd in commands_copied:
+                console.print(f"  • /{cmd}")
+
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")

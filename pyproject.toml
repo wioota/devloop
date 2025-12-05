@@ -36,6 +36,7 @@ packages = [{include = "devloop", from = "src"}]
 include = [
     "src/devloop/security/package.json",
     "src/devloop/security/pyodide_runner.js",
+    "src/devloop/cli/templates/claude_commands/*.md",
 ]
 
 [tool.poetry.dependencies]
