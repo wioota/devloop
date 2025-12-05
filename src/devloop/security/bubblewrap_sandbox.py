@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import shutil
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -15,6 +16,9 @@ from devloop.security.sandbox import (
     SandboxTimeoutError,
 )
 from devloop.security.audit_logger import get_audit_logger
+from devloop.security.cgroups_helper import CgroupsManager
+
+logger = logging.getLogger(__name__)
 
 
 class BubblewrapSandbox(SandboxExecutor):
@@ -25,9 +29,44 @@ class BubblewrapSandbox(SandboxExecutor):
     - Network isolation (--unshare-net)
     - Process isolation (--unshare-pid)
     - IPC isolation (--unshare-ipc)
+    - Resource enforcement via cgroups v2 (if available)
 
     Requires: bwrap binary installed on system
     """
+
+    def __init__(self, config: SandboxConfig):
+        """Initialize Bubblewrap sandbox.
+
+        Args:
+            config: Sandbox configuration
+        """
+        super().__init__(config)
+        self._cgroups_manager: Optional[CgroupsManager] = None
+        self._cgroups_available: Optional[bool] = None
+
+    async def _init_cgroups(self) -> bool:
+        """Initialize cgroups if available.
+
+        Returns:
+            True if cgroups is available and initialized
+        """
+        if self._cgroups_available is not None:
+            return self._cgroups_available
+
+        try:
+            self._cgroups_manager = CgroupsManager(cgroup_name="devloop-bwrap")
+            self._cgroups_available = await self._cgroups_manager.is_available()
+
+            if self._cgroups_available:
+                logger.debug("cgroups v2 available for resource enforcement")
+            else:
+                logger.info("cgroups v2 not available, resource limits not enforced")
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize cgroups: {e}")
+            self._cgroups_available = False
+
+        return self._cgroups_available
 
     async def is_available(self) -> bool:
         """Check if bwrap is installed.
@@ -114,6 +153,22 @@ class BubblewrapSandbox(SandboxExecutor):
                 f"Must be in whitelist: {self.config.allowed_tools}"
             )
 
+        # Initialize cgroups if available
+        cgroups_enabled = await self._init_cgroups()
+
+        # Set up cgroups if available
+        if cgroups_enabled and self._cgroups_manager:
+            try:
+                self._cgroups_manager.set_memory_limit(self.config.max_memory_mb)
+                self._cgroups_manager.set_cpu_limit(self.config.max_cpu_percent)
+                logger.debug(
+                    f"cgroups limits set: {self.config.max_memory_mb}MB RAM, "
+                    f"{self.config.max_cpu_percent}% CPU"
+                )
+            except RuntimeError as e:
+                logger.warning(f"Failed to set cgroups limits: {e}")
+                cgroups_enabled = False
+
         # Build bwrap command with strict isolation
         bwrap_cmd = self._build_bwrap_command(cmd, cwd, env)
 
@@ -126,6 +181,15 @@ class BubblewrapSandbox(SandboxExecutor):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
+
+            # Add process to cgroup if enabled
+            if cgroups_enabled and self._cgroups_manager and process.pid:
+                try:
+                    self._cgroups_manager.add_process(process.pid)
+                    logger.debug(f"Added process {process.pid} to cgroup")
+                except RuntimeError as e:
+                    logger.warning(f"Failed to add process to cgroup: {e}")
+                    cgroups_enabled = False
 
             stdout, stderr = await asyncio.wait_for(
                 process.communicate(), timeout=self.config.timeout_seconds
@@ -149,19 +213,43 @@ class BubblewrapSandbox(SandboxExecutor):
                 duration_ms=duration_ms,
             )
 
+            # Cleanup cgroups
+            if cgroups_enabled and self._cgroups_manager:
+                self._cgroups_manager.cleanup()
+
             raise SandboxTimeoutError(
                 f"Command exceeded {self.config.timeout_seconds}s timeout: {cmd}"
             )
 
         duration_ms = self._get_duration_ms()
 
+        # Get resource usage from cgroups if available
+        memory_peak_mb = 0.0
+        cpu_usage_percent = 0.0
+
+        if cgroups_enabled and self._cgroups_manager:
+            try:
+                resources = self._cgroups_manager.get_resource_usage()
+                memory_peak_mb = resources.memory_peak_mb
+                cpu_usage_percent = resources.cpu_usage_percent
+                logger.debug(
+                    f"cgroups metrics: {memory_peak_mb:.2f}MB RAM, "
+                    f"{cpu_usage_percent:.1f}% CPU"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to get cgroups metrics: {e}")
+
+        # Cleanup cgroups
+        if cgroups_enabled and self._cgroups_manager:
+            self._cgroups_manager.cleanup()
+
         result = SandboxResult(
             stdout=stdout.decode("utf-8", errors="replace") if stdout else "",
             stderr=stderr.decode("utf-8", errors="replace") if stderr else "",
             exit_code=process.returncode or 0,
             duration_ms=duration_ms,
-            memory_peak_mb=0.0,  # TODO: Get from cgroups
-            cpu_usage_percent=0.0,  # TODO: Get from cgroups
+            memory_peak_mb=memory_peak_mb,
+            cpu_usage_percent=cpu_usage_percent,
         )
 
         # Log successful execution
@@ -228,15 +316,27 @@ class BubblewrapSandbox(SandboxExecutor):
         )
 
         # Isolation flags
-        bwrap_cmd.extend(
-            [
-                "--unshare-net",  # No network access
-                "--unshare-pid",  # Isolated process namespace
-                "--unshare-ipc",  # Isolated IPC namespace
-                "--unshare-uts",  # Isolated hostname namespace
-                "--die-with-parent",  # Prevent orphaned processes
-            ]
-        )
+        isolation_flags = [
+            "--unshare-pid",  # Isolated process namespace
+            "--unshare-ipc",  # Isolated IPC namespace
+            "--unshare-uts",  # Isolated hostname namespace
+            "--die-with-parent",  # Prevent orphaned processes
+        ]
+
+        # Network isolation: Only use --unshare-net if no domains are allowed
+        # TODO(Phase 3): Implement selective network access using network namespaces
+        # Currently: all-or-nothing (full isolation or full access)
+        if not self.config.allowed_network_domains:
+            isolation_flags.insert(0, "--unshare-net")  # No network access
+            logger.debug("Network completely isolated (no allowed domains)")
+        else:
+            logger.warning(
+                f"Network allowlist configured ({len(self.config.allowed_network_domains)} domains) "
+                "but selective filtering not yet implemented. Network access UNRESTRICTED. "
+                "See https://github.com/yourusername/devloop/issues/XXX for status."
+            )
+
+        bwrap_cmd.extend(isolation_flags)
 
         # Working directory
         bwrap_cmd.extend(["--chdir", str(cwd)])
