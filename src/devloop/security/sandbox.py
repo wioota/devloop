@@ -51,7 +51,9 @@ class SandboxConfig:
     max_memory_mb: int = 500
     max_cpu_percent: int = 25
     timeout_seconds: int = 30
-    allowed_tools: List[str] = field(default_factory=lambda: DEFAULT_ALLOWED_TOOLS.copy())
+    allowed_tools: List[str] = field(
+        default_factory=lambda: DEFAULT_ALLOWED_TOOLS.copy()
+    )
     allowed_network_domains: List[str] = field(default_factory=list)
     allowed_env_vars: List[str] = field(default_factory=list)
 

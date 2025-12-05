@@ -7,7 +7,11 @@ from typing import Optional
 
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 from devloop.security.no_sandbox import NoSandbox
-from devloop.security.sandbox import SandboxConfig, SandboxExecutor, SandboxNotAvailableError
+from devloop.security.sandbox import (
+    SandboxConfig,
+    SandboxExecutor,
+    SandboxNotAvailableError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +156,9 @@ async def _create_auto_sandbox(
     # Try Bubblewrap next (works for all agents)
     sandbox = BubblewrapSandbox(config)
     if await sandbox.is_available():
-        logger.info(f"Using Bubblewrap (Linux namespaces) sandbox for {agent_type or 'agent'}")
+        logger.info(
+            f"Using Bubblewrap (Linux namespaces) sandbox for {agent_type or 'agent'}"
+        )
         return sandbox
 
     # Try seccomp as fallback
@@ -161,7 +167,9 @@ async def _create_auto_sandbox(
 
         sandbox = SeccompSandbox(config)
         if await sandbox.is_available():
-            logger.info(f"Using seccomp (syscall filtering) sandbox for {agent_type or 'agent'}")
+            logger.info(
+                f"Using seccomp (syscall filtering) sandbox for {agent_type or 'agent'}"
+            )
             return sandbox
     except ImportError:
         pass

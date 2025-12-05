@@ -83,7 +83,7 @@ class NoSandbox(SandboxExecutor):
                 sandbox_mode="none",
                 cmd=cmd,
                 cwd=cwd,
-                reason=f"Command not in whitelist: {self.config.allowed_tools}"
+                reason=f"Command not in whitelist: {self.config.allowed_tools}",
             )
             raise ValueError(
                 f"Command not allowed: {cmd[0]}. "

@@ -209,7 +209,9 @@ class LinterAgent(Agent):
 
             # Check if ruff is available in the sandbox
             if not await self.sandbox.check_tool_available("ruff"):
-                return LinterResult(success=False, error="ruff not installed or not allowed")
+                return LinterResult(
+                    success=False, error="ruff not installed or not allowed"
+                )
 
             # Run ruff with JSON output in sandbox
             if venv_path.exists():
@@ -250,7 +252,9 @@ class LinterAgent(Agent):
         try:
             # Check if eslint is available in the sandbox
             if not await self.sandbox.check_tool_available("eslint"):
-                return LinterResult(success=False, error="eslint not installed or not allowed")
+                return LinterResult(
+                    success=False, error="eslint not installed or not allowed"
+                )
 
             # Run eslint with JSON output in sandbox
             result = await self.sandbox.run_sandboxed(

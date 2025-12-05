@@ -51,9 +51,7 @@ def install_pyodide() -> bool:
         # Check if package.json exists
         package_json = security_dir / "package.json"
         if not package_json.exists():
-            console.print(
-                "[red]✗[/red] package.json not found in security module"
-            )
+            console.print("[red]✗[/red] package.json not found in security module")
             return False
 
         # Run npm install
@@ -102,20 +100,14 @@ def prompt_pyodide_installation(non_interactive: bool = False) -> bool:
             "\n[yellow]Note:[/yellow] Pyodide WASM sandbox requires Node.js 18+"
         )
         console.print(f"  Node.js status: {node_info}")
-        console.print(
-            "  Install Node.js from https://nodejs.org/ to enable Pyodide"
-        )
-        console.print(
-            "  [dim]DevLoop will work without it (using POC mode)[/dim]\n"
-        )
+        console.print("  Install Node.js from https://nodejs.org/ to enable Pyodide")
+        console.print("  [dim]DevLoop will work without it (using POC mode)[/dim]\n")
         return True  # Not an error, just not available
 
     # Node.js is available
     console.print(f"\n[cyan]Pyodide WASM Sandbox Setup[/cyan]")
     console.print(f"  Node.js {node_info} detected")
-    console.print(
-        "  Pyodide enables cross-platform Python code sandboxing in WASM"
-    )
+    console.print("  Pyodide enables cross-platform Python code sandboxing in WASM")
 
     import typer
 

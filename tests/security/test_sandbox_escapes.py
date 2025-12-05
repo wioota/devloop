@@ -6,7 +6,11 @@ and prevent various attack vectors.
 
 import pytest
 from pathlib import Path
-from devloop.security.sandbox import SandboxConfig, CommandNotAllowedError, SandboxTimeoutError
+from devloop.security.sandbox import (
+    SandboxConfig,
+    CommandNotAllowedError,
+    SandboxTimeoutError,
+)
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 from devloop.security.no_sandbox import NoSandbox
 
@@ -44,15 +48,15 @@ class TestCommandWhitelisting:
         if not await sandbox.is_available():
             pytest.skip("Bubblewrap not available")
 
-        result = await sandbox.execute(
-            ["echo", "test"], cwd=temp_workspace
-        )
+        result = await sandbox.execute(["echo", "test"], cwd=temp_workspace)
 
         assert result.exit_code == 0
         assert "test" in result.stdout
 
     @pytest.mark.asyncio
-    async def test_non_whitelisted_command_blocked(self, sandbox_config, temp_workspace):
+    async def test_non_whitelisted_command_blocked(
+        self, sandbox_config, temp_workspace
+    ):
         """Non-whitelisted commands should be blocked."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -62,7 +66,7 @@ class TestCommandWhitelisting:
         with pytest.raises(CommandNotAllowedError):
             await sandbox.execute(
                 ["rm", "-rf", "/"],  # Dangerous command not in whitelist
-                cwd=temp_workspace
+                cwd=temp_workspace,
             )
 
     @pytest.mark.asyncio
@@ -76,7 +80,7 @@ class TestCommandWhitelisting:
         with pytest.raises(CommandNotAllowedError):
             await sandbox.execute(
                 ["bash", "-c", "cat /etc/passwd"],  # Shell not in whitelist
-                cwd=temp_workspace
+                cwd=temp_workspace,
             )
 
     @pytest.mark.asyncio
@@ -89,8 +93,7 @@ class TestCommandWhitelisting:
 
         with pytest.raises(CommandNotAllowedError):
             await sandbox.execute(
-                ["sh", "-c", "ls"],  # sh not in whitelist
-                cwd=temp_workspace
+                ["sh", "-c", "ls"], cwd=temp_workspace  # sh not in whitelist
             )
 
 
@@ -105,9 +108,7 @@ class TestFilesystemIsolation:
         if not await sandbox.is_available():
             pytest.skip("Bubblewrap not available")
 
-        result = await sandbox.execute(
-            ["cat", "test.txt"], cwd=temp_workspace
-        )
+        result = await sandbox.execute(["cat", "test.txt"], cwd=temp_workspace)
 
         assert result.exit_code == 0
         assert "Hello, world!" in result.stdout
@@ -121,9 +122,7 @@ class TestFilesystemIsolation:
             pytest.skip("Bubblewrap not available")
 
         # Try to read /etc/passwd (should fail due to isolation)
-        result = await sandbox.execute(
-            ["cat", "/etc/passwd"], cwd=temp_workspace
-        )
+        result = await sandbox.execute(["cat", "/etc/passwd"], cwd=temp_workspace)
 
         # Should either fail to find file or get permission denied
         assert result.exit_code != 0
@@ -147,14 +146,13 @@ class TestFilesystemIsolation:
         # Write to /tmp in first execution
         result1 = await sandbox.execute(
             ["python3", "-c", "open('/tmp/test', 'w').write('data1')"],
-            cwd=temp_workspace
+            cwd=temp_workspace,
         )
         assert result1.exit_code == 0
 
         # Try to read from /tmp in second execution
         result2 = await sandbox.execute(
-            ["python3", "-c", "print(open('/tmp/test').read())"],
-            cwd=temp_workspace
+            ["python3", "-c", "print(open('/tmp/test').read())"], cwd=temp_workspace
         )
 
         if is_in_tmp:
@@ -181,8 +179,7 @@ class TestTimeoutEnforcement:
         with pytest.raises(SandboxTimeoutError):
             # Sleep longer than timeout
             await sandbox.execute(
-                ["python3", "-c", "import time; time.sleep(10)"],
-                cwd=temp_workspace
+                ["python3", "-c", "import time; time.sleep(10)"], cwd=temp_workspace
             )
 
     @pytest.mark.asyncio
@@ -195,7 +192,7 @@ class TestTimeoutEnforcement:
 
         result = await sandbox.execute(
             ["python3", "-c", "import time; time.sleep(0.1); print('done')"],
-            cwd=temp_workspace
+            cwd=temp_workspace,
         )
 
         assert result.exit_code == 0
@@ -216,7 +213,7 @@ class TestEnvironmentVariableFiltering:
         result = await sandbox.execute(
             ["python3", "-c", "import os; print(os.getenv('TEST_VAR'))"],
             cwd=temp_workspace,
-            env={"TEST_VAR": "secret_value"}
+            env={"TEST_VAR": "secret_value"},
         )
 
         assert result.exit_code == 0
@@ -231,9 +228,13 @@ class TestEnvironmentVariableFiltering:
             pytest.skip("Bubblewrap not available")
 
         result = await sandbox.execute(
-            ["python3", "-c", "import os; print(os.getenv('FORBIDDEN_VAR', 'not_set'))"],
+            [
+                "python3",
+                "-c",
+                "import os; print(os.getenv('FORBIDDEN_VAR', 'not_set'))",
+            ],
             cwd=temp_workspace,
-            env={"FORBIDDEN_VAR": "should_not_appear"}
+            env={"FORBIDDEN_VAR": "should_not_appear"},
         )
 
         assert result.exit_code == 0
@@ -255,10 +256,11 @@ class TestNetworkIsolation:
         # Try to make network connection
         result = await sandbox.execute(
             [
-                "python3", "-c",
-                "import socket; sock = socket.socket(); sock.connect(('8.8.8.8', 53))"
+                "python3",
+                "-c",
+                "import socket; sock = socket.socket(); sock.connect(('8.8.8.8', 53))",
             ],
-            cwd=temp_workspace
+            cwd=temp_workspace,
         )
 
         # Should fail due to network isolation
@@ -278,8 +280,7 @@ class TestMaliciousScenarios:
 
         # Try to read file outside workspace using path traversal
         result = await sandbox.execute(
-            ["cat", "../../../../etc/passwd"],
-            cwd=temp_workspace
+            ["cat", "../../../../etc/passwd"], cwd=temp_workspace
         )
 
         # Should fail (file not found in isolated environment)
@@ -296,11 +297,8 @@ class TestMaliciousScenarios:
         # Try to create many processes
         with pytest.raises(SandboxTimeoutError):
             await sandbox.execute(
-                [
-                    "python3", "-c",
-                    "import os; [os.fork() for _ in range(1000)]"
-                ],
-                cwd=temp_workspace
+                ["python3", "-c", "import os; [os.fork() for _ in range(1000)]"],
+                cwd=temp_workspace,
             )
 
     @pytest.mark.asyncio
@@ -314,10 +312,11 @@ class TestMaliciousScenarios:
         with pytest.raises(SandboxTimeoutError):
             await sandbox.execute(
                 [
-                    "python3", "-c",
-                    "data = []; [data.append(' ' * 10**6) for _ in range(10000)]"
+                    "python3",
+                    "-c",
+                    "data = []; [data.append(' ' * 10**6) for _ in range(10000)]",
                 ],
-                cwd=temp_workspace
+                cwd=temp_workspace,
             )
 
 
@@ -330,10 +329,7 @@ class TestNoSandboxFallback:
         sandbox = NoSandbox(sandbox_config)
 
         with pytest.raises(ValueError, match="not allowed"):
-            await sandbox.execute(
-                ["rm", "-rf", "/"],
-                cwd=temp_workspace
-            )
+            await sandbox.execute(["rm", "-rf", "/"], cwd=temp_workspace)
 
     @pytest.mark.asyncio
     async def test_timeout_still_enforced(self, sandbox_config, temp_workspace):
@@ -342,6 +338,5 @@ class TestNoSandboxFallback:
 
         with pytest.raises(SandboxTimeoutError):
             await sandbox.execute(
-                ["python3", "-c", "import time; time.sleep(10)"],
-                cwd=temp_workspace
+                ["python3", "-c", "import time; time.sleep(10)"], cwd=temp_workspace
             )

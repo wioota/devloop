@@ -64,6 +64,7 @@ class TestPyodideSandboxAvailability:
     @pytest.mark.asyncio
     async def test_unavailable_without_node(self, sandbox_config, monkeypatch):
         """Verify sandbox reports unavailable when Node.js missing."""
+
         # Mock shutil.which to return None for 'node'
         def mock_which(cmd):
             if cmd == "node":
@@ -117,13 +118,14 @@ class TestPyodideSandboxExecution:
 
         script_path = test_workspace / "test.py"
         result = await sandbox.execute(
-            ["python3", str(script_path)],
-            cwd=test_workspace
+            ["python3", str(script_path)], cwd=test_workspace
         )
 
         # In POC mode, we get a confirmation message
         assert result.exit_code == 0
-        assert "Would execute" in result.stdout or "Successfully loaded" in result.stdout
+        assert (
+            "Would execute" in result.stdout or "Successfully loaded" in result.stdout
+        )
 
     @pytest.mark.asyncio
     async def test_execute_inline_code(self, sandbox_config, test_workspace):
@@ -134,8 +136,7 @@ class TestPyodideSandboxExecution:
             pytest.skip("Pyodide sandbox not available")
 
         result = await sandbox.execute(
-            ["python3", "-c", "print('inline code')"],
-            cwd=test_workspace
+            ["python3", "-c", "print('inline code')"], cwd=test_workspace
         )
 
         # In POC mode, we get a confirmation message
@@ -151,8 +152,7 @@ class TestPyodideSandboxExecution:
             pytest.skip("Pyodide sandbox not available")
 
         result = await sandbox.execute(
-            ["python3", "nonexistent.py"],
-            cwd=test_workspace
+            ["python3", "nonexistent.py"], cwd=test_workspace
         )
 
         # Should fail in POC mode
@@ -179,8 +179,7 @@ class TestPyodideSandboxExecution:
         script_path = test_workspace / "test.py"
 
         result = await sandbox.execute(
-            ["python3", str(script_path)],
-            cwd=test_workspace
+            ["python3", str(script_path)], cwd=test_workspace
         )
 
         # POC mode completes quickly
@@ -198,8 +197,7 @@ class TestPyodideSandboxExecution:
         script_path = test_workspace / "test.py"
 
         result = await sandbox.execute(
-            ["python3", str(script_path)],
-            cwd=test_workspace
+            ["python3", str(script_path)], cwd=test_workspace
         )
 
         assert result.exit_code == 0
@@ -219,8 +217,7 @@ class TestPyodideSandboxMetrics:
         script_path = test_workspace / "test.py"
 
         result = await sandbox.execute(
-            ["python3", str(script_path)],
-            cwd=test_workspace
+            ["python3", str(script_path)], cwd=test_workspace
         )
 
         # Duration should be positive
@@ -238,8 +235,7 @@ class TestPyodideSandboxMetrics:
         script_path = test_workspace / "test.py"
 
         result = await sandbox.execute(
-            ["python3", str(script_path)],
-            cwd=test_workspace
+            ["python3", str(script_path)], cwd=test_workspace
         )
 
         # Memory should be reported (from Node.js process)
@@ -263,8 +259,7 @@ class TestPyodideSandboxIntegration:
         # Run multiple times
         for i in range(3):
             result = await sandbox.execute(
-                ["python3", str(script_path)],
-                cwd=test_workspace
+                ["python3", str(script_path)], cwd=test_workspace
             )
             assert result.exit_code == 0
 

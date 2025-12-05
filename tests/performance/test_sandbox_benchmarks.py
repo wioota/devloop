@@ -70,7 +70,9 @@ class TestStartupOverhead:
         avg_sandboxed = sum(sandboxed_times) / iterations
         avg_nosandbox = sum(nosandbox_times) / iterations
         overhead_ms = avg_sandboxed - avg_nosandbox
-        overhead_percent = (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        overhead_percent = (
+            (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        )
 
         print(f"\n=== Simple Command (echo) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
@@ -78,7 +80,9 @@ class TestStartupOverhead:
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
 
         # Assert target: <20ms absolute overhead for simple commands
-        assert overhead_ms < 20, f"Startup overhead {overhead_ms:.2f}ms exceeds 20ms target"
+        assert (
+            overhead_ms < 20
+        ), f"Startup overhead {overhead_ms:.2f}ms exceeds 20ms target"
 
     @pytest.mark.asyncio
     @pytest.mark.benchmark
@@ -112,7 +116,9 @@ class TestStartupOverhead:
         avg_sandboxed = sum(sandboxed_times) / iterations
         avg_nosandbox = sum(nosandbox_times) / iterations
         overhead_ms = avg_sandboxed - avg_nosandbox
-        overhead_percent = (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        overhead_percent = (
+            (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        )
 
         print(f"\n=== Python Script Execution ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
@@ -121,8 +127,9 @@ class TestStartupOverhead:
 
         # Assert target: <50% overhead or <30ms absolute (whichever is more lenient)
         # Percentage can be high for fast operations due to startup cost
-        assert overhead_ms < 30 or overhead_percent < 50, \
-            f"Overhead {overhead_percent:.1f}% ({overhead_ms:.2f}ms) exceeds targets"
+        assert (
+            overhead_ms < 30 or overhead_percent < 50
+        ), f"Overhead {overhead_percent:.1f}% ({overhead_ms:.2f}ms) exceeds targets"
 
 
 class TestIOOverhead:
@@ -156,7 +163,9 @@ class TestIOOverhead:
         avg_sandboxed = sum(sandboxed_times) / iterations
         avg_nosandbox = sum(nosandbox_times) / iterations
         overhead_ms = avg_sandboxed - avg_nosandbox
-        overhead_percent = (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        overhead_percent = (
+            (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        )
 
         print(f"\n=== File Read (cat 14KB file) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
@@ -182,11 +191,13 @@ class TestCPUIntensiveOverhead:
 
         # Create CPU-intensive Python script
         cpu_script = bench_workspace / "cpu_test.py"
-        cpu_script.write_text("""
+        cpu_script.write_text(
+            """
 import math
 result = sum(math.sqrt(i) for i in range(10000))
 print(result)
-""")
+"""
+        )
 
         iterations = 5  # Fewer iterations for CPU-intensive
         sandboxed_times = []
@@ -206,7 +217,9 @@ print(result)
         avg_sandboxed = sum(sandboxed_times) / iterations
         avg_nosandbox = sum(nosandbox_times) / iterations
         overhead_ms = avg_sandboxed - avg_nosandbox
-        overhead_percent = (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        overhead_percent = (
+            (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
+        )
 
         print(f"\n=== CPU-Intensive (math.sqrt x10000) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
@@ -214,8 +227,9 @@ print(result)
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
 
         # CPU overhead: allow <50ms absolute or <150% (startup dominates for short tasks)
-        assert overhead_ms < 50 or overhead_percent < 150, \
-            f"CPU overhead {overhead_percent:.1f}% ({overhead_ms:.2f}ms) exceeds targets"
+        assert (
+            overhead_ms < 50 or overhead_percent < 150
+        ), f"CPU overhead {overhead_percent:.1f}% ({overhead_ms:.2f}ms) exceeds targets"
 
 
 class TestMemoryOverhead:
@@ -235,8 +249,7 @@ class TestMemoryOverhead:
         # Full memory profiling would require psutil and process tracking
 
         result = await sandbox.execute(
-            ["python3", "-c", "print('hello')"],
-            cwd=bench_workspace
+            ["python3", "-c", "print('hello')"], cwd=bench_workspace
         )
 
         assert result.exit_code == 0

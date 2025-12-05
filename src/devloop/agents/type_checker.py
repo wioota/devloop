@@ -178,6 +178,7 @@ class TypeCheckerAgent(Agent):
         try:
             # Check if mypy is available
             import asyncio
+
             check_result = await self.sandbox.run_sandboxed(
                 [sys.executable, "-c", "import mypy"],
                 cwd=file_path.parent,

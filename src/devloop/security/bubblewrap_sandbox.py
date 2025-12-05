@@ -146,7 +146,7 @@ class BubblewrapSandbox(SandboxExecutor):
                 sandbox_mode="bubblewrap",
                 cmd=cmd,
                 cwd=cwd,
-                reason=f"Command not in whitelist: {self.config.allowed_tools}"
+                reason=f"Command not in whitelist: {self.config.allowed_tools}",
             )
             raise CommandNotAllowedError(
                 f"Command not allowed: {cmd[0]}. "

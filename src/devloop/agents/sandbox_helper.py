@@ -58,7 +58,9 @@ class AgentSandboxHelper:
         if self._sandbox is None or not self._sandbox_initialized:
             self._sandbox = await create_sandbox(self.config, self.agent_type)
             self._sandbox_initialized = True
-            logger.debug(f"Initialized sandbox for {self.agent_name} ({self.agent_type})")
+            logger.debug(
+                f"Initialized sandbox for {self.agent_name} ({self.agent_type})"
+            )
         return self._sandbox
 
     async def run_sandboxed(

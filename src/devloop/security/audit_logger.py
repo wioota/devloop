@@ -242,7 +242,9 @@ class SandboxAuditLogger:
             List of error entries
         """
         entries = self.query_recent(limit * 2)
-        return [e for e in entries if e.get("error") or e.get("exit_code", 0) != 0][:limit]
+        return [e for e in entries if e.get("error") or e.get("exit_code", 0) != 0][
+            :limit
+        ]
 
 
 # Global singleton instance

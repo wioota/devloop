@@ -228,9 +228,7 @@ class CgroupsManager:
                     pids = procs_file.read_text().strip().split("\n")
                     # Processes should have exited, but ensure empty
                     if pids and pids[0]:
-                        self.logger.warning(
-                            f"Cgroup still has processes: {pids}"
-                        )
+                        self.logger.warning(f"Cgroup still has processes: {pids}")
 
                 # Remove cgroup directory
                 self._cgroup_path.rmdir()

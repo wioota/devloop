@@ -181,17 +181,27 @@ class TestTypeCheckerAgent:
         """Test mypy tool availability checking."""
         # Test when mypy is available
         mock_result_available = MagicMock(exit_code=0, stdout="", stderr="")
-        mock_result_success = MagicMock(exit_code=0, stdout="Success: no issues found", stderr="")
+        mock_result_success = MagicMock(
+            exit_code=0, stdout="Success: no issues found", stderr=""
+        )
 
-        with patch.object(agent.sandbox, "run_sandboxed", side_effect=[mock_result_available, mock_result_success]):
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_result_available, mock_result_success],
+        ):
             result = await agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "mypy" in result.tool
 
         # Test when mypy is not available
-        mock_result_unavailable = MagicMock(exit_code=1, stdout="", stderr="ModuleNotFoundError")
+        mock_result_unavailable = MagicMock(
+            exit_code=1, stdout="", stderr="ModuleNotFoundError"
+        )
 
-        with patch.object(agent.sandbox, "run_sandboxed", return_value=mock_result_unavailable):
+        with patch.object(
+            agent.sandbox, "run_sandboxed", return_value=mock_result_unavailable
+        ):
             result = await agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "not installed" in result.errors[0]
@@ -207,7 +217,11 @@ Found 1 error in 1 file (checked 1 source file)
         mock_check_result = MagicMock(exit_code=0, stdout="", stderr="")
         mock_mypy_result = MagicMock(exit_code=1, stdout=mypy_output, stderr="")
 
-        with patch.object(agent.sandbox, "run_sandboxed", side_effect=[mock_check_result, mock_mypy_result]):
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_check_result, mock_mypy_result],
+        ):
             result = await agent._run_mypy(Path("test.py"))
 
             assert result.tool == "mypy"
@@ -225,7 +239,11 @@ Found 1 error in 1 file (checked 1 source file)
         mock_check_result = MagicMock(exit_code=0, stdout="", stderr="")
         mock_mypy_result = MagicMock(exit_code=0, stdout="", stderr="")
 
-        with patch.object(agent.sandbox, "run_sandboxed", side_effect=[mock_check_result, mock_mypy_result]) as mock_sandbox:
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_check_result, mock_mypy_result],
+        ) as mock_sandbox:
             result = await agent._run_mypy(Path("test.py"))  # noqa: F841
 
             # Check that run_sandboxed was called twice (availability check + mypy run)
@@ -234,4 +252,6 @@ Found 1 error in 1 file (checked 1 source file)
             # Check that --strict was in the mypy command (second call)
             mypy_call = mock_sandbox.call_args_list[1]
             cmd = mypy_call[0][0]  # First positional arg is the command
-            assert "--strict" in cmd, f"--strict not found in mypy command. Command: {cmd}"
+            assert (
+                "--strict" in cmd
+            ), f"--strict not found in mypy command. Command: {cmd}"
