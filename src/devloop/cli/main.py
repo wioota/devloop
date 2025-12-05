@@ -464,6 +464,11 @@ def init(
                     optional_agents["ci-monitor"] = True
                     console.print("  [green]✓[/green] CI Monitor agent enabled")
 
+                # Pyodide WASM Sandbox prompt and installation
+                from devloop.cli.pyodide_installer import prompt_pyodide_installation
+
+                prompt_pyodide_installation(non_interactive=False)
+
             config = Config()
             config._config = config._get_default_config(optional_agents=optional_agents)
             config.save(config_file)

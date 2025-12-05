@@ -238,6 +238,45 @@
     "autonomousFixes": {
       "enabled": true,
       "safetyLevel": "safe_only"
+    },
+    "security": {
+      "sandbox": {
+        "mode": "auto",
+        "allowed_tools": [
+          "python3",
+          "python",
+          "git",
+          "ruff",
+          "black",
+          "mypy",
+          "bandit",
+          "radon",
+          "pytest",
+          "eslint",
+          "prettier",
+          "snyk",
+          "gh"
+        ],
+        "resource_limits": {
+          "max_memory_mb": 500,
+          "max_cpu_percent": 25,
+          "timeout_seconds": 30
+        },
+        "network": {
+          "allowed_domains": [
+            "pypi.org",
+            "github.com",
+            "api.github.com"
+          ]
+        },
+        "allowed_env_vars": [
+          "PATH",
+          "HOME",
+          "PYTHONPATH",
+          "CODE_RABBIT_API_KEY",
+          "SNYK_TOKEN"
+        ]
+      }
     }
   },
   "eventSystem": {

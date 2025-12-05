@@ -2,14 +2,15 @@
 """Type Checker Agent - Runs static type checking on code."""
 
 import logging
-import subprocess  # nosec B404 - Required for running type checking tools
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
-from ..core.agent import Agent, AgentResult
-from ..core.event import Event
+from devloop.agents.sandbox_helper import create_agent_sandbox_helper
+from devloop.core.agent import Agent, AgentResult
+from devloop.core.event import Event
+from devloop.security.sandbox import CommandNotAllowedError, SandboxTimeoutError
 
 
 @dataclass
@@ -61,6 +62,11 @@ class TypeCheckerAgent(Agent):
         super().__init__("type-checker", ["file:modified", "file:created"], event_bus)
         self.config = TypeCheckerConfig(**config)
         self.logger = logging.getLogger(f"agent.{self.name}")
+        # Initialize sandbox helper for secure command execution
+        self.sandbox = create_agent_sandbox_helper(
+            agent_name=self.name,
+            agent_type="type_checker",
+        )
 
     async def handle(self, event: Event) -> AgentResult:
         """Handle file change events by running type checks."""
@@ -157,7 +163,7 @@ class TypeCheckerAgent(Agent):
 
         # Try mypy first (most common Python type checker)
         if "mypy" in self.config.enabled_tools:
-            mypy_result = self._run_mypy(file_path)
+            mypy_result = await self._run_mypy(file_path)
             if mypy_result:
                 results.append(mypy_result)
 
@@ -167,14 +173,17 @@ class TypeCheckerAgent(Agent):
 
         return TypeCheckResult("none", [], ["No type checking tools available"])
 
-    def _run_mypy(self, file_path: Path) -> Optional[TypeCheckResult]:
+    async def _run_mypy(self, file_path: Path) -> Optional[TypeCheckResult]:
         """Run MyPy type checker."""
         try:
             # Check if mypy is available
-            result = subprocess.run(
-                [sys.executable, "-c", "import mypy"], capture_output=True, text=True
-            )  # nosec B603 - Running trusted system Python with safe arguments
-            if result.returncode != 0:
+
+            check_result = await self.sandbox.run_sandboxed(
+                [sys.executable, "-c", "import mypy"],
+                cwd=file_path.parent,
+                timeout=5,
+            )
+            if check_result.exit_code != 0:
                 return TypeCheckResult(
                     "mypy", [], ["MyPy not installed - run: pip install mypy"]
                 )
@@ -191,13 +200,11 @@ class TypeCheckerAgent(Agent):
             if self.config.strict_mode:
                 cmd.append("--strict")
 
-            # Run mypy in subprocess
-            result = subprocess.run(
+            # Run mypy in sandbox
+            result = await self.sandbox.run_sandboxed(
                 cmd,
-                capture_output=True,
-                text=True,
                 cwd=file_path.parent,
-            )  # nosec B603 - Running mypy with controlled command arguments
+            )
             issues = []
 
             # Parse mypy output (line by line)
@@ -238,5 +245,7 @@ class TypeCheckerAgent(Agent):
 
             return TypeCheckResult("mypy", issues[: self.config.max_issues])
 
+        except (CommandNotAllowedError, SandboxTimeoutError) as e:
+            return TypeCheckResult("mypy", [], [f"MyPy sandbox error: {str(e)}"])
         except Exception as e:
             return TypeCheckResult("mypy", [], [f"MyPy execution error: {str(e)}"])

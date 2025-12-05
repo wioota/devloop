@@ -60,3 +60,4 @@ temp/
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
+.devloop/security-audit.log

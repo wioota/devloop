@@ -1,14 +1,15 @@
 """Linter agent - runs linters on file changes."""
 
-import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from devloop.agents.sandbox_helper import create_agent_sandbox_helper
 from devloop.core.agent import Agent, AgentResult
 from devloop.core.context_store import Finding, Severity
 from devloop.core.event import Event
+from devloop.security.sandbox import CommandNotAllowedError, SandboxTimeoutError
 
 
 class LinterConfig:
@@ -70,6 +71,11 @@ class LinterAgent(Agent):
         )
         self.config = LinterConfig(config or {})
         self._last_run: Dict[str, float] = {}  # path -> timestamp for debouncing
+        # Initialize sandbox helper for secure command execution
+        self.sandbox = create_agent_sandbox_helper(
+            agent_name=name,
+            agent_type="linter",
+        )
 
     async def handle(self, event: Event) -> AgentResult:
         """Handle file change event by running linter."""
@@ -198,45 +204,32 @@ class LinterAgent(Agent):
     async def _run_ruff(self, path: Path) -> LinterResult:
         """Run ruff on a Python file."""
         try:
-            # Get updated environment with venv bin in PATH
-            import os
+            # Get venv path
+            venv_path = Path(__file__).parent.parent.parent.parent / ".venv"
 
-            env = os.environ.copy()
-            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
-            if venv_bin.exists():
-                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+            # Check if ruff is available in the sandbox
+            if not await self.sandbox.check_tool_available("ruff"):
+                return LinterResult(
+                    success=False, error="ruff not installed or not allowed"
+                )
 
-            # Check if ruff is installed
-            check = await asyncio.create_subprocess_exec(
-                "ruff",
-                "--version",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env,
-            )
-            await check.communicate()
-
-            if check.returncode != 0:
-                return LinterResult(success=False, error="ruff not installed")
-
-            # Run ruff with JSON output
-            proc = await asyncio.create_subprocess_exec(
-                "ruff",
-                "check",
-                "--output-format",
-                "json",
-                str(path),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env,
-            )
-
-            stdout, stderr = await proc.communicate()
+            # Run ruff with JSON output in sandbox
+            if venv_path.exists():
+                result = await self.sandbox.run_sandboxed_with_venv(
+                    ["ruff", "check", "--output-format", "json", str(path)],
+                    venv_path=venv_path,
+                    cwd=path.parent,
+                )
+            else:
+                result = await self.sandbox.run_sandboxed(
+                    ["ruff", "check", "--output-format", "json", str(path)],
+                    cwd=path.parent,
+                )
 
             # ruff returns non-zero if issues found, but that's expected
-            if stdout:
+            if result.stdout:
                 try:
-                    issues = json.loads(stdout.decode())
+                    issues = json.loads(result.stdout)
                     return LinterResult(success=True, issues=issues)
                 except json.JSONDecodeError:
                     # No issues found or invalid JSON
@@ -245,39 +238,33 @@ class LinterAgent(Agent):
                 # No output = no issues
                 return LinterResult(success=True, issues=[])
 
-        except FileNotFoundError:
-            return LinterResult(success=False, error="ruff command not found")
+        except CommandNotAllowedError as e:
+            self.logger.error(f"ruff command not allowed in sandbox: {e}")
+            return LinterResult(success=False, error="ruff command not allowed")
+        except SandboxTimeoutError:
+            return LinterResult(success=False, error="ruff execution timeout")
+        except Exception as e:
+            self.logger.error(f"Error running ruff in sandbox: {e}")
+            return LinterResult(success=False, error=str(e))
 
     async def _run_eslint(self, path: Path) -> LinterResult:
         """Run eslint on a JavaScript/TypeScript file."""
         try:
-            # Check if eslint is installed
-            check = await asyncio.create_subprocess_exec(
-                "eslint",
-                "--version",
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            await check.communicate()
+            # Check if eslint is available in the sandbox
+            if not await self.sandbox.check_tool_available("eslint"):
+                return LinterResult(
+                    success=False, error="eslint not installed or not allowed"
+                )
 
-            if check.returncode != 0:
-                return LinterResult(success=False, error="eslint not installed")
-
-            # Run eslint with JSON output
-            proc = await asyncio.create_subprocess_exec(
-                "eslint",
-                "--format",
-                "json",
-                str(path),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            # Run eslint with JSON output in sandbox
+            result = await self.sandbox.run_sandboxed(
+                ["eslint", "--format", "json", str(path)],
+                cwd=path.parent,
             )
 
-            stdout, stderr = await proc.communicate()
-
-            if stdout:
+            if result.stdout:
                 try:
-                    results = json.loads(stdout.decode())
+                    results = json.loads(result.stdout)
                     # ESLint returns array of file results
                     if results and len(results) > 0:
                         issues = results[0].get("messages", [])
@@ -287,48 +274,51 @@ class LinterAgent(Agent):
 
             return LinterResult(success=True, issues=[])
 
-        except FileNotFoundError:
-            return LinterResult(success=False, error="eslint command not found")
+        except CommandNotAllowedError as e:
+            self.logger.error(f"eslint command not allowed in sandbox: {e}")
+            return LinterResult(success=False, error="eslint command not allowed")
+        except SandboxTimeoutError:
+            return LinterResult(success=False, error="eslint execution timeout")
+        except Exception as e:
+            self.logger.error(f"Error running eslint in sandbox: {e}")
+            return LinterResult(success=False, error=str(e))
 
     async def _auto_fix(self, linter: str, path: Path) -> LinterResult:
         """Attempt to auto-fix issues."""
         try:
-            # Get updated environment with venv bin in PATH
-            import os
-
-            env = os.environ.copy()
-            venv_bin = Path(__file__).parent.parent.parent.parent / ".venv" / "bin"
-            if venv_bin.exists():
-                env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+            # Get venv path
+            venv_path = Path(__file__).parent.parent.parent.parent / ".venv"
 
             if linter == "ruff":
-                proc = await asyncio.create_subprocess_exec(
-                    "ruff",
-                    "check",
-                    "--fix",
-                    str(path),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    env=env,
-                )
-                await proc.communicate()
+                if venv_path.exists():
+                    await self.sandbox.run_sandboxed_with_venv(
+                        ["ruff", "check", "--fix", str(path)],
+                        venv_path=venv_path,
+                        cwd=path.parent,
+                    )
+                else:
+                    await self.sandbox.run_sandboxed(
+                        ["ruff", "check", "--fix", str(path)],
+                        cwd=path.parent,
+                    )
                 return LinterResult(success=True)
 
             elif linter == "eslint":
-                proc = await asyncio.create_subprocess_exec(
-                    "eslint",
-                    "--fix",
-                    str(path),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    env=env,
+                await self.sandbox.run_sandboxed(
+                    ["eslint", "--fix", str(path)],
+                    cwd=path.parent,
                 )
-                await proc.communicate()
                 return LinterResult(success=True)
 
             return LinterResult(success=False, error="Auto-fix not supported")
 
+        except CommandNotAllowedError as e:
+            self.logger.error(f"Auto-fix command not allowed in sandbox: {e}")
+            return LinterResult(success=False, error="Auto-fix command not allowed")
+        except SandboxTimeoutError:
+            return LinterResult(success=False, error="Auto-fix execution timeout")
         except Exception as e:
+            self.logger.error(f"Error during auto-fix in sandbox: {e}")
             return LinterResult(success=False, error=str(e))
 
     async def _write_findings_to_context(

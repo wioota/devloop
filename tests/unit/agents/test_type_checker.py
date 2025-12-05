@@ -176,54 +176,53 @@ class TestTypeCheckerAgent:
         finally:
             py_file.unlink(missing_ok=True)
 
-    def test_mypy_tool_check(self, agent):
+    @pytest.mark.asyncio
+    async def test_mypy_tool_check(self, agent):
         """Test mypy tool availability checking."""
-        with patch("subprocess.run") as mock_run:
-            # Test when mypy is available
-            mock_run.return_value = MagicMock(returncode=0)
-            result = agent._run_mypy(Path("test.py"))
+        # Test when mypy is available
+        mock_result_available = MagicMock(exit_code=0, stdout="", stderr="")
+        mock_result_success = MagicMock(
+            exit_code=0, stdout="Success: no issues found", stderr=""
+        )
+
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_result_available, mock_result_success],
+        ):
+            result = await agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "mypy" in result.tool
 
-            # Test when mypy is not available
-            mock_run.return_value = MagicMock(returncode=1)
-            result = agent._run_mypy(Path("test.py"))
+        # Test when mypy is not available
+        mock_result_unavailable = MagicMock(
+            exit_code=1, stdout="", stderr="ModuleNotFoundError"
+        )
+
+        with patch.object(
+            agent.sandbox, "run_sandboxed", return_value=mock_result_unavailable
+        ):
+            result = await agent._run_mypy(Path("test.py"))
             assert result is not None
             assert "not installed" in result.errors[0]
 
-    def test_mypy_output_parsing(self, agent):
+    @pytest.mark.asyncio
+    async def test_mypy_output_parsing(self, agent):
         """Test parsing of mypy output."""
         mypy_output = """test.py:5: error: Argument 1 to "len" has incompatible type "int"; expected "Sized"  [arg-type]
 test.py:10: note: Revealed type is "builtins.int"
 Found 1 error in 1 file (checked 1 source file)
-"""  # noqa: F841
+"""
+        # Mock sandbox to return mypy output
+        mock_check_result = MagicMock(exit_code=0, stdout="", stderr="")
+        mock_mypy_result = MagicMock(exit_code=1, stdout=mypy_output, stderr="")
 
-        with patch.object(agent, "_run_mypy") as mock_run_mypy:
-            # Mock the _run_mypy method directly to return parsed result
-            from devloop.agents.type_checker import TypeCheckResult
-
-            expected_issues = [
-                {
-                    "filename": "test.py",
-                    "line_number": 5,
-                    "severity": "error",
-                    "message": 'Argument 1 to "len" has incompatible type "int"; expected "Sized"',
-                    "error_code": "arg-type",
-                    "tool": "mypy",
-                },
-                {
-                    "filename": "test.py",
-                    "line_number": 10,
-                    "severity": "note",
-                    "message": 'Revealed type is "builtins.int"',
-                    "error_code": "",
-                    "tool": "mypy",
-                },
-            ]
-            mock_result = TypeCheckResult("mypy", expected_issues)
-            mock_run_mypy.return_value = mock_result
-
-            result = agent._run_mypy(Path("test.py"))
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_check_result, mock_mypy_result],
+        ):
+            result = await agent._run_mypy(Path("test.py"))
 
             assert result.tool == "mypy"
             assert len(result.issues) == 2  # One error, one note
@@ -232,24 +231,27 @@ Found 1 error in 1 file (checked 1 source file)
             assert "arg-type" in result.issues[0]["error_code"]
             assert result.issues[1]["severity"] == "note"
 
-    def test_strict_mode_flag(self, agent):
+    @pytest.mark.asyncio
+    async def test_strict_mode_flag(self, agent):
         """Test that strict mode adds the --strict flag."""
         agent.config.strict_mode = True
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-            result = agent._run_mypy(Path("test.py"))  # noqa: F841
+        mock_check_result = MagicMock(exit_code=0, stdout="", stderr="")
+        mock_mypy_result = MagicMock(exit_code=0, stdout="", stderr="")
 
-            # Check that subprocess.run was called (should be called twice: availability check + mypy run)
-            assert mock_run.call_count >= 2
+        with patch.object(
+            agent.sandbox,
+            "run_sandboxed",
+            side_effect=[mock_check_result, mock_mypy_result],
+        ) as mock_sandbox:
+            result = await agent._run_mypy(Path("test.py"))  # noqa: F841
 
-            # Check that --strict was in one of the commands
-            strict_found = False
-            for call in mock_run.call_args_list:
-                cmd = call[0][0]  # First positional arg is the command
-                if isinstance(cmd, list) and "--strict" in cmd:
-                    strict_found = True
-                    break
+            # Check that run_sandboxed was called twice (availability check + mypy run)
+            assert mock_sandbox.call_count == 2
+
+            # Check that --strict was in the mypy command (second call)
+            mypy_call = mock_sandbox.call_args_list[1]
+            cmd = mypy_call[0][0]  # First positional arg is the command
             assert (
-                strict_found
-            ), f"--strict not found in any subprocess.run call. Calls: {mock_run.call_args_list}"
+                "--strict" in cmd
+            ), f"--strict not found in mypy command. Command: {cmd}"

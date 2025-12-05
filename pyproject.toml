@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "devloop"
-version = "0.2.2"
+version = "0.3.0"
 description = "Intelligent background agents for development workflow automation"
 authors = ["DevLoop Contributors <devloop@example.com>"]
 license = "MIT"
@@ -33,6 +33,10 @@ classifiers = [
     "Topic :: Utilities"
 ]
 packages = [{include = "devloop", from = "src"}]
+include = [
+    "src/devloop/security/package.json",
+    "src/devloop/security/pyodide_runner.js",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
