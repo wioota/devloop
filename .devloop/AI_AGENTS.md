@@ -109,6 +109,50 @@ Claude Code can read this file to access current status and findings.
 - Check context files when debugging or before commits
 - Use background agent results to inform Claude Code's suggestions
 
+## DevLoop Agent Status Verification
+
+**CRITICAL**: Before starting any coding work, verify that `devloop watch` is running.
+
+### Quick Check
+```bash
+./.agents/check-devloop-status
+```
+
+This will:
+- ✅ Show the running devloop process if active
+- ❌ Provide startup instructions if not running
+
+### Why This Matters
+
+- DevLoop agents provide real-time code quality feedback
+- Missing issues won't be caught until commit time
+- Faster feedback loop accelerates development
+- Tests run in background automatically
+
+### Starting DevLoop
+
+```bash
+# Recommended: Run in background with nohup
+nohup devloop watch . > .devloop/devloop.log 2>&1 &
+
+# Or directly:
+devloop watch .
+```
+
+### If DevLoop Stops
+
+Check the log for errors:
+```bash
+tail -50 .devloop/devloop.log
+```
+
+Common causes:
+- Database lock (clean up with `rm -f .beads/daemon.lock`)
+- Permission issues in `.devloop/`
+- Virtual environment not activated
+
+---
+
 ## Beads Daemon Management
 
 **CRITICAL**: When stopping the Beads daemon, always use graceful shutdown to avoid data loss:

@@ -60,6 +60,76 @@ git status  # Should show: "working tree clean" and "branch is even with origin"
 
 ---
 
+## CRITICAL: DevLoop Agent Status Check
+
+**Rule:** Before starting work, verify that `devloop watch` is running.
+
+### Why This Matters
+
+- DevLoop agents provide real-time code quality feedback
+- Running without devloop means missing linting, formatting, and security issues
+- Issues will only be caught at commit time (pre-commit hook), not during development
+- Tests won't run in background, delaying feedback
+
+### How to Check
+
+```bash
+# Quick status check
+./.agents/check-devloop-status
+```
+
+### Correct DevLoop Workflow
+
+1. **Start devloop** (if not already running):
+   ```bash
+   devloop watch . &
+   # or use nohup for persistent background process
+   nohup devloop watch . > .devloop/devloop.log 2>&1 &
+   ```
+
+2. **Verify it started:**
+   ```bash
+   ps aux | grep "devloop watch" | grep -v grep
+   # Should show a python process
+   ```
+
+3. **Work on code** - agents monitor changes automatically
+
+4. **Before committing**, check findings in `.devloop/context/`
+
+### If DevLoop Stops
+
+DevLoop may stop if:
+- Out of disk space
+- Permission issues in `.devloop/`
+- Database lock (if beads daemon killed ungracefully)
+- Python virtual environment issue
+
+**Recovery:**
+```bash
+# Check why it stopped
+tail -50 .devloop/devloop.log
+
+# Clean up any lock files
+rm -f .beads/daemon.lock
+
+# Restart devloop
+nohup devloop watch . > .devloop/devloop.log 2>&1 &
+```
+
+### Beads Daemon Safety
+
+When stopping Beads, **always use graceful shutdown**:
+```bash
+# ✅ CORRECT - Graceful shutdown
+bd daemon stop
+
+# ❌ WRONG - Hard kill (causes data loss)
+pkill -9 -f beads
+```
+
+---
+
 ## Special Cases: High-Risk Changes
 
 ### Poetry & Dependency Changes
