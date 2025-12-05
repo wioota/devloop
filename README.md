@@ -89,6 +89,12 @@ pip install devloop[all-optional]
 - `ci-monitor` — CI/CD pipeline monitoring
 - `all-optional` — All of the above
 
+**Optional sandbox enhancements:**
+- **Pyodide WASM Sandbox** (cross-platform Python sandboxing)
+  - Requires: Node.js 18+ (system dependency)
+  - Install: See [Pyodide Installation Guide](./docs/PYODIDE_INSTALLATION.md)
+  - Works in POC mode without installation for testing
+
 #### Option 2: From Source
 
 ```bash
