@@ -1,11 +1,11 @@
-# Claude Code Integration
-**Background agent integration for Claude Code users**
+# AI Agent Integration
+**Background agent integration instructions for all coding agents (Claude, Amp, etc.)**
 
-This project uses background agents that enhance Claude Code's capabilities through automated code quality checks and context provision.
+This project uses background agents that enhance all AI coding agents' capabilities through automated code quality checks and context provision.
 
 ## 🤖 Proactive Agent Status Checking
 
-**IMPORTANT**: Claude Code should proactively check background agent findings and surface them to users:
+**IMPORTANT**: All AI agents should proactively check background agent findings and surface them to users:
 
 1. **After Edit/Write operations**: Check `.devloop/AGENT_STATUS.md` for immediate issues
 2. **When starting tasks**: Check for existing findings that might be relevant
@@ -31,9 +31,9 @@ This project uses background agents that enhance Claude Code's capabilities thro
 - **Test Runner Agent**: Executes relevant tests
 - **Security Scanner**: Checks for vulnerabilities
 
-## Claude Code Integration
+## AI Agent Integration
 
-### Hooks Configuration
+### Hooks Configuration (Claude Code)
 
 Add these hooks to your Claude Code settings for automatic integration:
 
@@ -108,3 +108,31 @@ Claude Code can read this file to access current status and findings.
 - Leverage Claude Code's skills to analyze background agent findings
 - Check context files when debugging or before commits
 - Use background agent results to inform Claude Code's suggestions
+
+## Beads Daemon Management
+
+**CRITICAL**: When stopping the Beads daemon, always use graceful shutdown to avoid data loss:
+
+**✅ CORRECT - Graceful shutdown:**
+```bash
+bd daemon stop    # Cleanly shuts down daemon
+```
+
+**❌ WRONG - Hard kill (risk of data loss):**
+```bash
+pkill -9 -f beads  # Can leave lock files and WAL files
+```
+
+**Why this matters:**
+- Hard killing leaves `.beads/daemon.lock` and `.beads/beads.db-wal` files
+- If Beads was mid-write when killed, uncommitted transactions may be lost
+- Future writes could fail or corrupt the issue database
+- Devloop and Beads competing for database access causes lock contention
+
+**Recovery if hard kill occurred:**
+```bash
+rm -f .beads/daemon.lock  # Clean up orphaned lock
+bd status                 # Verify database integrity
+```
+
+Always use `bd daemon stop` for clean shutdowns.
