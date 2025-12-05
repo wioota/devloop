@@ -1,12 +1,12 @@
 {
-  "linter": {
+  "type-checker": {
     "total_executions": 1,
     "successful_executions": 1,
-    "average_duration": 0.00011396408081054688,
+    "average_duration": 0.00015974044799804688,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764843471.8201404
+    "last_updated": 1764899969.4537733
   }
 }
