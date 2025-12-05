@@ -29,8 +29,9 @@
         "file:modified"
       ],
       "config": {
-        "formatOnSave": false,
-        "reportOnly": true,
+        "formatOnSave": true,
+        "autoFix": true,
+        "reportOnly": false,
         "filePatterns": [
           "**/*.py",
           "**/*.js",
