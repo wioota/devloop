@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Extract DevLoop findings and create Beads issues for critical ones.
+
+This script:
+1. Reads DevLoop findings from the context store
+2. Extracts high-priority issues (formatter, linter)
+3. Creates Beads issues for them
+4. Links to discovered work automatically
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta, timezone
+import re
+
+
+def run_command(cmd, shell=True, capture_output=True):
+    """Run a command and return output."""
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=shell,
+            capture_output=capture_output,
+            text=True,
+            timeout=30
+        )
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return 124, "", "Command timed out"
+    except Exception as e:
+        return 1, "", str(e)
+
+
+def get_context_store_findings():
+    """Read findings from the .devloop/context/ directory."""
+    context_dir = Path(".devloop/context")
+    if not context_dir.exists():
+        return []
+    
+    findings = []
+    # Look for finding files (pattern: finding_*.json)
+    for finding_file in sorted(context_dir.glob("finding_*.json"), reverse=True)[:100]:
+        try:
+            with open(finding_file) as f:
+                finding = json.load(f)
+                findings.append(finding)
+        except (json.JSONDecodeError, IOError):
+            continue
+    
+    return findings
+
+
+def filter_recent_findings(findings, hours=24):
+    """Filter findings from the last N hours."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    recent = []
+    
+    for finding in findings:
+        # Try to parse timestamp - handle various formats
+        timestamp_str = finding.get("timestamp") or finding.get("created_at")
+        if not timestamp_str:
+            continue
+        
+        try:
+            # Handle ISO format timestamps
+            if timestamp_str.endswith("Z"):
+                timestamp = datetime.fromisoformat(timestamp_str[:-1] + "+00:00")
+            else:
+                # Try parsing with timezone
+                timestamp = datetime.fromisoformat(timestamp_str)
+            
+            if timestamp >= cutoff:
+                recent.append(finding)
+        except (ValueError, AttributeError):
+            continue
+    
+    return recent
+
+
+def categorize_findings(findings):
+    """Categorize findings by agent and severity."""
+    categorized = {
+        "formatter": [],
+        "linter": [],
+        "performance": [],
+        "security": [],
+        "other": []
+    }
+    
+    for finding in findings:
+        agent = finding.get("agent", "").lower()
+        severity = finding.get("severity", "").lower()
+        message = finding.get("message", "") + " " + finding.get("details", "")
+        
+        # Categorize by agent
+        if "formatter" in agent or "black" in agent:
+            categorized["formatter"].append(finding)
+        elif "linter" in agent or "pylint" in agent or "ruff" in agent:
+            categorized["linter"].append(finding)
+        elif "performance" in agent or "complexity" in agent:
+            categorized["performance"].append(finding)
+        elif "security" in agent or "bandit" in agent:
+            categorized["security"].append(finding)
+        else:
+            categorized["other"].append(finding)
+    
+    return categorized
+
+
+def create_beads_issue(title, description, priority, issue_type="task"):
+    """Create a Beads issue."""
+    # Escape quotes in description
+    description = description.replace('"', '\\"')
+    cmd = ['bd', 'create', title, '-t', issue_type, '-p', str(priority), '-d', description, '--json']
+    returncode, stdout, stderr = run_command(cmd, shell=False)
+    
+    if returncode == 0:
+        try:
+            # bd create returns a list
+            result = json.loads(stdout)
+            if isinstance(result, list) and len(result) > 0:
+                return result[0].get('id')
+            elif isinstance(result, dict):
+                return result.get('id')
+        except json.JSONDecodeError:
+            pass
+    
+    return None
+
+
+def extract_findings_to_beads():
+    """Main function: extract findings and create Beads issues."""
+    print("[Findings] Reading DevLoop context store...")
+    
+    findings = get_context_store_findings()
+    if not findings:
+        print("[Findings] No findings in context store")
+        return 0
+    
+    # Filter to recent findings (last 24 hours)
+    recent = filter_recent_findings(findings, hours=24)
+    if not recent:
+        print(f"[Findings] No recent findings (found {len(findings)} total, but none from last 24 hours)")
+        return 0
+    
+    print(f"[Findings] Found {len(recent)} recent findings")
+    
+    # Categorize
+    categorized = categorize_findings(recent)
+    
+    created_issues = []
+    
+    # Process formatter violations (HIGH priority) - can break CI
+    if categorized["formatter"]:
+        count = len(categorized["formatter"])
+        title = f"Fix {count} Black formatting issue{'s' if count > 1 else ''}"
+        
+        samples = categorized["formatter"][:3]
+        description = f"DevLoop formatter agent detected {count} Black formatting violation(s):\n\n"
+        for finding in samples:
+            msg = finding.get("message", "Unknown issue")
+            file_info = finding.get("file", "")
+            if file_info:
+                description += f"- {file_info}: {msg}\n"
+            else:
+                description += f"- {msg}\n"
+        
+        if len(categorized["formatter"]) > 3:
+            description += f"\n...and {len(categorized['formatter']) - 3} more\n"
+        
+        description += "\nRun `black .` to auto-fix or check `.devloop/context/` for details."
+        
+        issue_id = create_beads_issue(title, description, priority=1)
+        if issue_id:
+            created_issues.append(issue_id)
+            print(f"[Findings] ✓ Created formatter issue: {issue_id}")
+    
+    # Process linter violations (HIGH priority) - can block fixes
+    if categorized["linter"]:
+        count = len(categorized["linter"])
+        title = f"Fix {count} linter issue{'s' if count > 1 else ''}"
+        
+        samples = categorized["linter"][:3]
+        description = f"DevLoop linter agent detected {count} linting violation(s):\n\n"
+        for finding in samples:
+            msg = finding.get("message", "Unknown issue")
+            file_info = finding.get("file", "")
+            if file_info:
+                description += f"- {file_info}: {msg}\n"
+            else:
+                description += f"- {msg}\n"
+        
+        if len(categorized["linter"]) > 3:
+            description += f"\n...and {len(categorized['linter']) - 3} more\n"
+        
+        description += "\nReview `.devloop/context/` for details."
+        
+        issue_id = create_beads_issue(title, description, priority=1)
+        if issue_id:
+            created_issues.append(issue_id)
+            print(f"[Findings] ✓ Created linter issue: {issue_id}")
+    
+    # Process performance insights (MEDIUM priority) - nice to have
+    if categorized["performance"]:
+        count = len(categorized["performance"])
+        title = f"Investigate {count} performance issue{'s' if count > 1 else ''}"
+        
+        samples = categorized["performance"][:3]
+        description = f"DevLoop identified {count} potential performance improvement(s):\n\n"
+        for finding in samples:
+            msg = finding.get("message", "Unknown issue")
+            file_info = finding.get("file", "")
+            if file_info:
+                description += f"- {file_info}: {msg}\n"
+            else:
+                description += f"- {msg}\n"
+        
+        if len(categorized["performance"]) > 3:
+            description += f"\n...and {len(categorized['performance']) - 3} more\n"
+        
+        description += "\nConsider these optimizations in your next refactoring."
+        
+        issue_id = create_beads_issue(title, description, priority=2)
+        if issue_id:
+            created_issues.append(issue_id)
+            print(f"[Findings] ✓ Created performance issue: {issue_id}")
+    
+    if created_issues:
+        print(f"[Findings] ✅ Created {len(created_issues)} issue(s) from DevLoop findings")
+        return 0
+    else:
+        print("[Findings] No critical findings requiring new issues")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(extract_findings_to_beads())
