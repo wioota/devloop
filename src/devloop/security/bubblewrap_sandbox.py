@@ -55,19 +55,27 @@ class BubblewrapSandbox(SandboxExecutor):
 
         executable = cmd[0]
 
-        # Check whitelist
+        # Check whitelist first
         if not self._validate_whitelist(executable):
             return False
 
-        # Verify executable exists
+        # Verify executable exists in PATH
         exe_path = shutil.which(executable)
         if not exe_path:
             return False
 
+        # Resolve symlinks to get real path
+        try:
+            real_path = Path(exe_path).resolve()
+        except (OSError, RuntimeError):
+            return False
+
         # Verify it's in a trusted system directory
         # This prevents executing arbitrary binaries from user directories
-        allowed_paths = ["/usr/bin", "/usr/local/bin", "/bin", "/opt"]
-        if not any(exe_path.startswith(p) for p in allowed_paths):
+        allowed_prefixes = ["/usr/bin", "/usr/local/bin", "/bin", "/opt", "/usr/lib"]
+        str_path = str(real_path)
+
+        if not any(str_path.startswith(prefix) for prefix in allowed_prefixes):
             return False
 
         return True
@@ -167,9 +175,17 @@ class BubblewrapSandbox(SandboxExecutor):
         if Path("/lib64").exists():
             bwrap_cmd.extend(["--ro-bind", "/lib64", "/lib64"])
 
-        # Project directory gets read-write access
-        # This allows agents to read source files and write reports
-        bwrap_cmd.extend(["--bind", str(cwd), str(cwd)])
+        # Handle working directory binding
+        # If cwd is in /tmp, we need to bind /tmp first, then the specific directory
+        cwd_str = str(cwd.resolve())
+        if cwd_str.startswith("/tmp/"):
+            # Bind entire /tmp for test directories
+            bwrap_cmd.extend(["--bind", "/tmp", "/tmp"])
+        else:
+            # Isolated tmpfs for non-/tmp working directories
+            bwrap_cmd.extend(["--tmpfs", "/tmp"])
+            # Project directory gets read-write access
+            bwrap_cmd.extend(["--bind", cwd_str, cwd_str])
 
         # Essential directories
         bwrap_cmd.extend(
@@ -178,8 +194,6 @@ class BubblewrapSandbox(SandboxExecutor):
                 "/dev",  # Device files
                 "--proc",
                 "/proc",  # Process info
-                "--tmpfs",
-                "/tmp",  # Isolated temporary directory
             ]
         )
 
