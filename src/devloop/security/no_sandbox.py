@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from devloop.security.sandbox import (
-    SandboxConfig,
     SandboxExecutor,
     SandboxResult,
     SandboxTimeoutError,

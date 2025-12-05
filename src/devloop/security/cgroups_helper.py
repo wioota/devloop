@@ -6,7 +6,7 @@ Provides memory and CPU limits for sandboxed processes using Linux cgroups.
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 from dataclasses import dataclass
 
 
@@ -197,10 +197,10 @@ class CgroupsManager:
             # Read CPU usage (simplified - actual usage tracking is complex)
             # cpu.stat contains usage_usec
             cpu_stat = cgroup_path / "cpu.stat"
-            cpu_usage_usec = 0
+            _cpu_usage_usec = 0
             for line in cpu_stat.read_text().strip().split("\n"):
                 if line.startswith("usage_usec"):
-                    cpu_usage_usec = int(line.split()[1])
+                    _cpu_usage_usec = int(line.split()[1])
                     break
 
             # Convert to percentage (simplified - would need delta over time)

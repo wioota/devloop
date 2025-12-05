@@ -105,7 +105,7 @@ def prompt_pyodide_installation(non_interactive: bool = False) -> bool:
         return True  # Not an error, just not available
 
     # Node.js is available
-    console.print(f"\n[cyan]Pyodide WASM Sandbox Setup[/cyan]")
+    console.print("\n[cyan]Pyodide WASM Sandbox Setup[/cyan]")
     console.print(f"  Node.js {node_info} detected")
     console.print("  Pyodide enables cross-platform Python code sandboxing in WASM")
 
