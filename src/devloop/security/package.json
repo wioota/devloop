@@ -1,0 +1,19 @@
+{
+  "name": "devloop-pyodide-sandbox",
+  "version": "1.0.0",
+  "description": "Pyodide WASM runtime for DevLoop sandbox execution",
+  "main": "pyodide_runner.js",
+  "scripts": {
+    "test": "node pyodide_runner.js"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "pyodide": "^0.25.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "DevLoop Team",
+  "license": "MIT",
+  "private": true
+}

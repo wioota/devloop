@@ -1,32 +1,32 @@
 {
-  "formatter": {
-    "total_executions": 1,
-    "successful_executions": 1,
-    "average_duration": 0.00019073486328125,
-    "feedback_count": 0,
-    "thumbs_up_count": 0,
-    "thumbs_down_count": 0,
-    "average_rating": 0.0,
-    "last_updated": 1764903755.8040783
-  },
-  "performance-profiler": {
-    "total_executions": 1,
-    "successful_executions": 1,
-    "average_duration": 8.58306884765625e-05,
-    "feedback_count": 0,
-    "thumbs_up_count": 0,
-    "thumbs_down_count": 0,
-    "average_rating": 0.0,
-    "last_updated": 1764903756.5637288
-  },
   "test-runner": {
-    "total_executions": 1,
-    "successful_executions": 1,
-    "average_duration": 5.507469177246094e-05,
+    "total_executions": 2,
+    "successful_executions": 2,
+    "average_duration": 7.224082946777344e-05,
     "feedback_count": 0,
     "thumbs_up_count": 0,
     "thumbs_down_count": 0,
     "average_rating": 0.0,
-    "last_updated": 1764903756.6611948
+    "last_updated": 1764904696.7062361
+  },
+  "type-checker": {
+    "total_executions": 1,
+    "successful_executions": 1,
+    "average_duration": 6.818771362304688e-05,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764904697.1416159
+  },
+  "linter": {
+    "total_executions": 1,
+    "successful_executions": 1,
+    "average_duration": 8.606910705566406e-05,
+    "feedback_count": 0,
+    "thumbs_up_count": 0,
+    "thumbs_down_count": 0,
+    "average_rating": 0.0,
+    "last_updated": 1764904697.1597016
   }
 }
