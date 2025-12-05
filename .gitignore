@@ -41,6 +41,8 @@ htmlcov/
 
 # Project specific
 .claude/
+# But track slash commands
+!.claude/commands/
 .devloop/*
 # But track template markdown files and configuration
 !.devloop/*.md
