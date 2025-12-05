@@ -14,6 +14,7 @@ from devloop.security.sandbox import (
     SandboxResult,
     SandboxTimeoutError,
 )
+from devloop.security.audit_logger import get_audit_logger
 
 
 class BubblewrapSandbox(SandboxExecutor):
@@ -98,7 +99,16 @@ class BubblewrapSandbox(SandboxExecutor):
             SandboxTimeoutError: If execution exceeds timeout
             RuntimeError: If sandbox execution fails
         """
+        audit_logger = get_audit_logger()
+
         if not self.validate_command(cmd):
+            # Log blocked command attempt
+            audit_logger.log_blocked_command(
+                sandbox_mode="bubblewrap",
+                cmd=cmd,
+                cwd=cwd,
+                reason=f"Command not in whitelist: {self.config.allowed_tools}"
+            )
             raise CommandNotAllowedError(
                 f"Command not allowed: {cmd[0]}. "
                 f"Must be in whitelist: {self.config.allowed_tools}"
@@ -129,13 +139,23 @@ class BubblewrapSandbox(SandboxExecutor):
             except ProcessLookupError:
                 pass  # Process already dead
 
+            duration_ms = self._get_duration_ms()
+
+            # Log timeout
+            audit_logger.log_timeout(
+                sandbox_mode="bubblewrap",
+                cmd=cmd,
+                cwd=cwd,
+                duration_ms=duration_ms,
+            )
+
             raise SandboxTimeoutError(
                 f"Command exceeded {self.config.timeout_seconds}s timeout: {cmd}"
             )
 
         duration_ms = self._get_duration_ms()
 
-        return SandboxResult(
+        result = SandboxResult(
             stdout=stdout.decode("utf-8", errors="replace") if stdout else "",
             stderr=stderr.decode("utf-8", errors="replace") if stderr else "",
             exit_code=process.returncode or 0,
@@ -143,6 +163,16 @@ class BubblewrapSandbox(SandboxExecutor):
             memory_peak_mb=0.0,  # TODO: Get from cgroups
             cpu_usage_percent=0.0,  # TODO: Get from cgroups
         )
+
+        # Log successful execution
+        audit_logger.log_execution(
+            sandbox_mode="bubblewrap",
+            cmd=cmd,
+            cwd=cwd,
+            result=result,
+        )
+
+        return result
 
     def _build_bwrap_command(
         self, cmd: List[str], cwd: Path, env: Optional[Dict[str, str]]
