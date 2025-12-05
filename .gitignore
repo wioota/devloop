@@ -42,8 +42,9 @@ htmlcov/
 # Project specific
 .claude/
 .devloop/*
-# But track template markdown files
+# But track template markdown files and configuration
 !.devloop/*.md
+!.devloop/agents.json
 *.log
 
 # OS specific
