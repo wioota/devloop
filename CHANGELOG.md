@@ -11,6 +11,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2025-12-06
+
+### Major Features
+
+#### Claude Code Integration
+- **Auto-install Claude Code slash commands** during `devloop init`
+  - Slash commands: `/agent-summary`, `/agent-status`
+  - Automatic setup in `.claude/commands/` directory
+  - Zero-configuration integration for Claude Code users
+
+#### Sandbox Security System (Phases 1-3)
+- **Phase 1: Bubblewrap sandbox foundation**
+  - Secure agent execution in isolated environments
+  - Filesystem restrictions and process isolation
+  - Resource limits (CPU, memory, execution time)
+
+- **Phase 2: cgroups & Performance**
+  - Memory and CPU limits via cgroups v2
+  - Performance benchmarking framework
+  - Comprehensive audit logging for all sandbox operations
+
+- **Phase 3: Pyodide WASM sandbox**
+  - Browser-grade sandboxing for Python code execution
+  - Automatic Pyodide installation during `devloop init`
+  - Network allowlist and policy engine design
+
+- **Security testing**: Malicious config detection, path traversal prevention
+
+#### DevLoop Visibility Enhancement
+- **Extract findings to Beads** via pre-push hook
+  - Automatic conversion of DevLoop findings to Beads issues
+  - Link discovered issues with `discovered-from` dependencies
+  - Git-synced issue tracking for long-term memory
+
+- **Operational health analytics** in agent summary
+  - Health status, performance metrics, activity timeline
+  - Agent success/failure tracking
+  - Resource usage monitoring
+
+### Improvements
+
+#### Task Management & Workflow
+- **Beads-only policy** for all task tracking (no markdown TODOs)
+  - AGENTS.md auto-injection during `devloop init`
+  - Claude Code symlink (`CLAUDE.md -> AGENTS.md`)
+  - Template system for Beads integration
+
+- **Developer discipline framework**
+  - Pre-commit and pre-push git hooks
+  - CI status verification before pushes
+  - Verification scripts for task completion
+
+#### Installation & Setup
+- **Interactive optional agent selection** during `devloop init`
+  - Snyk, Code Rabbit, CI Monitor, Pyodide sandbox
+  - Poetry extras for dependency management
+  - Non-interactive mode support
+
+- **Comprehensive installation testing guide**
+  - Multi-environment testing procedures
+  - Installation verification checklist
+
+#### Code Quality
+- **Process improvements** to prevent CI failures
+  - Auto-format with Black before commits
+  - Ruff linting enforcement
+  - Type checking with mypy
+
+### Changed
+
+- **Hybrid sandbox architecture** for secure agent execution
+  - Default: Bubblewrap for native speed
+  - Optional: Pyodide WASM for maximum security
+  - Configurable sandbox policies
+
+- **Improved `devloop summary` command**
+  - Better devloop directory detection
+  - Context directory inference
+  - Operational health section
+
+### Documentation
+
+- **AGENTS.md enhancements**: Beads integration, sandbox security, publishing guidelines
+- **Risk assessment updates**: Sandbox security, resource limits, audit logging
+- **Installation automation guide**: `devloop init` deep dive
+
+### Fixed
+
+- Poetry.lock sync with pyproject.toml extras
+- Ruff linting errors in extract-findings-to-beads hook
+- Type annotations for CI compliance
+- Interactive prompts in non-interactive test environments
+
+---
+
 ## [0.2.2] - 2025-12-01
 
 ### ⚠️ ALPHA SOFTWARE NOTICE

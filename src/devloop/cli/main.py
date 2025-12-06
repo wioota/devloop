@@ -549,6 +549,7 @@ This project uses background agents and Beads for task management.
 
         # Copy command templates
         import shutil
+
         commands_copied = []
         for template_file in template_commands_dir.glob("*.md"):
             dest_file = claude_commands_dir / template_file.name
