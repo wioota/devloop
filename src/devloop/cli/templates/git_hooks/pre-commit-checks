@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Pre-commit checks: Formatting, linting, type checking, and tests
+# Prevents committing code that has formatting/linting/type errors or failing tests
+#
+# This is called from the main pre-commit hook after lock file checks
+#
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${YELLOW}[Pre-commit] Running code quality checks and tests...${NC}"
+
+# Check if poetry is available
+if ! command -v poetry &> /dev/null; then
+    echo -e "${YELLOW}[Pre-commit] poetry not found, skipping checks${NC}"
+    exit 0
+fi
+
+# Navigate to src directory where pyproject.toml is located
+if [ ! -d "src" ]; then
+    echo -e "${YELLOW}[Pre-commit] src directory not found, skipping checks${NC}"
+    exit 0
+fi
+
+# Run Black formatter check
+echo -e "${YELLOW}[Pre-commit] Checking code formatting (Black)...${NC}"
+if ! poetry run black --check src/ > /tmp/black-output.txt 2>&1; then
+    echo -e "${RED}[Pre-commit] ❌ Black formatting check failed:${NC}"
+    cat /tmp/black-output.txt
+    echo -e "${YELLOW}Fix with: poetry run black src/${NC}"
+    exit 1
+fi
+echo -e "${GREEN}[Pre-commit] ✅ Code formatting passed${NC}"
+
+# Run Ruff linting
+echo -e "${YELLOW}[Pre-commit] Running linter (Ruff)...${NC}"
+if ! poetry run ruff check src/ > /tmp/ruff-output.txt 2>&1; then
+    echo -e "${RED}[Pre-commit] ❌ Ruff linting failed:${NC}"
+    cat /tmp/ruff-output.txt
+    echo -e "${YELLOW}Fix with: poetry run ruff check src/ --fix${NC}"
+    exit 1
+fi
+echo -e "${GREEN}[Pre-commit] ✅ Linting passed${NC}"
+
+cd src
+
+# Run mypy
+echo -e "${YELLOW}[Pre-commit] Type checking (mypy)...${NC}"
+if ! poetry run mypy devloop/core/ devloop/agents/ > /tmp/mypy-output.txt 2>&1; then
+    echo -e "${RED}[Pre-commit] ❌ Type check failed:${NC}"
+    cat /tmp/mypy-output.txt
+    exit 1
+fi
+echo -e "${GREEN}[Pre-commit] ✅ Type checks passed${NC}"
+
+# Run pytest (from parent directory where tests/ exists)
+echo -e "${YELLOW}[Pre-commit] Running tests (pytest)...${NC}"
+cd ..
+if ! poetry run pytest tests/ -q > /tmp/pytest-output.txt 2>&1; then
+    echo -e "${RED}[Pre-commit] ❌ Tests failed:${NC}"
+    # Show last 50 lines of output
+    tail -50 /tmp/pytest-output.txt
+    exit 1
+fi
+echo -e "${GREEN}[Pre-commit] ✅ All tests passed${NC}"
+
+exit 0

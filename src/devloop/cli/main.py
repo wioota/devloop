@@ -567,6 +567,33 @@ This project uses background agents and Beads for task management.
             for cmd in commands_copied:
                 console.print(f"  • /{cmd}")
 
+    # Install git hooks if this is a git repository
+    git_dir = path / ".git"
+    if git_dir.exists() and git_dir.is_dir():
+        hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
+        hooks_dest_dir = git_dir / "hooks"
+
+        if hooks_template_dir.exists():
+            hooks_installed = []
+            for template_file in hooks_template_dir.iterdir():
+                if template_file.is_file():
+                    dest_file = hooks_dest_dir / template_file.name
+
+                    # Backup existing hook if present
+                    if dest_file.exists():
+                        backup_file = hooks_dest_dir / f"{template_file.name}.backup"
+                        shutil.copy2(dest_file, backup_file)
+
+                    # Install new hook
+                    shutil.copy2(template_file, dest_file)
+                    dest_file.chmod(0o755)  # Make executable
+                    hooks_installed.append(template_file.name)
+
+            if hooks_installed:
+                console.print("\n[green]✓[/green] Installed git hooks:")
+                for hook in hooks_installed:
+                    console.print(f"  • {hook}")
+
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
     console.print(f"  1. Review/edit: [cyan]{claude_dir / 'agents.json'}[/cyan]")
@@ -636,6 +663,55 @@ def version():
     from devloop import __version__
 
     console.print(f"DevLoop v{__version__}")
+
+
+@app.command()
+def update_hooks(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
+    """Update git hooks from latest templates."""
+    import shutil
+
+    git_dir = path / ".git"
+
+    if not git_dir.exists() or not git_dir.is_dir():
+        console.print(
+            f"[red]✗[/red] Not a git repository: {path}\n"
+            "[yellow]Git hooks can only be installed in git repositories.[/yellow]"
+        )
+        return
+
+    hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
+    hooks_dest_dir = git_dir / "hooks"
+
+    if not hooks_template_dir.exists():
+        console.print(f"[red]✗[/red] Hook templates not found at: {hooks_template_dir}")
+        return
+
+    hooks_dest_dir.mkdir(parents=True, exist_ok=True)
+    hooks_updated = []
+
+    for template_file in hooks_template_dir.iterdir():
+        if template_file.is_file():
+            dest_file = hooks_dest_dir / template_file.name
+
+            # Backup existing hook if present
+            if dest_file.exists():
+                backup_file = hooks_dest_dir / f"{template_file.name}.backup"
+                shutil.copy2(dest_file, backup_file)
+                console.print(
+                    f"[dim]  Backed up existing hook: {template_file.name} -> {template_file.name}.backup[/dim]"
+                )
+
+            # Install new hook
+            shutil.copy2(template_file, dest_file)
+            dest_file.chmod(0o755)  # Make executable
+            hooks_updated.append(template_file.name)
+
+    if hooks_updated:
+        console.print("\n[green]✓[/green] Updated git hooks:")
+        for hook in hooks_updated:
+            console.print(f"  • {hook}")
+    else:
+        console.print("[yellow]No hooks found to update[/yellow]")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# Combined pre-commit hook
+#
+# Checks:
+# 1. Poetry lock file sync with pyproject.toml
+# 2. Code quality checks (Black, Ruff, mypy, pytest)
+# 3. bd (beads) pre-commit flush
+# 4. Any existing pre-commit.old hook
+#
+
+# Check if pyproject.toml changed but poetry.lock didn't
+if git diff --cached --name-only | grep -q "pyproject.toml"; then
+    if ! git diff --cached --name-only | grep -q "poetry.lock"; then
+        echo "ERROR: pyproject.toml changed but poetry.lock not updated"
+        echo "This will cause CI failure: 'poetry.lock was last generated' error"
+        echo ""
+        echo "Fix: Run 'poetry lock' and stage both files"
+        echo "  poetry lock"
+        echo "  git add poetry.lock"
+        exit 1
+    fi
+fi
+
+# Run type checks and tests (only if there are Python changes)
+if git diff --cached --name-only | grep -qE '\.py$'; then
+    if [ -x ".git/hooks/pre-commit-checks" ]; then
+        ".git/hooks/pre-commit-checks"
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            exit $EXIT_CODE
+        fi
+    fi
+fi
+
+# Run existing hook if present
+if [ -x ".git/hooks/pre-commit.old" ]; then
+    ".git/hooks/pre-commit.old" "$@"
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        exit $EXIT_CODE
+    fi
+fi
+
+# Check if bd is available
+if ! command -v bd >/dev/null 2>&1; then
+    echo "Warning: bd command not found, skipping pre-commit flush" >&2
+    exit 0
+fi
+
+# Check if we're in a bd workspace
+if [ ! -d .beads ]; then
+    exit 0
+fi
+
+# Flush pending changes to JSONL
+if ! bd sync --flush-only >/dev/null 2>&1; then
+    echo "Error: Failed to flush bd changes to JSONL" >&2
+    echo "Run 'bd sync --flush-only' manually to diagnose" >&2
+    exit 1
+fi
+
+# If the JSONL file was modified, stage it
+if [ -f .beads/issues.jsonl ]; then
+    git add .beads/issues.jsonl 2>/dev/null || true
+fi
+
+exit 0
