@@ -237,7 +237,8 @@
     },
     "autonomousFixes": {
       "enabled": true,
-      "safetyLevel": "safe_only"
+      "safetyLevel": "safe_only",
+      "optIn": false
     },
     "security": {
       "sandbox": {

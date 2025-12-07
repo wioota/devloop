@@ -9,10 +9,20 @@ from dataclasses import dataclass
 
 @dataclass
 class AutonomousFixesConfig:
-    """Configuration for autonomous fix application."""
+    """Configuration for autonomous fix application.
+
+    Safety Levels:
+    - safe_only: Only apply whitespace, formatting, and trivial fixes
+    - medium_risk: Include import organization and common linting fixes
+    - all: Apply all auto-fixable issues (use with caution)
+
+    IMPORTANT: opt_in must be explicitly set to True to enable auto-fixes.
+    This prevents accidental code modifications.
+    """
 
     enabled: bool = False
     safety_level: str = "safe_only"
+    opt_in: bool = False  # CRITICAL: Must be explicitly enabled per project
 
     def __post_init__(self):
         if self.safety_level not in ["safe_only", "medium_risk", "all"]:
@@ -69,6 +79,7 @@ class Config:
         autonomous_fixes = AutonomousFixesConfig(
             enabled=autonomous_fixes_config.get("enabled", False),
             safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only"),
+            opt_in=autonomous_fixes_config.get("optIn", False),
         )
 
         return GlobalConfig(
