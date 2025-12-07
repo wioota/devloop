@@ -377,6 +377,121 @@ class PerformanceMonitor:
             await f.writelines(recent_lines)
 
 
+class AgentResourceTracker:
+    """Track per-agent resource usage for enforcement."""
+
+    def __init__(self, cache_ttl_seconds: float = 1.0):
+        """Initialize the tracker with a cache TTL."""
+        self.cache_ttl_seconds = cache_ttl_seconds
+        self._usage_cache: Dict[str, tuple[ResourceUsage, float]] = {}
+        self._active_agents: Dict[str, float] = {}  # agent_name -> start_time
+
+    def mark_agent_active(self, agent_name: str) -> None:
+        """Mark an agent as currently active."""
+        self._active_agents[agent_name] = time.time()
+
+    def mark_agent_inactive(self, agent_name: str) -> None:
+        """Mark an agent as no longer active."""
+        self._active_agents.pop(agent_name, None)
+
+    def get_agent_usage(
+        self, agent_name: str, force_refresh: bool = False
+    ) -> Optional[ResourceUsage]:
+        """Get current resource usage for an agent.
+
+        This returns a snapshot of the process's resource usage when the agent is active.
+        Since agents run as asyncio tasks in the same process, we can't directly measure
+        per-agent usage, but we sample when the agent is known to be active.
+
+        Args:
+            agent_name: Name of the agent
+            force_refresh: Force a new snapshot instead of using cache
+
+        Returns:
+            ResourceUsage snapshot if agent is active, None otherwise
+        """
+        # Check if agent is currently active
+        if agent_name not in self._active_agents:
+            return None
+
+        # Check cache
+        now = time.time()
+        if not force_refresh and agent_name in self._usage_cache:
+            cached_usage, cached_time = self._usage_cache[agent_name]
+            if now - cached_time < self.cache_ttl_seconds:
+                return cached_usage
+
+        # Take a new snapshot
+        usage = ResourceUsage.snapshot()
+        self._usage_cache[agent_name] = (usage, now)
+        return usage
+
+    def is_exceeding_limits(
+        self, agent_name: str, max_cpu_percent: Optional[float], max_memory_mb: Optional[int]
+    ) -> tuple[bool, Optional[str]]:
+        """Check if an agent is exceeding resource limits.
+
+        Args:
+            agent_name: Name of the agent
+            max_cpu_percent: Maximum CPU percentage (None = no limit)
+            max_memory_mb: Maximum memory in MB (None = no limit)
+
+        Returns:
+            Tuple of (is_exceeding, reason)
+        """
+        usage = self.get_agent_usage(agent_name)
+        if usage is None:
+            return False, None
+
+        reasons = []
+        if max_cpu_percent is not None and usage.cpu_percent > max_cpu_percent:
+            reasons.append(
+                f"CPU {usage.cpu_percent:.1f}% > {max_cpu_percent:.1f}%"
+            )
+
+        if max_memory_mb is not None and usage.memory_mb > max_memory_mb:
+            reasons.append(
+                f"Memory {usage.memory_mb:.1f}MB > {max_memory_mb}MB"
+            )
+
+        if reasons:
+            return True, "; ".join(reasons)
+        return False, None
+
+    def is_below_resume_threshold(
+        self,
+        agent_name: str,
+        max_cpu_percent: Optional[float],
+        max_memory_mb: Optional[int],
+        threshold_percent: float = 0.8,
+    ) -> bool:
+        """Check if agent resource usage is below resume threshold.
+
+        Args:
+            agent_name: Name of the agent
+            max_cpu_percent: Maximum CPU percentage
+            max_memory_mb: Maximum memory in MB
+            threshold_percent: Threshold as fraction of limit (default 0.8 = 80%)
+
+        Returns:
+            True if below threshold for all configured limits
+        """
+        usage = self.get_agent_usage(agent_name, force_refresh=True)
+        if usage is None:
+            return True  # If not active, consider it safe to resume
+
+        # Check each limit with threshold
+        if max_cpu_percent is not None:
+            if usage.cpu_percent > max_cpu_percent * threshold_percent:
+                return False
+
+        if max_memory_mb is not None:
+            if usage.memory_mb > max_memory_mb * threshold_percent:
+                return False
+
+        return True
+
+
 class PerformanceOptimizer:
     """Optimize performance based on monitoring data."""
 

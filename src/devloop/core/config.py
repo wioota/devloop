@@ -8,6 +8,49 @@ from dataclasses import dataclass
 
 
 @dataclass
+class ResourceLimitConfig:
+    """Configuration for agent resource limits.
+
+    Resource Limits:
+    - max_cpu_percent: Maximum CPU percentage per agent (0-100, or None for unlimited)
+    - max_memory_mb: Maximum memory in MB per agent (or None for unlimited)
+    - check_interval_seconds: How often to check resource usage (default: 10s)
+    - enforcement_action: What to do when limits exceeded ("pause" or "warn")
+    - resume_threshold_percent: Percentage below limit to resume (default: 80%)
+    """
+
+    max_cpu_percent: Optional[float] = None
+    max_memory_mb: Optional[int] = None
+    check_interval_seconds: int = 10
+    enforcement_action: str = "pause"
+    resume_threshold_percent: float = 0.8
+
+    def __post_init__(self):
+        if self.max_cpu_percent is not None and (
+            self.max_cpu_percent <= 0 or self.max_cpu_percent > 100
+        ):
+            raise ValueError(
+                f"max_cpu_percent must be between 0 and 100, got {self.max_cpu_percent}"
+            )
+        if self.max_memory_mb is not None and self.max_memory_mb <= 0:
+            raise ValueError(
+                f"max_memory_mb must be positive, got {self.max_memory_mb}"
+            )
+        if self.check_interval_seconds <= 0:
+            raise ValueError(
+                f"check_interval_seconds must be positive, got {self.check_interval_seconds}"
+            )
+        if self.enforcement_action not in ["pause", "warn"]:
+            raise ValueError(
+                f"enforcement_action must be 'pause' or 'warn', got {self.enforcement_action}"
+            )
+        if not (0 < self.resume_threshold_percent < 1):
+            raise ValueError(
+                f"resume_threshold_percent must be between 0 and 1, got {self.resume_threshold_percent}"
+            )
+
+
+@dataclass
 class AutonomousFixesConfig:
     """Configuration for autonomous fix application.
 
@@ -39,6 +82,7 @@ class GlobalConfig:
     context_store_enabled: bool = True
     context_store_path: str = ".devloop/context"
     autonomous_fixes: Optional[AutonomousFixesConfig] = None
+    resource_limits: Optional[ResourceLimitConfig] = None
 
     def __post_init__(self):
         if self.mode not in ["report-only", "active"]:
@@ -47,6 +91,8 @@ class GlobalConfig:
             raise ValueError(f"Invalid notification_level: {self.notification_level}")
         if self.autonomous_fixes is None:
             self.autonomous_fixes = AutonomousFixesConfig()
+        if self.resource_limits is None:
+            self.resource_limits = ResourceLimitConfig()
 
 
 class Config:
@@ -82,6 +128,21 @@ class Config:
             opt_in=autonomous_fixes_config.get("optIn", False),
         )
 
+        resource_limits_config = global_config.get("resourceLimits", {})
+        resource_limits = ResourceLimitConfig(
+            max_cpu_percent=resource_limits_config.get("maxCpu"),
+            max_memory_mb=resource_limits_config.get("maxMemory"),
+            check_interval_seconds=resource_limits_config.get(
+                "checkIntervalSeconds", 10
+            ),
+            enforcement_action=resource_limits_config.get(
+                "enforcementAction", "pause"
+            ),
+            resume_threshold_percent=resource_limits_config.get(
+                "resumeThresholdPercent", 0.8
+            ),
+        )
+
         return GlobalConfig(
             mode=global_config.get("mode", "report-only"),
             max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
@@ -93,6 +154,7 @@ class Config:
                 "path", ".devloop/context"
             ),
             autonomous_fixes=autonomous_fixes,
+            resource_limits=resource_limits,
         )
 
     @staticmethod
@@ -269,7 +331,13 @@ class Config:
                 "mode": "report-only",
                 "maxConcurrentAgents": 5,
                 "notificationLevel": "summary",
-                "resourceLimits": {},
+                "resourceLimits": {
+                    "maxCpu": 50,
+                    "maxMemory": 500,
+                    "checkIntervalSeconds": 10,
+                    "enforcementAction": "pause",
+                    "resumeThresholdPercent": 0.8,
+                },
                 "logging": {},
                 "contextStore": {"enabled": True, "path": ".devloop/context"},
                 "autonomousFixes": {"enabled": True, "safetyLevel": "safe_only"},
@@ -304,6 +372,21 @@ class ConfigWrapper:
             safety_level=autonomous_fixes_config.get("safetyLevel", "safe_only"),
         )
 
+        resource_limits_config = global_config.get("resourceLimits", {})
+        resource_limits = ResourceLimitConfig(
+            max_cpu_percent=resource_limits_config.get("maxCpu"),
+            max_memory_mb=resource_limits_config.get("maxMemory"),
+            check_interval_seconds=resource_limits_config.get(
+                "checkIntervalSeconds", 10
+            ),
+            enforcement_action=resource_limits_config.get(
+                "enforcementAction", "pause"
+            ),
+            resume_threshold_percent=resource_limits_config.get(
+                "resumeThresholdPercent", 0.8
+            ),
+        )
+
         return GlobalConfig(
             mode=global_config.get("mode", "report-only"),
             max_concurrent_agents=global_config.get("maxConcurrentAgents", 5),
@@ -315,6 +398,7 @@ class ConfigWrapper:
                 "path", ".devloop/context"
             ),
             autonomous_fixes=autonomous_fixes,
+            resource_limits=resource_limits,
         )
 
     def agents(self):

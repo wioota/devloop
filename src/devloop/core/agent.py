@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from .event import Event, EventBus
 from .feedback import FeedbackAPI
-from .performance import PerformanceMonitor
+from .performance import AgentResourceTracker, PerformanceMonitor
 
 
 @dataclass
@@ -79,12 +79,14 @@ class Agent(ABC):
         event_bus: EventBus,
         feedback_api: Optional[FeedbackAPI] = None,
         performance_monitor: Optional[PerformanceMonitor] = None,
+        resource_tracker: Optional[AgentResourceTracker] = None,
     ):
         self.name = name
         self.triggers = triggers
         self.event_bus = event_bus
         self.feedback_api = feedback_api
         self.performance_monitor = performance_monitor
+        self.resource_tracker = resource_tracker
         self.enabled = True
         self.logger = logging.getLogger(f"agent.{name}")
         self._running = False
@@ -139,21 +141,30 @@ class Agent(ABC):
             try:
                 operation_name = f"agent.{self.name}.handle"
 
-                if self.performance_monitor:
-                    async with self.performance_monitor.monitor_operation(
-                        operation_name,
-                        metadata={"event_type": event.type, "agent_name": self.name},
-                    ) as metrics:
-                        result = await self.handle(event)
-                        metrics.complete(result.success, result.error)
+                # Mark agent as active for resource tracking
+                if self.resource_tracker:
+                    self.resource_tracker.mark_agent_active(self.name)
 
-                        # Update result duration from metrics
-                        if metrics.duration:
-                            result.duration = metrics.duration
-                else:
-                    start_time = time.time()
-                    result = await self.handle(event)
-                    result.duration = time.time() - start_time
+                try:
+                    if self.performance_monitor:
+                        async with self.performance_monitor.monitor_operation(
+                            operation_name,
+                            metadata={"event_type": event.type, "agent_name": self.name},
+                        ) as metrics:
+                            result = await self.handle(event)
+                            metrics.complete(result.success, result.error)
+
+                            # Update result duration from metrics
+                            if metrics.duration:
+                                result.duration = metrics.duration
+                    else:
+                        start_time = time.time()
+                        result = await self.handle(event)
+                        result.duration = time.time() - start_time
+                finally:
+                    # Mark agent as inactive after handling
+                    if self.resource_tracker:
+                        self.resource_tracker.mark_agent_inactive(self.name)
 
                 # Update performance store if available
                 if self.feedback_api:

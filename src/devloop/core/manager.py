@@ -6,10 +6,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from devloop.core.agent import Agent
+from devloop.core.config import ResourceLimitConfig
 from devloop.core.context_store import context_store
-from devloop.core.event import EventBus
+from devloop.core.event import Event, EventBus
 from devloop.core.feedback import FeedbackAPI, FeedbackStore
-from devloop.core.performance import PerformanceMonitor
+from devloop.core.performance import AgentResourceTracker, PerformanceMonitor
 
 
 class AgentManager:
@@ -21,16 +22,21 @@ class AgentManager:
         project_dir: Optional[Path] = None,
         enable_feedback: bool = True,
         enable_performance: bool = True,
+        resource_limits: Optional[ResourceLimitConfig] = None,
     ):
         self.event_bus = event_bus
         self.agents: Dict[str, Agent] = {}
         self.logger = logging.getLogger("agent_manager")
         self._paused_agents: set[str] = set()
+        self._resource_paused_agents: set[str] = set()  # Agents paused due to resource limits
+        self._enforcement_task: Optional[asyncio.Task] = None
 
         # Initialize feedback and performance systems
         self.project_dir = project_dir or Path.cwd()
         self.feedback_api = None
         self.performance_monitor = None
+        self.resource_tracker = None
+        self.resource_limits = resource_limits or ResourceLimitConfig()
 
         if enable_feedback:
             feedback_storage = self.project_dir / ".devloop" / "feedback"
@@ -41,6 +47,9 @@ class AgentManager:
             performance_storage = self.project_dir / ".devloop" / "performance"
             self.performance_monitor = PerformanceMonitor(performance_storage)
 
+        # Always create resource tracker for monitoring
+        self.resource_tracker = AgentResourceTracker()
+
     def register(self, agent: Agent) -> None:
         """Register an agent."""
         # Inject feedback and performance systems if not already set
@@ -48,6 +57,8 @@ class AgentManager:
             agent.feedback_api = self.feedback_api
         if hasattr(agent, "performance_monitor") and agent.performance_monitor is None:
             agent.performance_monitor = self.performance_monitor
+        if hasattr(agent, "resource_tracker") and agent.resource_tracker is None:
+            agent.resource_tracker = self.resource_tracker
 
         self.agents[agent.name] = agent
         self.logger.info(f"Registered agent: {agent.name}")
@@ -64,7 +75,7 @@ class AgentManager:
             **kwargs,
         }
 
-        # Add optional feedback/performance parameters if the agent class supports them
+        # Add optional feedback/performance/resource parameters if the agent class supports them
         import inspect
 
         sig = inspect.signature(agent_class.__init__)
@@ -72,6 +83,8 @@ class AgentManager:
             agent_kwargs["feedback_api"] = self.feedback_api
         if "performance_monitor" in sig.parameters:
             agent_kwargs["performance_monitor"] = self.performance_monitor
+        if "resource_tracker" in sig.parameters:
+            agent_kwargs["resource_tracker"] = self.resource_tracker
 
         agent = agent_class(**agent_kwargs)
         self.register(agent)
@@ -86,6 +99,13 @@ class AgentManager:
             self._listen_for_agent_completion(queue)
         )
 
+        # Start resource limit enforcement if configured
+        if (
+            self.resource_limits.max_cpu_percent is not None
+            or self.resource_limits.max_memory_mb is not None
+        ):
+            self._enforcement_task = asyncio.create_task(self._enforce_resource_limits())
+
         tasks = [agent.start() for agent in self.agents.values() if agent.enabled]
         await asyncio.gather(*tasks)
         self.logger.info(
@@ -95,6 +115,8 @@ class AgentManager:
     async def stop_all(self) -> None:
         """Stop all agents."""
         self.completion_listener_task.cancel()
+        if self._enforcement_task:
+            self._enforcement_task.cancel()
         tasks = [agent.stop() for agent in self.agents.values()]
         await asyncio.gather(*tasks)
         self.logger.info("Stopped all agents")
@@ -217,3 +239,93 @@ class AgentManager:
                 self.logger.error(f"Failed to write consolidated results: {e}")
             finally:
                 queue.task_done()
+
+    async def _enforce_resource_limits(self):
+        """Background task to enforce resource limits on agents."""
+        if (
+            self.resource_limits.max_cpu_percent is None
+            and self.resource_limits.max_memory_mb is None
+        ):
+            # No limits configured, skip enforcement
+            return
+
+        self.logger.info(
+            f"Resource limit enforcement started (CPU: {self.resource_limits.max_cpu_percent}%, "
+            f"Memory: {self.resource_limits.max_memory_mb}MB, "
+            f"Interval: {self.resource_limits.check_interval_seconds}s)"
+        )
+
+        while True:
+            try:
+                await asyncio.sleep(self.resource_limits.check_interval_seconds)
+
+                for agent_name, agent in self.agents.items():
+                    if not agent.enabled or not agent._running:
+                        continue
+
+                    # Check if agent is exceeding limits
+                    is_exceeding, reason = self.resource_tracker.is_exceeding_limits(
+                        agent_name,
+                        self.resource_limits.max_cpu_percent,
+                        self.resource_limits.max_memory_mb,
+                    )
+
+                    if is_exceeding:
+                        # Agent is exceeding limits
+                        if agent_name not in self._resource_paused_agents:
+                            # First time exceeding, take action
+                            if self.resource_limits.enforcement_action == "pause":
+                                agent.enabled = False
+                                self._resource_paused_agents.add(agent_name)
+                                self.logger.warning(
+                                    f"Paused agent '{agent_name}' due to resource limits: {reason}"
+                                )
+
+                                # Emit event for monitoring
+                                await self.event_bus.emit(
+                                    Event(
+                                        type="agent:resource_limit_exceeded",
+                                        payload={
+                                            "agent_name": agent_name,
+                                            "reason": reason,
+                                            "action": "paused",
+                                        },
+                                        source="agent_manager",
+                                    )
+                                )
+                            else:
+                                # Warn only
+                                self.logger.warning(
+                                    f"Agent '{agent_name}' exceeding resource limits: {reason}"
+                                )
+
+                    elif agent_name in self._resource_paused_agents:
+                        # Agent was paused, check if we can resume
+                        can_resume = self.resource_tracker.is_below_resume_threshold(
+                            agent_name,
+                            self.resource_limits.max_cpu_percent,
+                            self.resource_limits.max_memory_mb,
+                            self.resource_limits.resume_threshold_percent,
+                        )
+
+                        if can_resume:
+                            agent.enabled = True
+                            self._resource_paused_agents.remove(agent_name)
+                            self.logger.info(
+                                f"Resumed agent '{agent_name}' - resource usage below threshold"
+                            )
+
+                            # Emit event for monitoring
+                            await self.event_bus.emit(
+                                Event(
+                                    type="agent:resource_limit_resumed",
+                                    payload={"agent_name": agent_name},
+                                    source="agent_manager",
+                                )
+                            )
+
+            except asyncio.CancelledError:
+                self.logger.info("Resource limit enforcement stopped")
+                break
+            except Exception as e:
+                self.logger.error(f"Error in resource limit enforcement: {e}", exc_info=True)

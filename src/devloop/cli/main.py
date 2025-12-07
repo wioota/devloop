@@ -289,8 +289,13 @@ async def watch_async(path: Path, config_path: Path | None):
     console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
     console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
 
-    # Create agent manager with project directory
-    agent_manager = AgentManager(event_bus, project_dir=path)
+    # Get global config for resource limits
+    global_config = config.get_global_config()
+
+    # Create agent manager with project directory and resource limits
+    agent_manager = AgentManager(
+        event_bus, project_dir=path, resource_limits=global_config.resource_limits
+    )
 
     # Create filesystem collector
     fs_config = {"watch_paths": [str(path)]}
