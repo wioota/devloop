@@ -135,9 +135,7 @@ class Config:
             check_interval_seconds=resource_limits_config.get(
                 "checkIntervalSeconds", 10
             ),
-            enforcement_action=resource_limits_config.get(
-                "enforcementAction", "pause"
-            ),
+            enforcement_action=resource_limits_config.get("enforcementAction", "pause"),
             resume_threshold_percent=resource_limits_config.get(
                 "resumeThresholdPercent", 0.8
             ),
@@ -379,9 +377,7 @@ class ConfigWrapper:
             check_interval_seconds=resource_limits_config.get(
                 "checkIntervalSeconds", 10
             ),
-            enforcement_action=resource_limits_config.get(
-                "enforcementAction", "pause"
-            ),
+            enforcement_action=resource_limits_config.get("enforcementAction", "pause"),
             resume_threshold_percent=resource_limits_config.get(
                 "resumeThresholdPercent", 0.8
             ),

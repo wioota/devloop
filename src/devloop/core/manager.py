@@ -28,7 +28,9 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.logger = logging.getLogger("agent_manager")
         self._paused_agents: set[str] = set()
-        self._resource_paused_agents: set[str] = set()  # Agents paused due to resource limits
+        self._resource_paused_agents: set[
+            str
+        ] = set()  # Agents paused due to resource limits
         self._enforcement_task: Optional[asyncio.Task] = None
 
         # Initialize feedback and performance systems
@@ -104,7 +106,9 @@ class AgentManager:
             self.resource_limits.max_cpu_percent is not None
             or self.resource_limits.max_memory_mb is not None
         ):
-            self._enforcement_task = asyncio.create_task(self._enforce_resource_limits())
+            self._enforcement_task = asyncio.create_task(
+                self._enforce_resource_limits()
+            )
 
         tasks = [agent.start() for agent in self.agents.values() if agent.enabled]
         await asyncio.gather(*tasks)
@@ -328,4 +332,6 @@ class AgentManager:
                 self.logger.info("Resource limit enforcement stopped")
                 break
             except Exception as e:
-                self.logger.error(f"Error in resource limit enforcement: {e}", exc_info=True)
+                self.logger.error(
+                    f"Error in resource limit enforcement: {e}", exc_info=True
+                )

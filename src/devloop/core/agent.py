@@ -149,7 +149,10 @@ class Agent(ABC):
                     if self.performance_monitor:
                         async with self.performance_monitor.monitor_operation(
                             operation_name,
-                            metadata={"event_type": event.type, "agent_name": self.name},
+                            metadata={
+                                "event_type": event.type,
+                                "agent_name": self.name,
+                            },
                         ) as metrics:
                             result = await self.handle(event)
                             metrics.complete(result.success, result.error)

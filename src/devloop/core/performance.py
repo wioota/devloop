@@ -427,7 +427,10 @@ class AgentResourceTracker:
         return usage
 
     def is_exceeding_limits(
-        self, agent_name: str, max_cpu_percent: Optional[float], max_memory_mb: Optional[int]
+        self,
+        agent_name: str,
+        max_cpu_percent: Optional[float],
+        max_memory_mb: Optional[int],
     ) -> tuple[bool, Optional[str]]:
         """Check if an agent is exceeding resource limits.
 
@@ -445,14 +448,10 @@ class AgentResourceTracker:
 
         reasons = []
         if max_cpu_percent is not None and usage.cpu_percent > max_cpu_percent:
-            reasons.append(
-                f"CPU {usage.cpu_percent:.1f}% > {max_cpu_percent:.1f}%"
-            )
+            reasons.append(f"CPU {usage.cpu_percent:.1f}% > {max_cpu_percent:.1f}%")
 
         if max_memory_mb is not None and usage.memory_mb > max_memory_mb:
-            reasons.append(
-                f"Memory {usage.memory_mb:.1f}MB > {max_memory_mb}MB"
-            )
+            reasons.append(f"Memory {usage.memory_mb:.1f}MB > {max_memory_mb}MB")
 
         if reasons:
             return True, "; ".join(reasons)
