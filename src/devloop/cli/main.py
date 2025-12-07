@@ -69,7 +69,7 @@ def amp_context():
     from pathlib import Path
 
     # Try to read the context index
-    context_dir = Path(".devloop/context")
+    context_dir = Path.cwd() / ".devloop/context"
     index_file = context_dir / "index.json"
 
     if index_file.exists():
