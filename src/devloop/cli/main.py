@@ -563,7 +563,7 @@ This project uses background agents and Beads for task management.
                 commands_copied.append(template_file.stem)
 
         if commands_copied:
-            console.print(f"\n[green]✓[/green] Created Claude Code slash commands:")
+            console.print("\n[green]✓[/green] Created Claude Code slash commands:")
             for cmd in commands_copied:
                 console.print(f"  • /{cmd}")
 

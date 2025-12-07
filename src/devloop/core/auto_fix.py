@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from devloop.core.backup_manager import BackupManager, get_backup_manager
+from devloop.core.backup_manager import get_backup_manager
 from devloop.core.config import AutonomousFixesConfig, config
 from devloop.core.context_store import Finding, context_store
 

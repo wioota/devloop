@@ -204,12 +204,10 @@ class BackupManager:
             backup_file = backup_entry_dir / "original"
 
             # Verify file hasn't been modified by something else
-            if verify_checksum and file_path.exists():
-                current_checksum = self._compute_checksum(file_path)
-                # Note: We don't check against original checksum because the file
-                # has been modified by the fix. Instead, we could store the
-                # post-fix checksum, but for now we skip this check.
-                # This is a TODO for enhanced safety.
+            # Note: We don't check against original checksum because the file
+            # has been modified by the fix. Instead, we could store the
+            # post-fix checksum, but for now we skip this check.
+            # This is a TODO for enhanced safety.
 
             # Restore backup
             if backup_file.exists():
