@@ -54,7 +54,7 @@ class BackupManager:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             return result.returncode == 0
         except Exception as e:
@@ -74,7 +74,7 @@ class BackupManager:
         file_path: Path,
         fix_type: str,
         description: str,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Optional[str]:
         """Create a backup before modifying a file.
 
@@ -119,8 +119,10 @@ class BackupManager:
                 "fix_type": fix_type,
                 "description": description,
                 "checksum": checksum,
-                "git_commit": self._get_current_git_commit() if self._git_available else None,
-                "metadata": metadata or {}
+                "git_commit": self._get_current_git_commit()
+                if self._git_available
+                else None,
+                "metadata": metadata or {},
             }
 
             metadata_file = backup_entry_dir / "metadata.json"
@@ -140,7 +142,9 @@ class BackupManager:
         """Generate unique backup ID."""
         # Use timestamp (including microseconds) + file path hash for uniqueness
         # MD5 used only for non-cryptographic ID generation, not security
-        path_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()[:8]
+        path_hash = hashlib.md5(
+            str(file_path).encode(), usedforsecurity=False
+        ).hexdigest()[:8]
         dt = datetime.fromisoformat(timestamp)
         time_str = dt.strftime("%Y%m%d_%H%M%S_%f")  # Include microseconds
         return f"{time_str}_{path_hash}"
@@ -153,7 +157,7 @@ class BackupManager:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -175,11 +179,7 @@ class BackupManager:
         except Exception as e:
             logger.error(f"Failed to update change log: {e}")
 
-    def rollback(
-        self,
-        backup_id: str,
-        verify_checksum: bool = True
-    ) -> bool:
+    def rollback(self, backup_id: str, verify_checksum: bool = True) -> bool:
         """Rollback a specific backup.
 
         Args:
@@ -261,7 +261,8 @@ class BackupManager:
             # Filter by time if specified
             if since:
                 changes = [
-                    c for c in changes
+                    c
+                    for c in changes
                     if datetime.fromisoformat(c["timestamp"]) >= since
                 ]
 
@@ -280,9 +281,7 @@ class BackupManager:
             return []
 
     def get_change_history(
-        self,
-        limit: Optional[int] = None,
-        include_rolled_back: bool = False
+        self, limit: Optional[int] = None, include_rolled_back: bool = False
     ) -> List[Dict]:
         """Get change history.
 
@@ -330,7 +329,7 @@ class BackupManager:
                 ["git", "rev-parse", "--verify", branch_name],
                 cwd=self.project_root,
                 capture_output=True,
-                timeout=5
+                timeout=5,
             )
 
             if check_result.returncode == 0:
@@ -343,7 +342,7 @@ class BackupManager:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
 
             if create_result.returncode == 0:
@@ -377,7 +376,9 @@ class BackupManager:
                 metadata_file = backup_dir / "metadata.json"
                 if metadata_file.exists():
                     metadata = json.loads(metadata_file.read_text())
-                    timestamp = datetime.fromisoformat(metadata["timestamp"]).timestamp()
+                    timestamp = datetime.fromisoformat(
+                        metadata["timestamp"]
+                    ).timestamp()
 
                     if timestamp < cutoff:
                         shutil.rmtree(backup_dir)

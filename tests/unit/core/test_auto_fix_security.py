@@ -33,25 +33,23 @@ def auto_fix_instance(temp_project):
 @pytest.fixture
 def safe_config():
     """Create safe autonomous fixes configuration."""
-    return AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    return AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
 
 @pytest.fixture
 def unsafe_config():
     """Create configuration without opt-in."""
-    return AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=False
-    )
+    return AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=False)
 
 
-def make_finding(file_path: str, message: str = "test", agent: str = "formatter",
-                 severity: str = "info", auto_fixable: bool = True, context: dict = None) -> Finding:
+def make_finding(
+    file_path: str,
+    message: str = "test",
+    agent: str = "formatter",
+    severity: str = "info",
+    auto_fixable: bool = True,
+    context: dict = None,
+) -> Finding:
     """Helper to create test findings."""
     return Finding(
         id=f"test-{hash(message) % 1000}",
@@ -61,7 +59,7 @@ def make_finding(file_path: str, message: str = "test", agent: str = "formatter"
         message=message,
         severity=severity,
         auto_fixable=auto_fixable,
-        context=context or {}
+        context=context or {},
     )
 
 
@@ -70,19 +68,17 @@ def test_requires_explicit_opt_in(auto_fix_instance, temp_project):
     test_file = temp_project / "test.py"
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
     unsafe_config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=False  # Not opted in
+        enabled=True, safety_level="safe_only", opt_in=False  # Not opted in
     )
 
     # Should not apply fix without opt-in
-    with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+    with patch.object(
+        auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+    ) as mock_execute:
         result = asyncio.run(
             auto_fix_instance._apply_single_fix("formatter", finding, unsafe_config)
         )
@@ -98,19 +94,15 @@ def test_creates_backup_before_fix(auto_fix_instance, temp_project):
     original_content = test_file.read_text()
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
     # Mock _execute_fix to always succeed
-    with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+    with patch.object(
+        auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+    ) as mock_execute:
         mock_execute.return_value = True
 
         result = asyncio.run(
@@ -131,22 +123,20 @@ def test_aborts_fix_if_backup_fails(auto_fix_instance, temp_project):
     test_file = temp_project / "test.py"
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
     # Mock backup creation to fail
-    with patch.object(auto_fix_instance._backup_manager, 'create_backup') as mock_backup:
+    with patch.object(
+        auto_fix_instance._backup_manager, "create_backup"
+    ) as mock_backup:
         mock_backup.return_value = None  # Backup failed
 
-        with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+        with patch.object(
+            auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+        ) as mock_execute:
             result = asyncio.run(
                 auto_fix_instance._apply_single_fix("formatter", finding, config)
             )
@@ -163,16 +153,10 @@ def test_rollback_functionality(auto_fix_instance, temp_project):
     original_content = test_file.read_text()
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
     # Apply fix (mocked to modify file)
     async def mock_execute_fix(agent_type, finding):
@@ -180,7 +164,7 @@ def test_rollback_functionality(auto_fix_instance, temp_project):
         test_file.write_text("modified content\n")
         return True
 
-    with patch.object(auto_fix_instance, '_execute_fix', new=mock_execute_fix):
+    with patch.object(auto_fix_instance, "_execute_fix", new=mock_execute_fix):
         result = asyncio.run(
             auto_fix_instance._apply_single_fix("formatter", finding, config)
         )
@@ -201,23 +185,23 @@ def test_safety_level_filtering(auto_fix_instance):
     """Test that safety level filtering works correctly."""
     # Test safe_only level
     finding_safe = make_finding(
-        file_path="test.py",
-        message="would format with black",
-        agent="formatter"
+        file_path="test.py", message="would format with black", agent="formatter"
     )
 
     finding_risky = make_finding(
         file_path="test.py",
         message="unused variable x",
         severity="warning",
-        agent="linter"
+        agent="linter",
     )
 
     # safe_only should allow formatting
     assert auto_fix_instance._is_safe_for_config("formatter", finding_safe, "safe_only")
 
     # safe_only should not allow removing unused variables
-    assert not auto_fix_instance._is_safe_for_config("linter", finding_risky, "safe_only")
+    assert not auto_fix_instance._is_safe_for_config(
+        "linter", finding_risky, "safe_only"
+    )
 
 
 @pytest.mark.skip(reason="Integration test needs refactoring - TODO follow-up")
@@ -226,18 +210,14 @@ def test_prevents_duplicate_fixes(auto_fix_instance, temp_project):
     test_file = temp_project / "test.py"
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
-    with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+    with patch.object(
+        auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+    ) as mock_execute:
         mock_execute.return_value = True
 
         # Apply fix first time
@@ -262,18 +242,14 @@ def test_tracks_applied_fixes(auto_fix_instance, temp_project):
     test_file = temp_project / "test.py"
 
     finding = make_finding(
-        file_path=str(test_file),
-        message="would format with black",
-        agent="formatter"
+        file_path=str(test_file), message="would format with black", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
-    with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+    with patch.object(
+        auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+    ) as mock_execute:
         mock_execute.return_value = True
 
         result = asyncio.run(
@@ -300,22 +276,14 @@ def test_rollback_all_session(auto_fix_instance, temp_project):
     test_file2.write_text("original2\n")
 
     finding1 = make_finding(
-        file_path=str(test_file1),
-        message="format test1",
-        agent="formatter"
+        file_path=str(test_file1), message="format test1", agent="formatter"
     )
 
     finding2 = make_finding(
-        file_path=str(test_file2),
-        message="format test2",
-        agent="formatter"
+        file_path=str(test_file2), message="format test2", agent="formatter"
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
     # Apply fixes (mocked to modify files)
     async def mock_execute_fix(agent_type, finding):
@@ -323,7 +291,7 @@ def test_rollback_all_session(auto_fix_instance, temp_project):
         file_path.write_text(f"modified {file_path.name}\n")
         return True
 
-    with patch.object(auto_fix_instance, '_execute_fix', new=mock_execute_fix):
+    with patch.object(auto_fix_instance, "_execute_fix", new=mock_execute_fix):
         asyncio.run(auto_fix_instance._apply_single_fix("formatter", finding1, config))
         asyncio.run(auto_fix_instance._apply_single_fix("formatter", finding2, config))
 
@@ -349,7 +317,7 @@ def test_rejects_error_findings(auto_fix_instance):
         file_path="test.py",
         message="syntax error in file",
         severity="error",
-        agent="linter"
+        agent="linter",
     )
 
     # Should be rejected regardless of safety level
@@ -367,16 +335,14 @@ def test_metadata_in_backup(auto_fix_instance, temp_project):
         file_path=str(test_file),
         message="would format with black",
         agent="formatter",
-        context={"formatter": "black"}
+        context={"formatter": "black"},
     )
 
-    config = AutonomousFixesConfig(
-        enabled=True,
-        safety_level="safe_only",
-        opt_in=True
-    )
+    config = AutonomousFixesConfig(enabled=True, safety_level="safe_only", opt_in=True)
 
-    with patch.object(auto_fix_instance, '_execute_fix', new_callable=AsyncMock) as mock_execute:
+    with patch.object(
+        auto_fix_instance, "_execute_fix", new_callable=AsyncMock
+    ) as mock_execute:
         mock_execute.return_value = True
 
         asyncio.run(auto_fix_instance._apply_single_fix("formatter", finding, config))
@@ -393,4 +359,4 @@ def test_metadata_in_backup(auto_fix_instance, temp_project):
 
 
 # Integration test with pytest-asyncio
-pytest_plugins = ('pytest_asyncio',)
+pytest_plugins = ("pytest_asyncio",)

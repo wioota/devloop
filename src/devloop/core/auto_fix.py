@@ -27,7 +27,9 @@ class AutoFix:
         self._backup_manager = get_backup_manager(project_root or Path.cwd())
         self._applied_fixes: List[Dict] = []  # Track all applied fixes in session
 
-    async def apply_safe_fixes(self, require_confirmation: bool = True) -> Dict[str, int]:
+    async def apply_safe_fixes(
+        self, require_confirmation: bool = True
+    ) -> Dict[str, int]:
         """Apply all safe fixes from agent findings.
 
         Args:
@@ -118,8 +120,8 @@ class AutoFix:
                     "finding_id": finding.id,
                     "severity": finding.severity,
                     "safety_level": autonomous_fixes_config.safety_level,
-                    "context": finding.context
-                }
+                    "context": finding.context,
+                },
             )
 
             if not backup_id:
@@ -132,13 +134,15 @@ class AutoFix:
         success = await self._execute_fix(agent_type, finding)
         if success:
             self._fix_history.add(finding.id)
-            self._applied_fixes.append({
-                "finding_id": finding.id,
-                "agent_type": agent_type,
-                "file": file_path,
-                "backup_id": backup_id if file_path else None,
-                "message": finding.message
-            })
+            self._applied_fixes.append(
+                {
+                    "finding_id": finding.id,
+                    "agent_type": agent_type,
+                    "file": file_path,
+                    "backup_id": backup_id if file_path else None,
+                    "message": finding.message,
+                }
+            )
             logger.info(f"Applied {agent_type} fix: {finding.message}")
 
         return success
@@ -283,7 +287,6 @@ class AutoFix:
         """Fix whitespace issues."""
         # Could use autopep8 or similar
         return False
-
 
     def rollback_last(self) -> bool:
         """Rollback the last applied fix.

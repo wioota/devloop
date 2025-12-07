@@ -26,18 +26,18 @@ def temp_project():
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"],
             cwd=project_root,
-            capture_output=True
+            capture_output=True,
         )
         subprocess.run(
             ["git", "config", "user.name", "Test User"],
             cwd=project_root,
-            capture_output=True
+            capture_output=True,
         )
         subprocess.run(["git", "add", "."], cwd=project_root, capture_output=True)
         subprocess.run(
             ["git", "commit", "-m", "Initial commit"],
             cwd=project_root,
-            capture_output=True
+            capture_output=True,
         )
 
         yield project_root
@@ -69,7 +69,7 @@ def test_create_backup(backup_manager, temp_project):
         file_path=test_file,
         fix_type="formatter",
         description="Format code with black",
-        metadata={"tool": "black"}
+        metadata={"tool": "black"},
     )
 
     assert backup_id is not None
@@ -101,9 +101,7 @@ def test_create_backup_nonexistent_file(backup_manager, temp_project):
     nonexistent = temp_project / "nonexistent.py"
 
     backup_id = backup_manager.create_backup(
-        file_path=nonexistent,
-        fix_type="formatter",
-        description="Test"
+        file_path=nonexistent, fix_type="formatter", description="Test"
     )
 
     assert backup_id is None
@@ -116,9 +114,7 @@ def test_rollback(backup_manager, temp_project):
 
     # Create backup
     backup_id = backup_manager.create_backup(
-        file_path=test_file,
-        fix_type="formatter",
-        description="Format code"
+        file_path=test_file, fix_type="formatter", description="Format code"
     )
 
     # Modify file
@@ -150,12 +146,8 @@ def test_change_log(backup_manager, temp_project):
     test_file = temp_project / "test.py"
 
     # Create multiple backups
-    backup_id1 = backup_manager.create_backup(
-        test_file, "formatter", "First change"
-    )
-    backup_id2 = backup_manager.create_backup(
-        test_file, "linter", "Second change"
-    )
+    backup_id1 = backup_manager.create_backup(test_file, "formatter", "First change")
+    backup_id2 = backup_manager.create_backup(test_file, "linter", "Second change")
 
     # Get change history
     history = backup_manager.get_change_history()
@@ -199,9 +191,7 @@ def test_git_integration(backup_manager, temp_project):
     test_file = temp_project / "test.py"
 
     # Create backup with git info
-    backup_id = backup_manager.create_backup(
-        test_file, "formatter", "Test with git"
-    )
+    backup_id = backup_manager.create_backup(test_file, "formatter", "Test with git")
 
     # Load metadata
     metadata_file = backup_manager.backup_dir / backup_id / "metadata.json"
@@ -223,7 +213,7 @@ def test_create_git_rollback_branch(backup_manager, temp_project):
         ["git", "branch", "--list", "test-rollback-branch"],
         cwd=temp_project,
         capture_output=True,
-        text=True
+        text=True,
     )
     assert "test-rollback-branch" in result.stdout
 
