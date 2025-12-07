@@ -139,7 +139,8 @@ class BackupManager:
     def _generate_backup_id(self, file_path: Path, timestamp: str) -> str:
         """Generate unique backup ID."""
         # Use timestamp (including microseconds) + file path hash for uniqueness
-        path_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
+        # MD5 used only for non-cryptographic ID generation, not security
+        path_hash = hashlib.md5(str(file_path).encode(), usedforsecurity=False).hexdigest()[:8]
         dt = datetime.fromisoformat(timestamp)
         time_str = dt.strftime("%Y%m%d_%H%M%S_%f")  # Include microseconds
         return f"{time_str}_{path_hash}"
