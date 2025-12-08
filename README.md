@@ -3,7 +3,7 @@
 > **Intelligent background agents for development workflow automation** — automate code quality checks, testing, documentation, and more while you code.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests Passing](https://img.shields.io/badge/tests-167%20passing-green.svg)](#testing)
+[![Tests Passing](https://img.shields.io/badge/tests-239%2B%20passing-green.svg)](#testing)
 [![Alpha Release](https://img.shields.io/badge/status-alpha-orange.svg)](#status)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -74,7 +74,7 @@ Try it on a side project first. See results in minutes, not days.
 
 ### What's Working ✅
 
-DevLoop has **production-grade** foundation with 167+ passing tests:
+DevLoop has **production-grade** foundation with 239+ passing tests:
 
 - **Core stability**: Event system, agent coordination, context management - all battle-tested
 - **Code quality**: Black, Ruff, mypy, pytest - works reliably across 1000s of file changes
