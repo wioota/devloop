@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "devloop"
-version = "0.3.1"
+version = "0.3.2"
 description = "Intelligent background agents for development workflow automation"
 authors = ["DevLoop Contributors <devloop@example.com>"]
 license = "MIT"
