@@ -1,3 +1,3 @@
 """DevLoop - Background agents for development workflow automation."""
 
-__version__ = "0.3.1"
+__version__ = "0.3.3"
