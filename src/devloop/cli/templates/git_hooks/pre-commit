@@ -9,16 +9,18 @@
 # 4. Any existing pre-commit.old hook
 #
 
-# Check if pyproject.toml changed but poetry.lock didn't
-if git diff --cached --name-only | grep -q "pyproject.toml"; then
-    if ! git diff --cached --name-only | grep -q "poetry.lock"; then
-        echo "ERROR: pyproject.toml changed but poetry.lock not updated"
-        echo "This will cause CI failure: 'poetry.lock was last generated' error"
-        echo ""
-        echo "Fix: Run 'poetry lock' and stage both files"
-        echo "  poetry lock"
-        echo "  git add poetry.lock"
-        exit 1
+# Check if pyproject.toml changed but poetry.lock didn't (only in Poetry projects)
+if [ -f "poetry.lock" ]; then
+    if git diff --cached --name-only | grep -q "pyproject.toml"; then
+        if ! git diff --cached --name-only | grep -q "poetry.lock"; then
+            echo "ERROR: pyproject.toml changed but poetry.lock not updated"
+            echo "This will cause CI failure: 'poetry.lock was last generated' error"
+            echo ""
+            echo "Fix: Run 'poetry lock' and stage both files"
+            echo "  poetry lock"
+            echo "  git add poetry.lock"
+            exit 1
+        fi
     fi
 fi
 
