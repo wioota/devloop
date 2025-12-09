@@ -80,30 +80,23 @@ git push origin main          # Push to GitHub
 
 ### 4. ✅ Post-Task Hook
 
-**For Amp automation:** Create a post-task hook that Amp calls
+**For Amp automation:** The post-task hook runs comprehensive verification
 
 **Hook script location:** `.agents/hooks/post-task`
 
-```bash
-#!/usr/bin/env bash
+**Features:**
+1. Verifies all work is committed and pushed
+2. Runs code quality checks (same as git pre-commit):
+   - Black formatting validation
+   - Ruff linting checks
+   - mypy type checking
+   - pytest test suite
+3. Extracts DevLoop findings and creates Beads issues
 
-# Post-task verification hook
-# Called by Amp after task completion
-
-set -e
-
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-
-cd "$PROJECT_ROOT"
-
-# Run verification
-.agents/verify-task-complete
-
-# If verification passed, we're done
-echo ""
-echo "✨ Task ready for next phase"
-```
+**How it works:**
+- Blocking checks: commit/push verification (must pass)
+- Non-blocking checks: code quality (warns but doesn't block)
+- Findings extraction: automatically creates Beads issues for critical findings
 
 Register this in Amp workspace config:
 ```json
@@ -113,6 +106,9 @@ Register this in Amp workspace config:
   }
 }
 ```
+
+**Unified Verification:**
+Both Git and Amp use the same unified verification script (`.agents/verify-common-checks`), ensuring identical code quality standards across both workflows.
 
 ### 5. ✅ Claude System Prompt Enhancement
 
@@ -161,6 +157,77 @@ devloop summary recent
 devloop summary today
 devloop summary --agent linter
 ```
+
+---
+
+## Unified Hook System
+
+DevLoop uses a unified verification script that both Git and Amp hooks use, ensuring consistent code quality enforcement across both workflows.
+
+### Architecture
+
+```
+Git Workflow              Amp Workflow
+     |                         |
+     v                         v
+pre-commit            post-task hook
+     |                         |
+     +-------┬─────────────────+
+             |
+             v
+   .agents/verify-common-checks
+       (unified verification)
+       |
+       +-- Poetry lock sync
+       +-- Version consistency  
+       +-- Black formatting
+       +-- Ruff linting
+       +-- mypy type checking
+       +-- pytest tests
+       +-- Beads sync
+       |
+       v
+   Findings Extraction
+   (extract-findings-to-beads)
+       |
+       v
+   Create Beads Issues
+```
+
+### Shared Scripts
+
+**`.agents/verify-common-checks`** - Unified verification logic
+- Used by Git pre-commit hook
+- Used by Amp post-task hook
+- Contains all code quality checks
+- Honors environment flags:
+  - `SKIP_VERSION_CHECK=1` - Skip version validation
+  - `SKIP_LOCK_CHECK=1` - Skip poetry.lock validation
+  - `NO_COLOR=1` - Disable colored output
+
+**`.agents/hooks/extract-findings-to-beads`** - DevLoop findings processing
+- Extracts findings from `.devloop/context/`
+- Creates Beads issues for critical findings
+- Runs after successful task completion (Amp)
+- Runs after CI passes (Git pre-push)
+
+### Differences Between Git and Amp Hooks
+
+| Aspect | Git Hooks | Amp Hooks |
+|--------|-----------|-----------|
+| **Timing** | Before commit/push | After task completion |
+| **Version checks** | Blocking (enforced) | Non-blocking (warnings only) |
+| **Formatting/Linting** | Blocking (enforced) | Non-blocking (warnings only) |
+| **Findings extraction** | After CI passes (pre-push) | After task completes (post-task) |
+| **Beads sync** | Automatic | Via common-checks |
+
+### Why Non-Blocking for Amp
+
+Amp tasks often involve working on multiple areas (docs, code, tests). By making code quality checks non-blocking in post-task:
+- Developers get visibility into quality issues
+- Issues are captured but don't block task completion
+- Encourages iterative improvement rather than perfection
+- Git pre-commit still enforces these before commits
 
 ---
 
