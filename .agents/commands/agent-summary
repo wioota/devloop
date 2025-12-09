@@ -25,7 +25,7 @@ def main():
     scope = sys.argv[1] if len(sys.argv) > 1 else "recent"
     
     # Build devloop command with remaining args
-    cmd = ["poetry", "run", "devloop", "summary", "agent-summary", scope]
+    cmd = ["poetry", "run", "devloop", "summary", "agent", scope]
     
     # Pass through any additional arguments
     for arg in sys.argv[2:]:
