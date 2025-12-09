@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
+from .commands import audit as audit_cmd
 from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
 from .commands import summary as summary_cmd
@@ -41,6 +42,7 @@ app = typer.Typer(
 )
 console = Console()
 
+app.add_typer(audit_cmd.audit, name="audit")
 app.add_typer(summary_cmd.app, name="summary")
 app.add_typer(custom_agents_cmd.app, name="custom")
 app.add_typer(feedback_cmd.app, name="feedback")
