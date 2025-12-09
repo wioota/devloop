@@ -206,6 +206,39 @@ pip install devloop[all-optional]
   - Install: See [Pyodide Installation Guide](./docs/PYODIDE_INSTALLATION.md)
   - Works in POC mode without installation for testing
 
+#### System Dependencies
+
+DevLoop automatically detects and uses several system tools. Install them for full functionality:
+
+**For Pre-Push CI Verification (Optional but Recommended):**
+```bash
+# GitHub CLI (for checking CI status before push)
+# Ubuntu/Debian:
+sudo apt-get install -y gh
+
+# macOS:
+brew install gh
+
+# JSON query tool (required for parsing CI responses)
+# Ubuntu/Debian:
+sudo apt-get install -y jq
+
+# macOS:
+brew install jq
+```
+
+**For Task Management Integration (Optional):**
+```bash
+# Beads task tracking (integrates findings with task queue)
+pip install beads-mcp
+```
+
+**What happens if missing:**
+- `gh` + `jq`: Pre-push CI verification is skipped (but DevLoop still works)
+- `bd`: Pre-push hook won't create task queue issues (but DevLoop still works)
+
+DevLoop will warn you during `devloop init` if any tools are missing and provide installation instructions. You can install them later and they'll be detected automatically.
+
 #### Option 2: From Source
 
 ```bash

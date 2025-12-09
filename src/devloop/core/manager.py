@@ -28,9 +28,9 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {}
         self.logger = logging.getLogger("agent_manager")
         self._paused_agents: set[str] = set()
-        self._resource_paused_agents: set[str] = (
-            set()
-        )  # Agents paused due to resource limits
+        self._resource_paused_agents: set[
+            str
+        ] = set()  # Agents paused due to resource limits
         self._enforcement_task: Optional[asyncio.Task] = None
 
         # Initialize feedback and performance systems

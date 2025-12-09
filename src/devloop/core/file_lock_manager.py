@@ -12,7 +12,7 @@ import logging
 import asyncio
 import time
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Set
+from typing import Any, Dict, Optional, Set, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
@@ -294,7 +294,7 @@ class FileLockManager:
 
         return conflict_msg
 
-    def get_file_status(self, file_path: Path) -> Dict[str, any]:
+    def get_file_status(self, file_path: Path) -> Dict[str, Any]:
         """Get lock and version status for a file.
 
         Args:
@@ -316,7 +316,7 @@ class FileLockManager:
             "version": self._file_versions.get(file_key),
         }
 
-    def get_all_locks(self) -> Dict[str, Dict[str, any]]:
+    def get_all_locks(self) -> Dict[str, Dict[str, Any]]:
         """Get status of all locked files.
 
         Returns:

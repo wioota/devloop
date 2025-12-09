@@ -574,6 +574,12 @@ This project uses background agents and Beads for task management.
     # Install git hooks if this is a git repository
     git_dir = path / ".git"
     if git_dir.exists() and git_dir.is_dir():
+        # Check prerequisites before installing hooks
+        from devloop.cli.prerequisites import PrerequisiteChecker
+
+        checker = PrerequisiteChecker()
+        available, missing = checker.validate_for_git_hooks(interactive=True)
+
         hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
         hooks_dest_dir = git_dir / "hooks"
 
@@ -597,6 +603,10 @@ This project uses background agents and Beads for task management.
                 console.print("\n[green]✓[/green] Installed git hooks:")
                 for hook in hooks_installed:
                     console.print(f"  • {hook}")
+
+            # Show installation guide if prerequisites missing
+            if missing:
+                checker.show_installation_guide(missing)
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
