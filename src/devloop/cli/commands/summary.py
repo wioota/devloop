@@ -11,14 +11,11 @@ from devloop.core.context_store import context_store
 from devloop.core.summary_generator import SummaryGenerator
 from devloop.core.summary_formatter import SummaryFormatter
 
-app = typer.Typer()
+app = typer.Typer(help="View summaries of dev-agent findings")
 console = Console()
 
 
-# Summary formatting is now handled by SummaryFormatter
-
-
-@app.command()
+@app.command("agent")
 def agent_summary(
     scope: str = typer.Argument(
         "recent", help="Summary scope: recent|today|session|all"
@@ -33,11 +30,11 @@ def agent_summary(
 ):
     """Generate intelligent summary of dev-agent findings."""
     filters = {}
-    if agent and agent is not None:
+    if agent:
         filters["agent"] = str(agent)
-    if severity and severity is not None:
+    if severity:
         filters["severity"] = str(severity)
-    if category and category is not None:
+    if category:
         filters["category"] = str(category)
 
     generator = SummaryGenerator(context_store)

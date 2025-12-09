@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import signal
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -42,11 +43,37 @@ app = typer.Typer(
 )
 console = Console()
 
-app.add_typer(audit_cmd.audit, name="audit")
 app.add_typer(summary_cmd.app, name="summary")
 app.add_typer(custom_agents_cmd.app, name="custom")
 app.add_typer(feedback_cmd.app, name="feedback")
 app.add_typer(telemetry_cmd.app, name="telemetry")
+
+# Wrap Typer app to handle Click-based audit command
+# Note: We can't use add_typer with Click groups due to Typer version compatibility
+_original_app = app
+
+
+class _WrappedApp:
+    """Wrapper app that intercepts Click commands before Typer processes them."""
+
+    def __init__(self, typer_app):
+        self.typer_app = typer_app
+
+    def __call__(self, *args, **kwargs):
+        """Handle command invocation."""
+        if len(sys.argv) > 1 and sys.argv[1] == "audit":
+            # Delegate to Click for audit command
+            audit_cmd.audit(sys.argv[2:], standalone_mode=False)
+            return
+        # Otherwise, run the Typer app normally
+        return self.typer_app(*args, **kwargs)
+
+    def __getattr__(self, name):
+        """Delegate attribute access to the wrapped Typer app."""
+        return getattr(self.typer_app, name)
+
+
+app = _WrappedApp(_original_app)
 
 
 @app.command()
