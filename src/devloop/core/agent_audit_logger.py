@@ -6,6 +6,7 @@ applied by agents for security, compliance, and incident investigation.
 
 import json
 import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -108,18 +109,22 @@ class AgentAuditLogger:
     - Compliance tracking
     - File change tracking with diffs
     - Fix validation
+
+    Implements 30-day retention policy to prevent unbounded log growth.
     """
 
-    def __init__(self, log_path: Optional[Path] = None):
+    def __init__(self, log_path: Optional[Path] = None, retention_days: int = 30):
         """Initialize agent audit logger.
 
         Args:
             log_path: Path to audit log file (defaults to .devloop/agent-audit.log)
+            retention_days: Number of days to keep audit logs (default: 30)
         """
         if log_path is None:
             log_path = Path(".devloop/agent-audit.log")
 
         self.log_path = log_path
+        self.retention_days = retention_days
         self.logger = logging.getLogger("agent.audit")
 
         # Ensure log directory exists
@@ -181,6 +186,9 @@ class AgentAuditLogger:
         try:
             with open(self.log_path, "a", encoding="utf-8") as f:
                 f.write(entry.to_json() + "\n")
+
+            # Periodically clean up old logs
+            self._cleanup_old_logs()
         except Exception as e:
             self.logger.error(f"Failed to write agent audit log: {e}")
 
@@ -481,6 +489,71 @@ class AgentAuditLogger:
             fixes = [e for e in fixes if e.get("agent_name") == agent_name]
 
         return fixes[:limit]
+
+    def _cleanup_old_logs(self) -> None:
+        """Remove audit log entries older than retention period.
+
+        Runs periodically to prevent unbounded log file growth.
+        Only cleans when file hasn't been modified for 5+ minutes to amortize cost.
+        """
+        if not self.log_path.exists():
+            return
+
+        # Check if cleanup is needed (skip if file was modified recently)
+        try:
+            mtime = self.log_path.stat().st_mtime
+            current_time = time.time()
+
+            # Only run cleanup if file hasn't been modified in the last 5 minutes
+            # This prevents running cleanup on every write
+            if current_time - mtime < 300:
+                return
+        except Exception:
+            return
+
+        self._cleanup_old_logs_sync()
+
+    def _cleanup_old_logs_sync(self) -> None:
+        """Synchronous cleanup of old audit log entries.
+
+        Separated for testability.
+        """
+        # Calculate cutoff timestamp
+        cutoff_time = time.time() - (self.retention_days * 24 * 3600)
+
+        try:
+            # Read all entries
+            with open(self.log_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+            # Filter recent entries
+            recent_lines = []
+            for line in lines:
+                try:
+                    data = json.loads(line.strip())
+                    # Parse ISO 8601 timestamp
+                    timestamp_str = data.get("timestamp", "")
+                    if timestamp_str:
+                        dt = datetime.fromisoformat(timestamp_str)
+                        timestamp = dt.timestamp()
+                        if timestamp >= cutoff_time:
+                            recent_lines.append(line)
+                except (json.JSONDecodeError, ValueError, KeyError):
+                    # Keep malformed lines (for safety)
+                    recent_lines.append(line)
+
+            # Write back recent entries only
+            with open(self.log_path, "w", encoding="utf-8") as f:
+                f.writelines(recent_lines)
+
+            removed_count = len(lines) - len(recent_lines)
+            if removed_count > 0:
+                self.logger.debug(
+                    f"Cleaned up {removed_count} old audit log entries "
+                    f"(kept last {self.retention_days} days)"
+                )
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup old audit logs: {e}")
 
     @staticmethod
     def _create_file_modification(

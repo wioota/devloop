@@ -2,6 +2,8 @@
 
 import json
 import tempfile
+import time
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -490,3 +492,128 @@ class TestAgentAuditLogger:
         logger2 = get_agent_audit_logger()
         
         assert logger1 is logger2
+
+    def test_cleanup_old_logs(self, logger):
+        """Test that old entries are cleaned up after retention period."""
+        # Add entries with old timestamps
+        old_time = datetime.now(timezone.utc) - timedelta(days=40)
+        recent_time = datetime.now(timezone.utc) - timedelta(days=5)
+        
+        # Manually write old and recent entries
+        old_entry = {
+            "timestamp": old_time.isoformat(),
+            "agent_name": "old-agent",
+            "action_type": "file_modified",
+            "message": "Old action",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        recent_entry = {
+            "timestamp": recent_time.isoformat(),
+            "agent_name": "recent-agent",
+            "action_type": "file_modified",
+            "message": "Recent action",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        # Write entries directly
+        with open(logger.log_path, "w") as f:
+            f.write(json.dumps(old_entry) + "\n")
+            f.write(json.dumps(recent_entry) + "\n")
+        
+        # Call cleanup directly (bypass mtime check)
+        logger._cleanup_old_logs_sync()
+        
+        # Verify old entry was removed and recent ones kept
+        with open(logger.log_path) as f:
+            lines = f.readlines()
+        
+        entries = [json.loads(line) for line in lines]
+        
+        # Should have only recent entry (old one removed)
+        agent_names = [e["agent_name"] for e in entries]
+        assert "old-agent" not in agent_names
+        assert "recent-agent" in agent_names
+
+    def test_cleanup_with_custom_retention(self, temp_log_dir):
+        """Test cleanup respects custom retention period."""
+        logger = AgentAuditLogger(temp_log_dir / "audit.log", retention_days=5)
+        
+        # Add entries with timestamps
+        old_time = datetime.now(timezone.utc) - timedelta(days=10)
+        recent_time = datetime.now(timezone.utc) - timedelta(days=2)
+        
+        old_entry = {
+            "timestamp": old_time.isoformat(),
+            "agent_name": "old-agent",
+            "action_type": "file_modified",
+            "message": "Old action",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        recent_entry = {
+            "timestamp": recent_time.isoformat(),
+            "agent_name": "recent-agent",
+            "action_type": "file_modified",
+            "message": "Recent action",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        # Write entries
+        with open(logger.log_path, "w") as f:
+            f.write(json.dumps(old_entry) + "\n")
+            f.write(json.dumps(recent_entry) + "\n")
+        
+        # Trigger cleanup directly
+        logger._cleanup_old_logs_sync()
+        
+        # Verify cleanup happened
+        with open(logger.log_path) as f:
+            entries = [json.loads(line) for line in f.readlines()]
+        
+        agent_names = [e["agent_name"] for e in entries]
+        assert "old-agent" not in agent_names
+
+    def test_cleanup_preserves_malformed_entries(self, logger):
+        """Test cleanup preserves malformed entries for safety."""
+        old_time = datetime.now(timezone.utc) - timedelta(days=40)
+        recent_time = datetime.now(timezone.utc) - timedelta(days=5)
+        
+        old_entry = {
+            "timestamp": old_time.isoformat(),
+            "agent_name": "old",
+            "action_type": "file_modified",
+            "message": "Old",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        malformed = "this is not valid json"
+        
+        recent_entry = {
+            "timestamp": recent_time.isoformat(),
+            "agent_name": "recent",
+            "action_type": "file_modified",
+            "message": "Recent",
+            "success": True,
+            "duration_ms": 0,
+        }
+        
+        # Write entries with malformed one
+        with open(logger.log_path, "w") as f:
+            f.write(json.dumps(old_entry) + "\n")
+            f.write(malformed + "\n")
+            f.write(json.dumps(recent_entry) + "\n")
+        
+        # Trigger cleanup directly
+        logger._cleanup_old_logs_sync()
+        
+        # Verify malformed entry was kept
+        with open(logger.log_path) as f:
+            content = f.read()
+        
+        assert "this is not valid json" in content
