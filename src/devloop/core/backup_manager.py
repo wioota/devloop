@@ -119,9 +119,9 @@ class BackupManager:
                 "fix_type": fix_type,
                 "description": description,
                 "checksum": checksum,
-                "git_commit": self._get_current_git_commit()
-                if self._git_available
-                else None,
+                "git_commit": (
+                    self._get_current_git_commit() if self._git_available else None
+                ),
                 "metadata": metadata or {},
             }
 
