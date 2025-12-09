@@ -109,6 +109,7 @@ class PerformanceMonitor:
         self.storage_path.mkdir(parents=True, exist_ok=True)
         self.metrics_file = storage_path / "metrics.jsonl"
         self.retention_days = retention_days
+        self._last_cleanup_time = time.time()
 
     @asynccontextmanager
     async def monitor_operation(
@@ -303,8 +304,11 @@ class PerformanceMonitor:
         async with aiofiles.open(self.metrics_file, "a") as f:
             await f.write(json.dumps(metrics_dict) + "\n")
 
-        # Cleanup old metrics
-        await self._cleanup_old_metrics()
+        # Cleanup old metrics periodically (every 5 minutes instead of after every write)
+        now = time.time()
+        if now - self._last_cleanup_time > 300:  # 5 minutes
+            await self._cleanup_old_metrics()
+            self._last_cleanup_time = now
 
     async def _load_recent_metrics(
         self, cutoff_time: float

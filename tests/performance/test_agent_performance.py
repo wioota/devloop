@@ -40,7 +40,8 @@ def test_workspace(tmp_path):
 
     # Create a simple Python file to lint/check
     py_file = workspace / "example.py"
-    py_file.write_text("""
+    py_file.write_text(
+        """
 import os
 import sys
 from typing import List
@@ -58,12 +59,10 @@ class MyClass:
     def method(self):
         result=1+2+3
         return result
-""")
+"""
+    )
 
     return workspace
-
-
-
 
 
 class TestAgentLatency:
@@ -95,7 +94,9 @@ class TestAgentLatency:
         logger.info(f"Ruff latency: {duration_ms:.1f}ms")
 
         # Target: <500ms
-        assert duration_ms < 500, f"Ruff latency {duration_ms:.1f}ms exceeds 500ms target"
+        assert (
+            duration_ms < 500
+        ), f"Ruff latency {duration_ms:.1f}ms exceeds 500ms target"
 
     @pytest.mark.asyncio
     async def test_formatter_tool_latency(self, test_workspace):
@@ -123,7 +124,9 @@ class TestAgentLatency:
         logger.info(f"Black latency: {duration_ms:.1f}ms")
 
         # Target: <1000ms (Black startup can be slow, ~600ms+)
-        assert duration_ms < 1000, f"Black latency {duration_ms:.1f}ms exceeds 1000ms target"
+        assert (
+            duration_ms < 1000
+        ), f"Black latency {duration_ms:.1f}ms exceeds 1000ms target"
 
     @pytest.mark.asyncio
     async def test_type_checker_tool_latency(self, test_workspace):
@@ -151,7 +154,9 @@ class TestAgentLatency:
         logger.info(f"mypy latency: {duration_ms:.1f}ms")
 
         # Target: <2000ms (mypy can be slow)
-        assert duration_ms < 2000, f"mypy latency {duration_ms:.1f}ms exceeds 2000ms target"
+        assert (
+            duration_ms < 2000
+        ), f"mypy latency {duration_ms:.1f}ms exceeds 2000ms target"
 
 
 class TestResourceUsage:
@@ -190,9 +195,9 @@ class TestResourceUsage:
         )
 
         # Target: <10MB overhead for 1000 events
-        assert memory_usage < 10, (
-            f"Event bus memory overhead {memory_usage:.1f}MB exceeds 10MB target"
-        )
+        assert (
+            memory_usage < 10
+        ), f"Event bus memory overhead {memory_usage:.1f}MB exceeds 10MB target"
 
     @pytest.mark.asyncio
     async def test_event_bus_throughput(self):
@@ -224,7 +229,9 @@ class TestResourceUsage:
         duration = time.perf_counter() - start_time
         throughput = num_events / duration
 
-        logger.info(f"Event bus throughput: {throughput:.0f} events/second ({duration:.2f}s for {num_events})")
+        logger.info(
+            f"Event bus throughput: {throughput:.0f} events/second ({duration:.2f}s for {num_events})"
+        )
 
         # Target: >1000 events/second
         assert (
@@ -268,7 +275,9 @@ class TestEndToEndTiming:
         logger.info(f"Event creation and emission latency: {duration_ms:.1f}ms")
 
         # Target: <100ms
-        assert duration_ms < 100, f"Event latency {duration_ms:.1f}ms exceeds 100ms target"
+        assert (
+            duration_ms < 100
+        ), f"Event latency {duration_ms:.1f}ms exceeds 100ms target"
 
 
 class TestTelemetryPerformance:
@@ -345,7 +354,9 @@ class TestConcurrentEvents:
         logger.info(f"Concurrent emission of 100 events: {duration:.2f}s")
 
         # Target: <500ms
-        assert duration < 0.5, f"Concurrent emission {duration:.2f}s exceeds 500ms target"
+        assert (
+            duration < 0.5
+        ), f"Concurrent emission {duration:.2f}s exceeds 500ms target"
 
 
 if __name__ == "__main__":

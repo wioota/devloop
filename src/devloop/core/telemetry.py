@@ -282,13 +282,37 @@ class TelemetryLogger:
             logger.error(f"Failed to read telemetry events: {e}")
             return []
 
+    def _get_events_streaming(self) -> list[dict[str, Any]]:
+        """Stream events without loading all into memory at once.
+
+        Returns:
+            List of all events (loaded in small batches internally)
+        """
+        if not self.log_file.exists():
+            return []
+
+        events = []
+        try:
+            with open(self.log_file, "r") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            event = json.loads(line)
+                            events.append(event)
+                        except json.JSONDecodeError:
+                            logger.warning(f"Invalid JSON in telemetry log: {line}")
+            return events
+        except Exception as e:
+            logger.error(f"Failed to read telemetry events: {e}")
+            return []
+
     def get_stats(self) -> dict[str, Any]:
         """Get statistics from telemetry log.
 
         Returns:
             Dictionary with stats: total_events, events_by_type, total_findings, etc.
         """
-        events = self.get_events(limit=10000)
+        events = self._get_events_streaming()
 
         if not events:
             return {

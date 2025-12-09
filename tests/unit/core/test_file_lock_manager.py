@@ -103,15 +103,11 @@ class TestFileLockManager:
 
         await lock_manager.release_lock(temp_file, "agent1")
 
-
-
     @pytest.mark.asyncio
     async def test_lock_release(self, lock_manager, temp_file):
         """Test lock release."""
         # Acquire lock
-        await lock_manager.acquire_lock(
-            temp_file, "agent1", LockMode.EXCLUSIVE
-        )
+        await lock_manager.acquire_lock(temp_file, "agent1", LockMode.EXCLUSIVE)
 
         # Verify locked
         assert lock_manager.get_file_status(temp_file)["locked"] is True
@@ -159,9 +155,7 @@ class TestFileLockManager:
             f.write("new content\n")
 
         # Record modification
-        version = await lock_manager.record_modification(
-            temp_file, "formatter"
-        )
+        version = await lock_manager.record_modification(temp_file, "formatter")
 
         assert version.modified_by == "formatter"
         assert version.modified_at is not None
@@ -184,9 +178,7 @@ class TestFileLockManager:
     async def test_reset(self, lock_manager, temp_file):
         """Test resetting all locks."""
         # Acquire locks
-        await lock_manager.acquire_lock(
-            temp_file, "agent1", LockMode.EXCLUSIVE
-        )
+        await lock_manager.acquire_lock(temp_file, "agent1", LockMode.EXCLUSIVE)
 
         # Reset
         await lock_manager.reset()
@@ -203,9 +195,7 @@ class TestFileLockContext:
     @pytest.mark.asyncio
     async def test_context_manager_success(self, lock_manager, temp_file):
         """Test successful lock acquisition and release with context manager."""
-        async with FileLockContext(
-            temp_file, "agent1", LockMode.EXCLUSIVE
-        ) as ctx:
+        async with FileLockContext(temp_file, "agent1", LockMode.EXCLUSIVE) as ctx:
             assert ctx.lock_acquired is True
 
         # Lock should be released after context
@@ -213,14 +203,10 @@ class TestFileLockContext:
         assert not status.get("lock_mode")
 
     @pytest.mark.asyncio
-    async def test_context_manager_exception_handling(
-        self, lock_manager, temp_file
-    ):
+    async def test_context_manager_exception_handling(self, lock_manager, temp_file):
         """Test that lock is released even on exception."""
         try:
-            async with FileLockContext(
-                temp_file, "agent1", LockMode.EXCLUSIVE
-            ):
+            async with FileLockContext(temp_file, "agent1", LockMode.EXCLUSIVE):
                 raise ValueError("Test exception")
         except ValueError:
             pass
@@ -228,5 +214,3 @@ class TestFileLockContext:
         # Lock should still be released
         status = lock_manager.get_file_status(temp_file)
         assert status["locked"] is False
-
-
