@@ -3,7 +3,10 @@
 # Post-task verification hook
 # Called by Amp/system after task completion to enforce commit discipline
 # 
-# This hook ensures all work is committed and pushed before moving to next task
+# This hook ensures:
+# 1. All work is committed and pushed (via verify-task-complete)
+# 2. Code quality checks pass (formatting, linting, types, tests)
+# 3. DevLoop findings are extracted and filed as Beads issues
 
 set -e
 
@@ -18,13 +21,8 @@ echo "Post-Task Verification"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
-# Run verification
-if .agents/verify-task-complete; then
-    echo ""
-    echo "✨ All checks passed. Ready for next task."
-    echo ""
-    exit 0
-else
+# Step 1: Basic commit/push verification
+if ! .agents/verify-task-complete; then
     echo ""
     echo "⚠️  Task verification failed. Please fix the issues above."
     echo ""
@@ -37,3 +35,42 @@ else
     echo ""
     exit 1
 fi
+
+echo ""
+echo "✅ Commit & push verification passed"
+echo ""
+
+# Step 2: Run common code quality checks (non-blocking for Amp tasks)
+# These are the same checks that run in git pre-commit, but we run them
+# after task completion so developers can see any issues
+SKIP_VERSION_CHECK=1 SKIP_LOCK_CHECK=1 .agents/verify-common-checks || {
+    # Non-blocking - just warn about quality issues
+    echo ""
+    echo "⚠️  Some code quality checks failed (non-blocking in post-task)"
+    echo "     Consider fixing these issues in your next task:"
+    echo "     - Run 'poetry run black src/' for formatting"
+    echo "     - Run 'poetry run ruff check src/ --fix' for linting"
+    echo "     - Run 'poetry run mypy ...' for type checking"
+    echo "     - Run 'poetry run pytest' for tests"
+    echo ""
+}
+
+# Step 3: Extract DevLoop findings to Beads issues
+echo ""
+echo "[Findings] Extracting DevLoop findings..."
+
+FINDINGS_SCRIPT=".agents/hooks/extract-findings-to-beads"
+if [ -x "$FINDINGS_SCRIPT" ]; then
+    if "$FINDINGS_SCRIPT"; then
+        echo "[Findings] ✅ DevLoop findings processed"
+    else
+        echo "[Findings] ⚠️  Could not process DevLoop findings (non-blocking)"
+    fi
+else
+    echo "[Findings] 📝 Extract-findings script not found (optional)"
+fi
+
+echo ""
+echo "✨ Task verification complete. Ready for next task."
+echo ""
+exit 0

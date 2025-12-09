@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# Common verification checks used by both Git hooks and Amp hooks
+# 
+# Runs:
+# 1. Poetry lock file sync validation
+# 2. Version consistency checks
+# 3. Pre-commit checks (formatting, linting, type checking, tests)
+#
+# Used by:
+# - .git/hooks/pre-commit (before committing)
+# - .agents/hooks/post-task (after Amp task completion)
+#
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Colors are optional (disable if NO_COLOR is set)
+if [ -n "$NO_COLOR" ]; then
+    RED=''
+    GREEN=''
+    YELLOW=''
+    NC=''
+fi
+
+# Determine script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Change to project root if we're not already there
+if [ "$(pwd)" != "$PROJECT_ROOT" ]; then
+    cd "$PROJECT_ROOT"
+fi
+
+# Flag to track if any check failed
+HAS_FAILURES=0
+
+# ============================================================================
+# Check 1: Poetry lock file sync (only if poetry.lock exists)
+# ============================================================================
+if [ -f "poetry.lock" ]; then
+    if [ -f "pyproject.toml" ]; then
+        # Only check if pyproject.toml is in staged changes
+        # (if called from pre-commit)
+        if git diff --cached --name-only 2>/dev/null | grep -q "pyproject.toml" || [ "$SKIP_LOCK_CHECK" = "1" ]; then
+            if ! git diff --cached --name-only 2>/dev/null | grep -q "poetry.lock"; then
+                echo -e "${YELLOW}[Verify] Checking poetry.lock sync...${NC}"
+                echo -e "${RED}[Verify] ❌ pyproject.toml changed but poetry.lock not updated${NC}"
+                echo "Fix: Run 'poetry lock' and stage both files"
+                HAS_FAILURES=1
+            fi
+        fi
+    fi
+fi
+
+# ============================================================================
+# Check 2: Version consistency (only if version files exist)
+# ============================================================================
+if [ -f "pyproject.toml" ] && [ -f "src/devloop/__init__.py" ]; then
+    # Only check if version files are in staged changes (if called from pre-commit)
+    # or always check (if called from post-task with SKIP_VERSION_CHECK set)
+    if git diff --cached --name-only 2>/dev/null | grep -qE '(pyproject.toml|src/devloop/__init__.py)' || [ "$SKIP_VERSION_CHECK" = "1" ]; then
+        PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml 2>/dev/null | sed 's/version = "\(.*\)"/\1/')
+        INIT_VERSION=$(grep '^__version__ = ' src/devloop/__init__.py 2>/dev/null | sed 's/__version__ = "\(.*\)"/\1/')
+
+        if [ -n "$PYPROJECT_VERSION" ] && [ -n "$INIT_VERSION" ] && [ "$PYPROJECT_VERSION" != "$INIT_VERSION" ]; then
+            echo -e "${YELLOW}[Verify] Checking version consistency...${NC}"
+            echo -e "${RED}[Verify] ❌ Version mismatch detected:${NC}"
+            echo "  pyproject.toml:           $PYPROJECT_VERSION"
+            echo "  src/devloop/__init__.py:  $INIT_VERSION"
+            echo "Use: python scripts/bump-version.py <version>"
+            HAS_FAILURES=1
+        fi
+    fi
+fi
+
+# ============================================================================
+# Check 3: Pre-commit checks (formatting, linting, type checking, tests)
+# ============================================================================
+PRE_COMMIT_CHECKS_SCRIPT="$PROJECT_ROOT/.git/hooks/pre-commit-checks"
+if [ -x "$PRE_COMMIT_CHECKS_SCRIPT" ]; then
+    if ! "$PRE_COMMIT_CHECKS_SCRIPT"; then
+        HAS_FAILURES=1
+    fi
+fi
+
+# ============================================================================
+# Check 4: Beads sync (only if in beads workspace)
+# ============================================================================
+if [ -d ".beads" ] && command -v bd >/dev/null 2>&1; then
+    if ! bd sync --flush-only >/dev/null 2>&1; then
+        echo -e "${YELLOW}[Verify] Warning: bd sync failed (non-blocking)${NC}"
+        # Don't fail, just warn
+    else
+        # If beads was modified, stage it
+        if [ -f ".beads/issues.jsonl" ]; then
+            git add .beads/issues.jsonl 2>/dev/null || true
+        fi
+    fi
+fi
+
+# ============================================================================
+# Exit with appropriate code
+# ============================================================================
+if [ $HAS_FAILURES -eq 0 ]; then
+    echo -e "${GREEN}[Verify] ✅ All checks passed${NC}"
+    exit 0
+else
+    echo -e "${RED}[Verify] ❌ Some checks failed${NC}"
+    exit 1
+fi
