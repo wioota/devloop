@@ -9,12 +9,9 @@ Provides utilities for Claude Code to:
 """
 
 import json
-import os
-import sys
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from datetime import datetime
 
 
 class ClaudeCodeAdapter:
@@ -24,7 +21,9 @@ class ClaudeCodeAdapter:
         self.project_root = project_root or Path.cwd()
         self.context_dir = self.project_root / ".claude" / "context"
         self.verify_script = self.project_root / ".agents" / "verify-common-checks"
-        self.extract_script = self.project_root / ".agents" / "hooks" / "extract-findings-to-beads"
+        self.extract_script = (
+            self.project_root / ".agents" / "hooks" / "extract-findings-to-beads"
+        )
 
     def check_results(self) -> Dict[str, Any]:
         """Check recent background agent results (for hooks and quick checks)"""
@@ -36,11 +35,11 @@ class ClaudeCodeAdapter:
                 "status": "no_results",
                 "message": "Background agents haven't run yet or context store not initialized",
                 "actionable": False,
-                "display": "No background agent findings"
+                "display": "No background agent findings",
             }
 
         try:
-            with open(index_file, 'r') as f:
+            with open(index_file, "r") as f:
                 index = json.load(f)
 
             check_now = index.get("check_now", {})
@@ -62,14 +61,14 @@ class ClaudeCodeAdapter:
                 "check_now_count": check_now_count,
                 "index": index,
                 "display": display,
-                "timestamp": index.get("last_updated")
+                "timestamp": index.get("last_updated"),
             }
 
         except Exception as e:
             return {
                 "status": "error",
                 "message": f"Failed to check results: {str(e)}",
-                "display": f"Error reading agent results: {str(e)}"
+                "display": f"Error reading agent results: {str(e)}",
             }
 
     def get_detailed_findings(self, tier: str = "all") -> Dict[str, Any]:
@@ -87,7 +86,7 @@ class ClaudeCodeAdapter:
         return {
             "status": "success",
             "findings": findings,
-            "summary": self._create_detailed_summary(findings)
+            "summary": self._create_detailed_summary(findings),
         }
 
     def get_agent_insights(self, query_type: str = "general") -> Dict[str, Any]:
@@ -98,41 +97,44 @@ class ClaudeCodeAdapter:
         if not index_file.exists():
             return {
                 "status": "no_results",
-                "insights": ["Background agents haven't run yet"]
+                "insights": ["Background agents haven't run yet"],
             }
 
         try:
-            with open(index_file, 'r') as f:
+            with open(index_file, "r") as f:
                 index = json.load(f)
 
             immediate_findings = self._get_findings("immediate")
             relevant_findings = self._get_findings("relevant")
 
-            insights = {
-                "status": "success",
-                "query_type": query_type,
-                "insights": []
-            }
+            insights = {"status": "success", "query_type": query_type, "insights": []}
 
             # Generate insights based on query type
             if query_type == "lint":
-                insights["insights"] = self._get_lint_insights(immediate_findings, relevant_findings)
+                insights["insights"] = self._get_lint_insights(
+                    immediate_findings, relevant_findings
+                )
             elif query_type == "test":
-                insights["insights"] = self._get_test_insights(immediate_findings, relevant_findings)
+                insights["insights"] = self._get_test_insights(
+                    immediate_findings, relevant_findings
+                )
             elif query_type == "security":
-                insights["insights"] = self._get_security_insights(immediate_findings, relevant_findings)
+                insights["insights"] = self._get_security_insights(
+                    immediate_findings, relevant_findings
+                )
             elif query_type == "format":
-                insights["insights"] = self._get_format_insights(immediate_findings, relevant_findings)
+                insights["insights"] = self._get_format_insights(
+                    immediate_findings, relevant_findings
+                )
             else:
-                insights["insights"] = self._get_general_insights(index, immediate_findings)
+                insights["insights"] = self._get_general_insights(
+                    index, immediate_findings
+                )
 
             return insights
 
         except Exception as e:
-            return {
-                "status": "error",
-                "insights": [f"Error: {str(e)}"]
-            }
+            return {"status": "error", "insights": [f"Error: {str(e)}"]}
 
     def _get_findings(self, tier: str) -> List[Dict[str, Any]]:
         """Get findings from a specific tier file"""
@@ -142,22 +144,23 @@ class ClaudeCodeAdapter:
             return []
 
         try:
-            with open(tier_file, 'r') as f:
+            with open(tier_file, "r") as f:
                 data = json.load(f)
                 return data.get("findings", [])
         except Exception:
             return []
 
-    def _format_immediate_display(self, check_now: Dict[str, Any], findings: List[Dict[str, Any]]) -> str:
+    def _format_immediate_display(
+        self, check_now: Dict[str, Any], findings: List[Dict[str, Any]]
+    ) -> str:
         """Format immediate findings for display"""
         count = check_now.get("count", 0)
-        preview = check_now.get("preview", "")
 
         if count == 0:
             return "✅ No immediate issues"
 
         # Group by file
-        by_file = {}
+        by_file: Dict[str, List[Dict[str, Any]]] = {}
         for finding in findings:
             file_path = finding.get("file", "unknown")
             if file_path not in by_file:
@@ -171,7 +174,13 @@ class ClaudeCodeAdapter:
             lines.append(f"📄 {file_name}:")
             for finding in file_findings[:3]:  # Show max 3 findings per file
                 severity = finding.get("severity", "info")
-                emoji = "🔴" if severity == "error" else "🟡" if severity == "warning" else "🔵"
+                emoji = (
+                    "🔴"
+                    if severity == "error"
+                    else "🟡"
+                    if severity == "warning"
+                    else "🔵"
+                )
                 message = finding.get("message", "No message")
                 line = finding.get("line")
                 location = f":{line}" if line else ""
@@ -191,7 +200,7 @@ class ClaudeCodeAdapter:
                 lines.append(f"\n{tier.upper()} ({len(tier_findings)} findings):")
 
                 # Group by agent
-                by_agent = {}
+                by_agent: Dict[str, List[Dict[str, Any]]] = {}
                 for finding in tier_findings:
                     agent = finding.get("agent", "unknown")
                     if agent not in by_agent:
@@ -238,7 +247,9 @@ class ClaudeCodeAdapter:
         """Get test-specific insights"""
         insights = []
 
-        test_findings = [f for f in immediate + relevant if f.get("agent") == "test-runner"]
+        test_findings = [
+            f for f in immediate + relevant if f.get("agent") == "test-runner"
+        ]
 
         if not test_findings:
             insights.append("✅ No test failures")
@@ -256,7 +267,9 @@ class ClaudeCodeAdapter:
         """Get security-specific insights"""
         insights = []
 
-        sec_findings = [f for f in immediate + relevant if f.get("agent") == "security-scanner"]
+        sec_findings = [
+            f for f in immediate + relevant if f.get("agent") == "security-scanner"
+        ]
 
         if not sec_findings:
             insights.append("✅ No security issues detected")
@@ -279,7 +292,9 @@ class ClaudeCodeAdapter:
         """Get formatting-specific insights"""
         insights = []
 
-        format_findings = [f for f in immediate + relevant if f.get("agent") == "formatter"]
+        format_findings = [
+            f for f in immediate + relevant if f.get("agent") == "formatter"
+        ]
 
         if not format_findings:
             insights.append("✅ No formatting issues")
@@ -310,11 +325,17 @@ class ClaudeCodeAdapter:
 
         for severity, count in severity_breakdown.items():
             if count > 0:
-                emoji = "🔴" if severity == "error" else "🟡" if severity == "warning" else "🔵"
+                emoji = (
+                    "🔴"
+                    if severity == "error"
+                    else "🟡"
+                    if severity == "warning"
+                    else "🔵"
+                )
                 insights.append(f"  {emoji} {count} {severity}(s)")
 
         # Group by agent
-        by_agent = {}
+        by_agent: Dict[str, int] = {}
         for finding in immediate:
             agent = finding.get("agent", "unknown")
             if agent not in by_agent:
@@ -332,10 +353,9 @@ class ClaudeCodeAdapter:
 
         return insights
 
-
     def run_verification(self) -> Dict[str, Any]:
         """Run unified code quality verification (same as Amp post-task hook).
-        
+
         Returns:
             Dict with verification results, messages, and enforcement status
         """
@@ -344,35 +364,35 @@ class ClaudeCodeAdapter:
                 "status": "error",
                 "message": "Verification script not found",
                 "verified": False,
-                "can_proceed": False
+                "can_proceed": False,
             }
-        
+
         try:
             result = subprocess.run(
                 [str(self.verify_script)],
                 cwd=str(self.project_root),
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=120,
             )
-            
+
             # Parse output for status
             output = result.stdout + result.stderr
             passed = result.returncode == 0
-            
+
             # Extract key results from output
             has_failures = "❌" in output or "FAIL" in output
             blocking_issues = []
             warnings = []
-            
+
             if has_failures:
-                lines = output.split('\n')
+                lines = output.split("\n")
                 for line in lines:
-                    if '❌' in line or 'ERROR:' in line:
+                    if "❌" in line or "ERROR:" in line:
                         blocking_issues.append(line.strip())
-                    elif '⚠️' in line or 'Warning' in line:
+                    elif "⚠️" in line or "Warning" in line:
                         warnings.append(line.strip())
-            
+
             return {
                 "status": "success" if passed else "failed",
                 "verified": passed,
@@ -380,27 +400,29 @@ class ClaudeCodeAdapter:
                 "blocking_issues": blocking_issues,
                 "warnings": warnings,
                 "output": output,
-                "message": "✅ All checks passed" if passed else "❌ Verification failed - see issues above"
+                "message": "✅ All checks passed"
+                if passed
+                else "❌ Verification failed - see issues above",
             }
-            
+
         except subprocess.TimeoutExpired:
             return {
                 "status": "timeout",
                 "verified": False,
                 "can_proceed": False,
-                "message": "Verification timed out after 120 seconds"
+                "message": "Verification timed out after 120 seconds",
             }
         except Exception as e:
             return {
                 "status": "error",
                 "verified": False,
                 "can_proceed": False,
-                "message": f"Verification error: {str(e)}"
+                "message": f"Verification error: {str(e)}",
             }
-    
+
     def extract_findings(self) -> Dict[str, Any]:
         """Extract DevLoop findings and create Beads issues (same as Amp post-task hook).
-        
+
         Returns:
             Dict with extraction results and created issue IDs
         """
@@ -409,74 +431,76 @@ class ClaudeCodeAdapter:
                 "status": "error",
                 "message": "Extraction script not found",
                 "extracted": False,
-                "issues_created": 0
+                "issues_created": 0,
             }
-        
+
         try:
             result = subprocess.run(
                 [str(self.extract_script)],
                 cwd=str(self.project_root),
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
-            
+
             output = result.stdout + result.stderr
             passed = result.returncode == 0
-            
+
             # Parse created issues from output
             created_issues = []
-            for line in output.split('\n'):
-                if 'Created' in line and ': ' in line:
+            for line in output.split("\n"):
+                if "Created" in line and ": " in line:
                     # Extract issue ID from output like "Created formatter issue: claude-agents-xyz"
-                    parts = line.split(': ')
+                    parts = line.split(": ")
                     if len(parts) > 1:
                         created_issues.append(parts[-1].strip())
-            
+
             return {
                 "status": "success" if passed else "partial",
                 "extracted": passed,
                 "issues_created": len(created_issues),
                 "issue_ids": created_issues,
                 "output": output,
-                "message": f"Extracted findings: {len(created_issues)} Beads issue(s) created"
+                "message": f"Extracted findings: {len(created_issues)} Beads issue(s) created",
             }
-            
+
         except subprocess.TimeoutExpired:
             return {
                 "status": "timeout",
                 "extracted": False,
                 "issues_created": 0,
-                "message": "Findings extraction timed out"
+                "message": "Findings extraction timed out",
             }
         except Exception as e:
             return {
                 "status": "error",
                 "extracted": False,
                 "issues_created": 0,
-                "message": f"Extraction error: {str(e)}"
+                "message": f"Extraction error: {str(e)}",
             }
-    
+
     def verify_and_extract(self) -> Dict[str, Any]:
         """Run full verification and extraction workflow (like Amp post-task).
-        
+
         Combines verification with findings extraction for complete enforcement.
         """
         verification = self.run_verification()
         extraction = self.extract_findings()
-        
+
         return {
             "status": verification.get("status"),
             "verification": verification,
             "extraction": extraction,
             "verified": verification.get("verified", False),
-            "can_save": verification.get("verified", False),  # Claude Code: block save if verification fails?
+            "can_save": verification.get(
+                "verified", False
+            ),  # Claude Code: block save if verification fails?
             "summary": {
                 "checks_passed": verification.get("verified", False),
                 "issues_found": len(verification.get("blocking_issues", [])),
                 "warnings": len(verification.get("warnings", [])),
-                "beads_issues_created": extraction.get("issues_created", 0)
-            }
+                "beads_issues_created": extraction.get("issues_created", 0),
+            },
         }
 
 
@@ -485,13 +509,32 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Claude Code Background Agent Adapter")
-    parser.add_argument("command", choices=["check_results", "insights", "detailed", "verify", "extract", "verify-and-extract"])
-    parser.add_argument("--query-type", choices=["general", "lint", "test", "security", "format"],
-                       default="general", help="Type of insights to get")
-    parser.add_argument("--tier", choices=["all", "immediate", "relevant", "background", "auto_fixed"],
-                       default="all", help="Tier of findings to get")
-    parser.add_argument("--format", choices=["json", "text"], default="json",
-                        help="Output format")
+    parser.add_argument(
+        "command",
+        choices=[
+            "check_results",
+            "insights",
+            "detailed",
+            "verify",
+            "extract",
+            "verify-and-extract",
+        ],
+    )
+    parser.add_argument(
+        "--query-type",
+        choices=["general", "lint", "test", "security", "format"],
+        default="general",
+        help="Type of insights to get",
+    )
+    parser.add_argument(
+        "--tier",
+        choices=["all", "immediate", "relevant", "background", "auto_fixed"],
+        default="all",
+        help="Tier of findings to get",
+    )
+    parser.add_argument(
+        "--format", choices=["json", "text"], default="json", help="Output format"
+    )
 
     args = parser.parse_args()
 

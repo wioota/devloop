@@ -761,5 +761,76 @@ def update_hooks(path: Path = typer.Argument(Path.cwd(), help="Project directory
         console.print("[yellow]No hooks found to update[/yellow]")
 
 
+@app.command()
+def verify_work():
+    """Run code quality verification (Claude Code equivalent to Amp post-task hook)."""
+    from devloop.core.claude_adapter import ClaudeCodeAdapter
+
+    adapter = ClaudeCodeAdapter()
+    result = adapter.verify_and_extract()
+
+    console.print("\n[bold]Code Quality Verification[/bold]")
+    console.print("=" * 50)
+
+    # Verification status
+    verification = result.get("verification", {})
+    if verification.get("verified"):
+        console.print("[green]✅ All checks passed[/green]")
+    else:
+        console.print("[red]❌ Verification failed[/red]")
+        if verification.get("blocking_issues"):
+            console.print("\n[bold red]Blocking Issues:[/bold red]")
+            for issue in verification["blocking_issues"]:
+                console.print(f"  • {issue}")
+
+    # Warnings
+    if verification.get("warnings"):
+        console.print("\n[bold yellow]Warnings:[/bold yellow]")
+        for warning in verification["warnings"][:5]:  # Show first 5
+            console.print(f"  • {warning}")
+        if len(verification["warnings"]) > 5:
+            console.print(f"  ... and {len(verification['warnings']) - 5} more")
+
+    # Findings extraction
+    extraction = result.get("extraction", {})
+    if extraction.get("issues_created") > 0:
+        console.print(
+            f"\n[green]✅ Created {extraction['issues_created']} Beads issue(s)[/green]"
+        )
+        if extraction.get("issue_ids"):
+            for issue_id in extraction["issue_ids"]:
+                console.print(f"  • {issue_id}")
+    else:
+        console.print("\n[dim]No new Beads issues created[/dim]")
+
+    console.print("\n[dim]Use 'bd ready' to see ready work[/dim]")
+
+
+@app.command()
+def extract_findings_cmd():
+    """Extract DevLoop findings and create Beads issues."""
+    from devloop.core.claude_adapter import ClaudeCodeAdapter
+
+    adapter = ClaudeCodeAdapter()
+    result = adapter.extract_findings()
+
+    console.print("\n[bold]Findings Extraction[/bold]")
+    console.print("=" * 50)
+
+    if result.get("extracted"):
+        console.print(
+            f"[green]✅ {result.get('issues_created', 0)} Beads issue(s) created[/green]"
+        )
+        if result.get("issue_ids"):
+            for issue_id in result["issue_ids"]:
+                console.print(f"  • {issue_id}")
+    else:
+        console.print(
+            f"[yellow]⚠️  {result.get('message', 'Could not extract findings')}[/yellow]"
+        )
+
+    console.print("\n[dim]Use 'bd ready' to see ready work[/dim]")
+
+
 if __name__ == "__main__":
     app()
