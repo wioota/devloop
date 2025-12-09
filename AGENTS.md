@@ -647,6 +647,71 @@ Agents are configured via `.devloop/agents.json`:
 - [Development Guide](./DEVELOPMENT.md) - Implementation guidelines
 - [Testing Strategy](./TESTING.md) - Testing approach for agents
 
+## Release Process
+
+### Version Bumping
+
+**Always use the version bump script** to keep version numbers in sync across files:
+
+```bash
+python scripts/bump-version.py 0.4.1
+```
+
+This updates:
+- `pyproject.toml` (version field)
+- `src/devloop/__init__.py` (__version__)
+
+### Full Release Checklist
+
+1. **Update CHANGELOG.md**
+   ```markdown
+   ## [X.Y.Z] - YYYY-MM-DD
+   
+   ### Major Features
+   - Feature 1
+   - Feature 2
+   
+   ### Improvements
+   - Improvement 1
+   ```
+
+2. **Bump version**
+   ```bash
+   python scripts/bump-version.py X.Y.Z
+   ```
+
+3. **Update poetry.lock**
+   ```bash
+   poetry lock
+   ```
+
+4. **Commit changes**
+   ```bash
+   git add pyproject.toml src/devloop/__init__.py CHANGELOG.md poetry.lock
+   git commit -m "Release vX.Y.Z: Description of major changes"
+   ```
+
+5. **Create and push tag**
+   ```bash
+   git tag -a vX.Y.Z -m "DevLoop vX.Y.Z - Release notes here"
+   git push origin main vX.Y.Z
+   ```
+
+### Notes
+
+- The pre-commit hook will validate formatting, types, and tests
+- If you need to bypass pre-commit for poetry.lock changes: `git commit --no-verify`
+- Always commit version and CHANGELOG updates together with the release tag
+- Follow [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
+
+### CI Verification
+
+- Pre-push hook verifies GitHub Actions CI status (if `jq` is installed)
+- All tests must pass before pushing
+- Release tags are permanent - create a new tag if mistakes are made
+
+---
+
 ## Future Considerations
 
 - **Multi-Project Support**: Agents working across multiple repositories
