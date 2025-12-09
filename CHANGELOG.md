@@ -11,6 +11,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2025-12-09
+
+### Major Features
+
+#### Structured Event Logging & Performance Tracking
+- **Event store with SQLite backend** for persistent event history
+- **Agent execution metrics** - timing, success rates, error tracking
+- **Performance benchmarking framework** for agent efficiency analysis
+- **Audit logging** with 30-day retention policy
+- **File-level locking and versioning** for race condition prevention
+
+#### Observability & Analysis
+- **Agent audit CLI commands** - query recent findings and agent activity
+- **Agent health monitoring** - track agent performance and reliability
+- **README value validation** - documented features with data tracking
+- **CLI telemetry integration** - foundation for usage analytics
+
+### Improvements
+
+#### Memory Management
+- **Aggressive context store trimming** - per-tier memory limits (500 → 250 findings)
+- **Increased cleanup frequency** - 1 hour → 15 minutes for faster cleanup
+- **Timestamp-based prioritization** - keeps most recent findings in memory
+- **Comprehensive memory tests** - validates memory constraints
+
+#### CLI & UX
+- **Pre-flight checklist updates** - documentation in AGENTS.md
+- **Typer/Click compatibility fix** - proper audit command integration
+- **CI status verification** - pre-push hook validates GitHub Actions status
+- **Interactive agent setup** - optional agents during `devloop init`
+
+#### Code Quality
+- **25+ unit tests for context store** including memory management
+- **Comprehensive audit logging tests**
+- **Performance benchmarking tests**
+- **All code formatted with Black and type-checked with mypy**
+
+### Security
+- **Audit log retention policies** prevent unbounded disk usage
+- **File locking** prevents race conditions in concurrent access
+- **Event versioning** for audit trail integrity
+
+### Documentation
+- **Agent architecture guide** in AGENTS.md
+- **Task management with Beads** - synced issue tracking
+- **Development discipline framework** with git hooks
+
+---
+
 ## [0.3.1] - 2025-12-06
 
 ### Fixed
