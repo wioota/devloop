@@ -42,11 +42,11 @@ HAS_FAILURES=0
 # ============================================================================
 # Check 1: Poetry lock file sync (only if poetry.lock exists)
 # ============================================================================
-if [ -f "poetry.lock" ]; then
+if [ "$SKIP_LOCK_CHECK" != "1" ] && [ -f "poetry.lock" ]; then
     if [ -f "pyproject.toml" ]; then
         # Only check if pyproject.toml is in staged changes
         # (if called from pre-commit)
-        if git diff --cached --name-only 2>/dev/null | grep -q "pyproject.toml" || [ "$SKIP_LOCK_CHECK" = "1" ]; then
+        if git diff --cached --name-only 2>/dev/null | grep -q "pyproject.toml"; then
             if ! git diff --cached --name-only 2>/dev/null | grep -q "poetry.lock"; then
                 echo -e "${YELLOW}[Verify] Checking poetry.lock sync...${NC}"
                 echo -e "${RED}[Verify] ❌ pyproject.toml changed but poetry.lock not updated${NC}"
@@ -60,10 +60,9 @@ fi
 # ============================================================================
 # Check 2: Version consistency (only if version files exist)
 # ============================================================================
-if [ -f "pyproject.toml" ] && [ -f "src/devloop/__init__.py" ]; then
+if [ "$SKIP_VERSION_CHECK" != "1" ] && [ -f "pyproject.toml" ] && [ -f "src/devloop/__init__.py" ]; then
     # Only check if version files are in staged changes (if called from pre-commit)
-    # or always check (if called from post-task with SKIP_VERSION_CHECK set)
-    if git diff --cached --name-only 2>/dev/null | grep -qE '(pyproject.toml|src/devloop/__init__.py)' || [ "$SKIP_VERSION_CHECK" = "1" ]; then
+    if git diff --cached --name-only 2>/dev/null | grep -qE '(pyproject.toml|src/devloop/__init__.py)'; then
         PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml 2>/dev/null | sed 's/version = "\(.*\)"/\1/')
         INIT_VERSION=$(grep '^__version__ = ' src/devloop/__init__.py 2>/dev/null | sed 's/__version__ = "\(.*\)"/\1/')
 
