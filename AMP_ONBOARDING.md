@@ -162,17 +162,17 @@ devloop summary --agent linter
 
 ## Unified Hook System
 
-DevLoop uses a unified verification script that both Git and Amp hooks use, ensuring consistent code quality enforcement across both workflows.
+DevLoop uses a unified verification script that Git, Amp, and Claude Code all use, ensuring consistent code quality enforcement across all workflows.
 
 ### Architecture
 
 ```
-Git Workflow              Amp Workflow
-     |                         |
-     v                         v
-pre-commit            post-task hook
-     |                         |
-     +-------┬─────────────────+
+Git Workflow    Amp Workflow      Claude Code Workflow
+     |               |                      |
+     v               v                      v
+pre-commit    post-task hook    /verify-work slash command
+     |               |                      |
+     +-------┬───────┴──────────────────────+
              |
              v
    .agents/verify-common-checks
@@ -211,19 +211,41 @@ pre-commit            post-task hook
 - Runs after successful task completion (Amp)
 - Runs after CI passes (Git pre-push)
 
-### Differences Between Git and Amp Hooks
+### Differences Between Git, Amp, and Claude Code Hooks
 
-| Aspect | Git Hooks | Amp Hooks |
-|--------|-----------|-----------|
-| **Timing** | Before commit/push | After task completion |
-| **Version checks** | Blocking (enforced) | Non-blocking (warnings only) |
-| **Formatting/Linting** | Blocking (enforced) | Non-blocking (warnings only) |
-| **Findings extraction** | After CI passes (pre-push) | After task completes (post-task) |
-| **Beads sync** | Automatic | Via common-checks |
+| Aspect | Git Hooks | Amp Hooks | Claude Code |
+|--------|-----------|-----------|-------------|
+| **Timing** | Before commit/push | After task completion | On-demand via slash command |
+| **Triggering** | Automatic (Git events) | Automatic (Task completion) | Manual (user runs command) |
+| **Version checks** | Blocking (enforced) | Non-blocking (warnings only) | Non-blocking (warnings only) |
+| **Formatting/Linting** | Blocking (enforced) | Non-blocking (warnings only) | Non-blocking (warnings only) |
+| **Code quality checks** | Full (Black, Ruff, mypy, pytest) | Full (same) | Full (same) |
+| **Findings extraction** | After CI passes (pre-push) | After task completes (post-task) | On-demand (slash command) |
+| **Beads sync** | Automatic | Via common-checks | Via slash command |
+| **Access method** | Git workflow | Amp workflow | `/verify-work` command or `devloop verify-work` CLI |
 
-### Why Non-Blocking for Amp
+### Claude Code Enforcement
 
-Amp tasks often involve working on multiple areas (docs, code, tests). By making code quality checks non-blocking in post-task:
+Claude Code provides on-demand verification with enforcement similar to Amp:
+
+**Available commands:**
+- `/verify-work` slash command - runs full verification + findings extraction
+- `/extract-findings` slash command - extracts findings to Beads issues
+- `devloop verify-work` CLI - programmatic access
+- `devloop extract-findings` CLI - standalone findings extraction
+
+**Usage pattern:**
+1. Complete code changes in Claude Code
+2. Run `/verify-work` to check quality
+3. Tool shows blocking issues and warnings
+4. Tool creates Beads issues automatically
+5. Review and fix before committing
+
+This gives Claude Code users the same enforcement as Amp, just with manual triggering.
+
+### Why Non-Blocking for Amp and Claude Code
+
+Amp tasks and Claude Code work often involve multiple areas (docs, code, tests). By making code quality checks non-blocking:
 - Developers get visibility into quality issues
 - Issues are captured but don't block task completion
 - Encourages iterative improvement rather than perfection
