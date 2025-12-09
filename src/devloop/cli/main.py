@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import signal
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
@@ -640,6 +641,122 @@ This project uses background agents and Beads for task management.
             # Show installation guide if prerequisites missing
             if missing:
                 checker.show_installation_guide(missing)
+
+    # Set up Claude Code hooks
+    agents_hooks_dir = path / ".agents" / "hooks"
+    agents_hooks_dir.mkdir(parents=True, exist_ok=True)
+
+    # Define Claude hook scripts
+    claude_hooks = {
+        "claude-session-start": """#!/bin/bash
+#
+# SessionStart hook: Pre-load DevLoop findings when Claude Code starts
+#
+set -e
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+if command -v devloop &>/dev/null; then
+    devloop amp_context 2>/dev/null || exit 0
+fi
+exit 0
+""",
+        "claude-stop": """#!/bin/bash
+#
+# Stop hook: Collect DevLoop findings when Claude finishes
+#
+set -e
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+if ! command -v devloop &>/dev/null; then
+    exit 0
+fi
+input_json=$(cat)
+stop_hook_active=$(echo "$input_json" | jq -r '.stop_hook_active // false' 2>/dev/null || echo "false")
+if [ "$stop_hook_active" = "true" ]; then
+    exit 0
+fi
+devloop amp_findings 2>/dev/null || true
+exit 0
+""",
+        "claude-file-protection": """#!/bin/bash
+#
+# PreToolUse hook: Block modifications to protected files
+#
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+input_json=$(cat)
+tool_name=$(echo "$input_json" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+tool_input=$(echo "$input_json" | jq -r '.tool_input // {}' 2>/dev/null || echo "{}")
+if [[ "$tool_name" != "Write" && "$tool_name" != "Edit" ]]; then
+    exit 0
+fi
+file_path=$(echo "$tool_input" | jq -r '.path // ""' 2>/dev/null || echo "")
+if [ -n "$file_path" ]; then
+    file_path=$(realpath "$file_path" 2>/dev/null || echo "$file_path")
+fi
+protected_patterns=(".beads/" ".devloop/" ".git/" ".agents/hooks/" ".claude/" "AGENTS.md" "CODING_RULES.md" "AMP_ONBOARDING.md")
+is_protected=0
+for pattern in "${protected_patterns[@]}"; do
+    if [[ "$file_path" == *"$pattern"* ]]; then
+        is_protected=1
+        break
+    fi
+done
+if [ $is_protected -eq 1 ]; then
+    cat >&2 <<EOF
+🚫 Protected file: $file_path
+This file is protected by DevLoop to prevent accidental modifications.
+If you need to modify this file, use manual editing or ask the user.
+EOF
+    exit 2
+fi
+exit 0
+""",
+    }
+
+    # Create hook scripts
+    hooks_created = []
+    for hook_name, hook_content in claude_hooks.items():
+        hook_file = agents_hooks_dir / hook_name
+        if not hook_file.exists():
+            hook_file.write_text(hook_content)
+            hook_file.chmod(0o755)
+            hooks_created.append(hook_name)
+
+    if hooks_created:
+        console.print("\n[green]✓[/green] Created Claude Code hooks:")
+        for hook in hooks_created:
+            console.print(f"  • {hook}")
+
+        # Offer to install hooks to Claude settings (skip in non-interactive mode)
+        install_hooks = True
+        if not non_interactive:
+            install_hooks = typer.confirm(
+                "\nInstall Claude Code hooks to ~/.claude/settings.json?", default=True
+            )
+
+        if install_hooks:
+            install_hook_script = agents_hooks_dir / "install-claude-hooks"
+            if install_hook_script.exists():
+                try:
+                    result = subprocess.run(
+                        [str(install_hook_script), str(path)],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if result.returncode == 0:
+                        console.print("[green]✓[/green] Claude Code hooks installed")
+                    else:
+                        console.print("[yellow]⚠[/yellow] Could not auto-install hooks")
+                        console.print("To install manually, run:")
+                        console.print(f"  {install_hook_script} {path}")
+                except Exception as e:
+                    console.print(f"[yellow]⚠[/yellow] Hook installation error: {e}")
+                    console.print("To install manually, run:")
+                    console.print(f"  {install_hook_script} {path}")
+    else:
+        console.print("\n[green]✓[/green] Claude Code hooks already exist")
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")

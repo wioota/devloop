@@ -1,0 +1,100 @@
+#!/bin/bash
+#
+# Helper script to install Claude Code hooks to ~/.claude/settings.json
+#
+# This script registers the hook scripts with Claude Code by updating
+# the settings.json file to include hook configuration.
+#
+# Usage: ./.agents/hooks/install-claude-hooks [project_root]
+
+set -e
+
+PROJECT_ROOT="${1:-.}"
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+
+# Verify hooks exist
+HOOKS_DIR="$PROJECT_ROOT/.agents/hooks"
+if [ ! -d "$HOOKS_DIR" ]; then
+    echo "Error: hooks directory not found at $HOOKS_DIR" >&2
+    exit 1
+fi
+
+# Required hooks
+REQUIRED_HOOKS=(
+    "claude-session-start"
+    "claude-stop"
+    "claude-file-protection"
+)
+
+for hook in "${REQUIRED_HOOKS[@]}"; do
+    if [ ! -x "$HOOKS_DIR/$hook" ]; then
+        echo "Error: hook not found or not executable: $HOOKS_DIR/$hook" >&2
+        exit 1
+    fi
+done
+
+# Create settings file if it doesn't exist
+if [ ! -f "$CLAUDE_SETTINGS" ]; then
+    mkdir -p "$(dirname "$CLAUDE_SETTINGS")"
+    echo '{}' > "$CLAUDE_SETTINGS"
+fi
+
+# Update settings.json with hooks configuration
+# This is a simplified approach - in production, use a proper JSON tool
+python3 << 'EOF'
+import json
+import sys
+from pathlib import Path
+
+settings_path = Path.home() / ".claude" / "settings.json"
+project_root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
+hooks_dir = project_root / ".agents" / "hooks"
+
+# Read existing settings
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except (json.JSONDecodeError, FileNotFoundError):
+    settings = {}
+
+# Ensure hooks section exists
+if "hooks" not in settings:
+    settings["hooks"] = {}
+
+# SessionStart hook
+if "SessionStart" not in settings["hooks"]:
+    settings["hooks"]["SessionStart"] = {
+        "hooks": [{
+            "type": "command",
+            "matcher": "startup",
+            "command": str(hooks_dir / "claude-session-start")
+        }]
+    }
+
+# Stop hook
+if "Stop" not in settings["hooks"]:
+    settings["hooks"]["Stop"] = {
+        "hooks": [{
+            "type": "command",
+            "command": str(hooks_dir / "claude-stop")
+        }]
+    }
+
+# PreToolUse hook (Write/Edit protection)
+if "PreToolUse" not in settings["hooks"]:
+    settings["hooks"]["PreToolUse"] = {
+        "hooks": [{
+            "type": "command",
+            "matcher": "Write|Edit",
+            "command": str(hooks_dir / "claude-file-protection")
+        }]
+    }
+
+# Write updated settings
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+
+print(f"✓ Hooks installed to {settings_path}")
+EOF
+
+exit 0

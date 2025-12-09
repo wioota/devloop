@@ -215,33 +215,45 @@ pre-commit    post-task hook    /verify-work slash command
 
 | Aspect | Git Hooks | Amp Hooks | Claude Code |
 |--------|-----------|-----------|-------------|
-| **Timing** | Before commit/push | After task completion | On-demand via slash command |
-| **Triggering** | Automatic (Git events) | Automatic (Task completion) | Manual (user runs command) |
+| **Timing** | Before commit/push | After task completion | Session start + On completion |
+| **Triggering** | Automatic (Git events) | Automatic (Task completion) | Automatic (Native hooks) |
+| **Findings loading** | N/A | N/A | SessionStart hook loads context |
+| **Findings collection** | N/A | Post-task hook | Stop hook collects on completion |
+| **File protection** | N/A | N/A | PreToolUse blocks protected files |
+| **Manual override** | Via `--no-verify` | Manual via CLI | CLI commands always available |
 | **Version checks** | Blocking (enforced) | Non-blocking (warnings only) | Non-blocking (warnings only) |
-| **Formatting/Linting** | Blocking (enforced) | Non-blocking (warnings only) | Non-blocking (warnings only) |
-| **Code quality checks** | Full (Black, Ruff, mypy, pytest) | Full (same) | Full (same) |
-| **Findings extraction** | After CI passes (pre-push) | After task completes (post-task) | On-demand (slash command) |
-| **Beads sync** | Automatic | Via common-checks | Via slash command |
-| **Access method** | Git workflow | Amp workflow | `/verify-work` command or `devloop verify-work` CLI |
+| **Code quality checks** | Full (Black, Ruff, mypy, pytest) | Full (same) | Full (same via `/verify-work`) |
+| **Beads sync** | Automatic (pre-push) | Automatic (post-task) | Automatic (Stop hook) or manual |
+| **Access method** | Git workflow | Amp workflow | Native hooks + `/verify-work` CLI |
 
-### Claude Code Enforcement
+### Claude Code Automation (Native Hooks)
 
-Claude Code provides on-demand verification with enforcement similar to Amp:
+Claude Code now uses native hook events for automatic verification, similar to Amp's post-task hook.
 
-**Available commands:**
+**Automatic hooks** (no action needed):
+- **SessionStart** - Pre-loads findings when Claude Code starts
+- **Stop** - Collects findings when Claude finishes (non-blocking)
+- **PreToolUse** - Blocks writes to protected files (.beads/, .devloop/, .git/, etc.)
+
+**Optional manual commands** (when you want explicit control):
 - `/verify-work` slash command - runs full verification + findings extraction
 - `/extract-findings` slash command - extracts findings to Beads issues
 - `devloop verify-work` CLI - programmatic access
 - `devloop extract-findings` CLI - standalone findings extraction
 
-**Usage pattern:**
-1. Complete code changes in Claude Code
-2. Run `/verify-work` to check quality
-3. Tool shows blocking issues and warnings
-4. Tool creates Beads issues automatically
-5. Review and fix before committing
+**Typical workflow**:
+1. Start Claude Code → SessionStart hook loads findings automatically
+2. Work with Claude on code changes
+3. Claude finishes → Stop hook collects findings automatically
+4. Optionally run `/verify-work` to check quality before committing
+5. Commit and push normally
 
-This gives Claude Code users the same enforcement as Amp, just with manual triggering.
+**Installation**:
+- Automatic via `devloop init` (prompts to install hooks)
+- Manual: `.agents/hooks/install-claude-hooks` or edit `/hooks` in Claude Code
+- See `.agents/hooks/README.md` for detailed setup and troubleshooting
+
+This gives Claude Code users the same automatic verification as Amp's post-task hook.
 
 ### Why Non-Blocking for Amp and Claude Code
 

@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# SessionStart hook: Pre-load DevLoop findings when Claude Code starts
+#
+# This makes DevLoop findings available in Claude's context without
+# requiring a manual /verify-work command.
+#
+# Runs when Claude Code starts a new session or resumes an existing one.
+# Non-blocking: failures don't prevent session start.
+
+set -e
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+# Try to load and display context
+if command -v devloop &>/dev/null; then
+    devloop amp_context 2>/dev/null || {
+        # If devloop fails, just continue silently
+        exit 0
+    }
+fi
+
+exit 0
