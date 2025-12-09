@@ -44,7 +44,7 @@ class TestAuditEntry:
             success=True,
             duration_ms=100,
         )
-        
+
         assert entry.agent_name == "test-agent"
         assert entry.action_type == "file_modified"
         assert entry.success is True
@@ -60,10 +60,10 @@ class TestAuditEntry:
             success=True,
             duration_ms=100,
         )
-        
+
         json_str = entry.to_json()
         parsed = json.loads(json_str)
-        
+
         assert parsed["agent_name"] == "test-agent"
         assert parsed["action_type"] == "file_modified"
         assert parsed["success"] is True
@@ -81,7 +81,7 @@ class TestFileModification:
             line_count_after=10,
             hash_after="abc123",
         )
-        
+
         assert mod.action == "created"
         assert mod.size_bytes_before is None
         assert mod.size_bytes_after == 100
@@ -96,7 +96,7 @@ class TestFileModification:
             line_count_before=10,
             line_count_after=11,
         )
-        
+
         d = mod.to_dict()
         assert d["path"] == "/test/file.py"
         assert d["action"] == "modified"
@@ -111,7 +111,7 @@ class TestAgentAuditLogger:
         """Test logger initialization."""
         log_path = temp_log_dir / "test-audit.log"
         logger = AgentAuditLogger(log_path)
-        
+
         assert logger.log_path == log_path
         assert logger.log_path.parent.exists()
 
@@ -124,15 +124,15 @@ class TestAgentAuditLogger:
             success=True,
             duration_ms=50,
         )
-        
+
         # Verify log file was created
         assert logger.log_path.exists()
-        
+
         # Read and verify entry
         with open(logger.log_path) as f:
             line = f.readline()
             entry = json.loads(line)
-        
+
         assert entry["agent_name"] == "formatter"
         assert entry["action_type"] == "file_modified"
         assert entry["success"] is True
@@ -141,10 +141,10 @@ class TestAgentAuditLogger:
     def test_log_file_modified(self, logger, tmp_path):
         """Test logging file modification with diff."""
         test_file = tmp_path / "test.py"
-        
+
         before = "def hello():\n    print('world')\n"
         after = "def hello():\n    print('hello')\n"
-        
+
         logger.log_file_modified(
             agent_name="formatter",
             file_path=test_file,
@@ -152,15 +152,15 @@ class TestAgentAuditLogger:
             after_content=after,
             message="Formatted test.py",
         )
-        
+
         # Read entry
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["agent_name"] == "formatter"
         assert entry["action_type"] == "file_modified"
         assert len(entry["file_modifications"]) == 1
-        
+
         mod = entry["file_modifications"][0]
         assert mod["action"] == "modified"
         assert mod["line_count_before"] == 2
@@ -171,10 +171,10 @@ class TestAgentAuditLogger:
     def test_log_fix_applied(self, logger, tmp_path):
         """Test logging fix application."""
         test_file = tmp_path / "test.py"
-        
+
         before = "x=1"
         after = "x = 1"
-        
+
         logger.log_fix_applied(
             agent_name="formatter",
             file_path=test_file,
@@ -183,10 +183,10 @@ class TestAgentAuditLogger:
             fix_type="formatting",
             severity="info",
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["action_type"] == "fix_applied"
         assert entry["context"]["fix_type"] == "formatting"
         assert entry["context"]["severity"] == "info"
@@ -201,10 +201,10 @@ class TestAgentAuditLogger:
             duration_ms=1500,
             message="Tests passed",
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["action_type"] == "command_executed"
         assert entry["command"] == "pytest tests/"
         assert entry["exit_code"] == 0
@@ -221,10 +221,10 @@ class TestAgentAuditLogger:
             line_number=42,
             fixable=True,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["action_type"] == "finding_reported"
         assert entry["context"]["finding_type"] == "line-too-long"
         assert entry["context"]["line_number"] == 42
@@ -238,10 +238,10 @@ class TestAgentAuditLogger:
             message="Failed to format file",
             duration_ms=100,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["action_type"] == "error_occurred"
         assert entry["success"] is False
         assert entry["error"] == "File not found"
@@ -257,9 +257,9 @@ class TestAgentAuditLogger:
                 success=True,
                 duration_ms=10 * i,
             )
-        
+
         entries = logger.query_recent(limit=10)
-        
+
         assert len(entries) == 5
         # Most recent should be first
         assert entries[0]["agent_name"] == "agent-4"
@@ -275,7 +275,7 @@ class TestAgentAuditLogger:
                 success=True,
                 duration_ms=0,
             )
-        
+
         entries = logger.query_recent(limit=5)
         assert len(entries) == 5
 
@@ -302,7 +302,7 @@ class TestAgentAuditLogger:
             success=True,
             duration_ms=0,
         )
-        
+
         entries = logger.query_by_agent("formatter", limit=10)
         assert len(entries) == 2
         assert all(e["agent_name"] == "formatter" for e in entries)
@@ -324,7 +324,7 @@ class TestAgentAuditLogger:
             duration_ms=0,
             error="Test error",
         )
-        
+
         entries = logger.query_by_action_type(ActionType.FILE_MODIFIED)
         assert len(entries) == 1
         assert entries[0]["action_type"] == "file_modified"
@@ -346,7 +346,7 @@ class TestAgentAuditLogger:
             duration_ms=0,
             error="Test error",
         )
-        
+
         entries = logger.query_failed_actions()
         assert len(entries) == 1
         assert entries[0]["agent_name"] == "agent-2"
@@ -354,7 +354,7 @@ class TestAgentAuditLogger:
     def test_query_fixes_applied(self, logger, tmp_path):
         """Test querying fixes."""
         test_file = tmp_path / "test.py"
-        
+
         logger.log_fix_applied(
             agent_name="formatter",
             file_path=test_file,
@@ -369,10 +369,10 @@ class TestAgentAuditLogger:
             after_content="",
             fix_type="unused-import",
         )
-        
+
         entries = logger.query_fixes_applied()
         assert len(entries) == 2
-        
+
         entries = logger.query_fixes_applied(agent_name="formatter")
         assert len(entries) == 1
         assert entries[0]["context"]["fix_type"] == "spacing"
@@ -380,20 +380,20 @@ class TestAgentAuditLogger:
     def test_diff_generation_for_small_changes(self, logger, tmp_path):
         """Test diff generation for small file changes."""
         test_file = tmp_path / "test.py"
-        
+
         before = "def hello():\n    pass\n"
         after = "def hello():\n    print('hello')\n"
-        
+
         logger.log_file_modified(
             agent_name="formatter",
             file_path=test_file,
             before_content=before,
             after_content=after,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         mod = entry["file_modifications"][0]
         assert mod["diff_lines"] is not None
         # Should have diff header + changes
@@ -402,21 +402,21 @@ class TestAgentAuditLogger:
     def test_diff_truncation_for_large_changes(self, logger, tmp_path):
         """Test diff is truncated for very large changes."""
         test_file = tmp_path / "large.py"
-        
+
         # Create a large file with many lines
         before = "\n".join(f"line {i}" for i in range(200))
         after = "\n".join(f"line {i + 1000}" for i in range(200))
-        
+
         logger.log_file_modified(
             agent_name="formatter",
             file_path=test_file,
             before_content=before,
             after_content=after,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         mod = entry["file_modifications"][0]
         assert mod["diff_lines"] is not None
         # Should have truncation marker
@@ -425,22 +425,22 @@ class TestAgentAuditLogger:
     def test_file_hash_calculation(self, logger, tmp_path):
         """Test SHA256 hash calculation for files."""
         test_file = tmp_path / "test.py"
-        
+
         before = "content before"
         after = "content after"
-        
+
         logger.log_file_modified(
             agent_name="formatter",
             file_path=test_file,
             before_content=before,
             after_content=after,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         mod = entry["file_modifications"][0]
-        
+
         # Verify hashes are present and different
         assert mod["hash_before"] is not None
         assert mod["hash_after"] is not None
@@ -457,16 +457,16 @@ class TestAgentAuditLogger:
             success=True,
             duration_ms=0,
         )
-        
+
         with open(logger.log_path) as f:
             entry = json.loads(f.readline())
-        
+
         assert entry["action_type"] == "fix_applied"
 
     def test_nonexistent_log_file_query(self, temp_log_dir):
         """Test querying when log file doesn't exist."""
         logger = AgentAuditLogger(temp_log_dir / "nonexistent.log")
-        
+
         entries = logger.query_recent()
         assert entries == []
 
@@ -476,7 +476,7 @@ class TestAgentAuditLogger:
         with open(logger.log_path, "w") as f:
             f.write("invalid json\n")
             f.write('{"valid": "json"}\n')
-        
+
         entries = logger.query_recent()
         # Should skip invalid line and return valid entry
         assert len(entries) == 1
@@ -486,11 +486,12 @@ class TestAgentAuditLogger:
         """Test get_agent_audit_logger returns singleton."""
         # Reset global instance
         import devloop.core.agent_audit_logger
+
         devloop.core.agent_audit_logger._agent_audit_logger = None
-        
+
         logger1 = get_agent_audit_logger()
         logger2 = get_agent_audit_logger()
-        
+
         assert logger1 is logger2
 
     def test_cleanup_old_logs(self, logger):
@@ -498,7 +499,7 @@ class TestAgentAuditLogger:
         # Add entries with old timestamps
         old_time = datetime.now(timezone.utc) - timedelta(days=40)
         recent_time = datetime.now(timezone.utc) - timedelta(days=5)
-        
+
         # Manually write old and recent entries
         old_entry = {
             "timestamp": old_time.isoformat(),
@@ -508,7 +509,7 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         recent_entry = {
             "timestamp": recent_time.isoformat(),
             "agent_name": "recent-agent",
@@ -517,21 +518,21 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         # Write entries directly
         with open(logger.log_path, "w") as f:
             f.write(json.dumps(old_entry) + "\n")
             f.write(json.dumps(recent_entry) + "\n")
-        
+
         # Call cleanup directly (bypass mtime check)
         logger._cleanup_old_logs_sync()
-        
+
         # Verify old entry was removed and recent ones kept
         with open(logger.log_path) as f:
             lines = f.readlines()
-        
+
         entries = [json.loads(line) for line in lines]
-        
+
         # Should have only recent entry (old one removed)
         agent_names = [e["agent_name"] for e in entries]
         assert "old-agent" not in agent_names
@@ -540,11 +541,11 @@ class TestAgentAuditLogger:
     def test_cleanup_with_custom_retention(self, temp_log_dir):
         """Test cleanup respects custom retention period."""
         logger = AgentAuditLogger(temp_log_dir / "audit.log", retention_days=5)
-        
+
         # Add entries with timestamps
         old_time = datetime.now(timezone.utc) - timedelta(days=10)
         recent_time = datetime.now(timezone.utc) - timedelta(days=2)
-        
+
         old_entry = {
             "timestamp": old_time.isoformat(),
             "agent_name": "old-agent",
@@ -553,7 +554,7 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         recent_entry = {
             "timestamp": recent_time.isoformat(),
             "agent_name": "recent-agent",
@@ -562,19 +563,19 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         # Write entries
         with open(logger.log_path, "w") as f:
             f.write(json.dumps(old_entry) + "\n")
             f.write(json.dumps(recent_entry) + "\n")
-        
+
         # Trigger cleanup directly
         logger._cleanup_old_logs_sync()
-        
+
         # Verify cleanup happened
         with open(logger.log_path) as f:
             entries = [json.loads(line) for line in f.readlines()]
-        
+
         agent_names = [e["agent_name"] for e in entries]
         assert "old-agent" not in agent_names
 
@@ -582,7 +583,7 @@ class TestAgentAuditLogger:
         """Test cleanup preserves malformed entries for safety."""
         old_time = datetime.now(timezone.utc) - timedelta(days=40)
         recent_time = datetime.now(timezone.utc) - timedelta(days=5)
-        
+
         old_entry = {
             "timestamp": old_time.isoformat(),
             "agent_name": "old",
@@ -591,9 +592,9 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         malformed = "this is not valid json"
-        
+
         recent_entry = {
             "timestamp": recent_time.isoformat(),
             "agent_name": "recent",
@@ -602,18 +603,95 @@ class TestAgentAuditLogger:
             "success": True,
             "duration_ms": 0,
         }
-        
+
         # Write entries with malformed one
         with open(logger.log_path, "w") as f:
             f.write(json.dumps(old_entry) + "\n")
             f.write(malformed + "\n")
             f.write(json.dumps(recent_entry) + "\n")
-        
+
         # Trigger cleanup directly
         logger._cleanup_old_logs_sync()
-        
+
         # Verify malformed entry was kept
         with open(logger.log_path) as f:
             content = f.read()
-        
+
         assert "this is not valid json" in content
+
+    def test_query_recent_tail_reading_small_file(self, logger):
+        """Test tail reading works correctly for small files."""
+        # Add 10 entries
+        for i in range(10):
+            logger.log_action(
+                agent_name=f"agent-{i}",
+                action_type=ActionType.FILE_MODIFIED,
+                message=f"Action {i}",
+                success=True,
+                duration_ms=10 * i,
+            )
+
+        # Query last 5 entries
+        entries = logger.query_recent(limit=5)
+
+        assert len(entries) == 5
+        # Most recent should be first
+        assert entries[0]["agent_name"] == "agent-9"
+        assert entries[-1]["agent_name"] == "agent-5"
+
+    def test_query_recent_tail_reading_large_file(self, logger):
+        """Test tail reading efficiently handles large files."""
+        # Create a large file with many entries
+        entry_count = 5000
+        for i in range(entry_count):
+            logger.log_action(
+                agent_name=f"agent-{i % 10}",
+                action_type=ActionType.FILE_MODIFIED,
+                message=f"Action {i}",
+                success=True,
+                duration_ms=0,
+            )
+
+        # Query last 100 entries
+        import time
+
+        start = time.time()
+        entries = logger.query_recent(limit=100)
+        elapsed = time.time() - start
+
+        assert len(entries) == 100
+        # Most recent should be first
+        assert entries[0]["message"] == "Action 4999"
+        assert entries[-1]["message"] == "Action 4900"
+
+        # Should be reasonably fast (not loading entire file)
+        # This is just a sanity check - actual performance depends on system
+        assert elapsed < 5.0
+
+    def test_tail_reading_with_incomplete_last_line(self, logger, tmp_path):
+        """Test tail reading handles incomplete last line gracefully."""
+        test_log = tmp_path / "test.log"
+        logger_test = AgentAuditLogger(test_log)
+
+        # Write entries with incomplete last line
+        entry1 = {
+            "agent_name": "test1",
+            "message": "msg1",
+            "timestamp": "2024-01-01T00:00:00+00:00",
+        }
+        entry2 = {
+            "agent_name": "test2",
+            "message": "msg2",
+            "timestamp": "2024-01-01T00:00:01+00:00",
+        }
+
+        with open(test_log, "w") as f:
+            f.write(json.dumps(entry1) + "\n")
+            f.write(json.dumps(entry2))  # No newline at end
+
+        entries = logger_test.query_recent(limit=10)
+
+        # Should still get both entries
+        assert len(entries) == 2
+        assert entries[0]["agent_name"] == "test2"
+        assert entries[1]["agent_name"] == "test1"

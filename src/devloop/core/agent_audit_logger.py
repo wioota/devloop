@@ -371,7 +371,11 @@ class AgentAuditLogger:
         )
 
     def query_recent(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Query recent audit entries.
+        """Query recent audit entries without loading entire file.
+
+        Implements efficient tail-based reading to avoid memory spikes
+        when querying large log files. Uses a buffered approach that reads
+        from the end of the file.
 
         Args:
             limit: Maximum number of entries to return
@@ -384,19 +388,88 @@ class AgentAuditLogger:
 
         entries = []
         try:
-            with open(self.log_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                for line in lines[-limit:]:
-                    try:
-                        entries.append(json.loads(line.strip()))
-                    except json.JSONDecodeError:
-                        self.logger.warning(
-                            f"Invalid JSON in agent audit log: {line[:100]}"
-                        )
+            # Use tail-based approach to efficiently read from end of file
+            entries = self._read_tail_entries(limit)
         except Exception as e:
             self.logger.error(f"Failed to read agent audit log: {e}")
 
         return list(reversed(entries))
+
+    def _read_tail_entries(self, limit: int) -> List[Dict[str, Any]]:
+        """Read the last N entries from log file efficiently.
+
+        Implements buffered reading from the end of the file to avoid
+        loading entire file into memory. Uses a chunk-based approach.
+
+        Returns entries in the order they appear in the file (oldest to newest).
+
+        Args:
+            limit: Number of entries to read
+
+        Returns:
+            List of parsed entries (in file order: oldest to newest)
+        """
+        entries = []
+        buffer_size = 8192  # 8KB chunks
+
+        try:
+            file_size = self.log_path.stat().st_size
+
+            # For small files, just read the whole thing
+            if file_size < 1024 * 1024:  # < 1MB
+                with open(self.log_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                    for line in lines[-limit:]:
+                        try:
+                            entries.append(json.loads(line.strip()))
+                        except json.JSONDecodeError:
+                            self.logger.warning(
+                                f"Invalid JSON in agent audit log: {line[:100]}"
+                            )
+                return entries
+
+            # For larger files, read from the end in chunks
+            entries = []
+            line_buffer = ""
+
+            with open(self.log_path, "rb") as f:
+                # Seek to end of file
+                f.seek(0, 2)
+                file_pos = f.tell()
+
+                # Read backwards in chunks until we have enough entries
+                while file_pos > 0 and len(entries) < limit:
+                    # Calculate how much to read
+                    read_size = min(buffer_size, file_pos)
+                    file_pos -= read_size
+
+                    # Read chunk
+                    f.seek(file_pos)
+                    chunk = f.read(read_size).decode("utf-8", errors="replace")
+                    line_buffer = chunk + line_buffer
+
+                    # Extract complete lines and process them
+                    lines = line_buffer.split("\n")
+                    line_buffer = lines[0]  # Incomplete line goes back to buffer
+
+                    # Process lines in reverse order (from last to first)
+                    for line in reversed(lines[1:]):
+                        if line.strip() and len(entries) < limit:
+                            try:
+                                entries.append(json.loads(line.strip()))
+                            except json.JSONDecodeError:
+                                self.logger.warning(
+                                    f"Invalid JSON in agent audit log: {line[:100]}"
+                                )
+
+            # Entries were collected in reverse order while reading backwards,
+            # so reverse them back to file order (oldest to newest)
+            entries.reverse()
+            return entries
+
+        except Exception as e:
+            self.logger.error(f"Failed to read tail entries: {e}")
+            return entries
 
     def query_by_agent(self, agent_name: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Query audit entries for a specific agent.
