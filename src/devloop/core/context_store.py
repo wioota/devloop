@@ -202,6 +202,12 @@ class ContextStore:
         async with self._lock:
             self._findings[tier].append(finding)
             await self._write_tier(tier)
+
+            # Aggressively manage memory: trim old findings when tier gets large
+            # Keep only the most recent findings to prevent unbounded memory growth
+            if len(self._findings[tier]) > 500:  # Per-tier threshold
+                self._trim_tier_memory(tier, keep_count=250)
+
             await self._update_index()
 
         logger.debug(
@@ -254,6 +260,26 @@ class ContextStore:
             score -= 0.2
 
         return min(score, 1.0)
+
+    def _trim_tier_memory(self, tier: Tier, keep_count: int = 250) -> None:
+        """
+        Trim memory by keeping only the most recent findings in a tier.
+
+        Args:
+            tier: Tier to trim
+            keep_count: Number of most recent findings to keep
+        """
+        if len(self._findings[tier]) > keep_count:
+            # Sort by timestamp (most recent first) and keep only the latest
+            sorted_findings = sorted(
+                self._findings[tier], key=lambda f: f.timestamp, reverse=True
+            )
+            self._findings[tier] = sorted_findings[:keep_count]
+            removed = len(sorted_findings) - keep_count
+            logger.debug(
+                f"Trimmed {tier.value} tier: removed {removed} old findings from memory "
+                f"(kept {keep_count} most recent)"
+            )
 
     def assign_tier(self, finding: Finding) -> Tier:
         """

@@ -259,35 +259,41 @@ def watch(
         console.print("\n[yellow]Shutting down...[/yellow]")
 
 
-async def _cleanup_old_data(context_store, event_store, interval_hours: int = 1):
-    """Periodically clean up old findings and events to prevent disk fill-up.
+async def _cleanup_old_data(context_store, event_store, interval_minutes: int = 15):
+    """Periodically clean up old findings and events to prevent disk/memory fill-up.
 
     Args:
         context_store: Context store instance
         event_store: Event store instance
-        interval_hours: How often to run cleanup (default: 1 hour)
+        interval_minutes: How often to run cleanup (default: 15 minutes)
+
+    Note: This is aggressive cleanup to prevent memory bloat between finds.
+    Most findings are auto-retained for 24 hours (IMMEDIATE/RELEVANT) or
+    7 days (BACKGROUND) on disk. Memory is trimmed more aggressively per
+    tier limits in ContextStore.add_finding().
     """
-    cleanup_interval = interval_hours * 60 * 60  # Convert to seconds
-    context_retention_hours = 7 * 24  # Keep 7 days of findings
+    cleanup_interval = interval_minutes * 60  # Convert to seconds
+    context_retention_hours = 7 * 24  # Keep 7 days of findings on disk
     event_retention_days = 30  # Keep 30 days of events
 
     while True:
         try:
             await asyncio.sleep(cleanup_interval)
 
-            # Clean up old context findings
+            # Clean up old context findings (removes from disk)
             findings_removed = await context_store.cleanup_old_findings(
                 hours_to_keep=context_retention_hours
             )
 
-            # Clean up old events
+            # Clean up old events (removes from database)
             events_removed = await event_store.cleanup_old_events(
                 days_to_keep=event_retention_days
             )
 
-            console.print(
-                f"[dim]Cleanup: removed {findings_removed} old findings, {events_removed} old events[/dim]"
-            )
+            if findings_removed > 0 or events_removed > 0:
+                console.print(
+                    f"[dim]Cleanup: removed {findings_removed} old findings, {events_removed} old events[/dim]"
+                )
 
         except asyncio.CancelledError:
             break

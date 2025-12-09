@@ -431,6 +431,109 @@ class TestTierAssignment:
         assert tier == Tier.AUTO_FIXED
 
 
+class TestMemoryManagement:
+    """Test memory management and trimming."""
+
+    @pytest.mark.asyncio
+    async def test_memory_trim_on_add_finding(self):
+        """Test that memory is trimmed when a tier exceeds threshold."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            store = ContextStore(context_dir=temp_dir)
+            await store.initialize()
+
+            # Add many findings to exceed threshold (500)
+            from datetime import timedelta
+
+            base_time = datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
+            for i in range(600):
+                finding = Finding(
+                    id=f"test_{i:04d}",
+                    agent="linter",
+                    # Use incrementing seconds to ensure unique timestamps
+                    timestamp=(base_time + timedelta(seconds=i)).isoformat() + "Z",
+                    file="test.py",
+                    relevance_score=0.9,  # Goes to IMMEDIATE
+                )
+                await store.add_finding(finding)
+
+            # After trimming, should have fewer findings than added
+            # We added 600 items, and after trimming to keep 250 per tier,
+            # memory should be constrained
+            immediate_findings = store._findings[Tier.IMMEDIATE]
+            # The trimming happens when tier exceeds 500, then keeps 250
+            # So we expect close to 250 but may have slight variations
+            assert len(immediate_findings) <= 350, "Memory should be trimmed"
+            assert len(immediate_findings) > 0
+
+            # The most recent findings should be kept (highest indices)
+            ids = [f.id for f in immediate_findings]
+            # Most recent should include the last ones we added
+            recent_ids = {f"test_{i:04d}" for i in range(500, 600)}
+            found_recent = len(recent_ids & set(ids)) >= 10
+            assert found_recent, f"Expected recent IDs in {ids}"
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_trim_tier_memory(self):
+        """Test the _trim_tier_memory helper method."""
+        store = ContextStore()
+
+        # Add multiple findings to IMMEDIATE tier with unique timestamps
+        from datetime import timedelta
+
+        base_time = datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
+        for i in range(100):
+            finding = Finding(
+                id=f"test_{i:03d}",
+                agent="linter",
+                timestamp=(base_time + timedelta(seconds=i)).isoformat() + "Z",
+                file="test.py",
+            )
+            store._findings[Tier.IMMEDIATE].append(finding)
+
+        # Trim to keep only 50
+        store._trim_tier_memory(Tier.IMMEDIATE, keep_count=50)
+
+        # Should have only 50
+        assert len(store._findings[Tier.IMMEDIATE]) == 50
+
+        # The most recent ones should be kept (highest indices)
+        ids = [f.id for f in store._findings[Tier.IMMEDIATE]]
+        recent_ids = {f"test_{i:03d}" for i in range(50, 100)}
+        found_recent = (
+            len(recent_ids & set(ids)) >= 40
+        )  # At least 40 of the most recent
+        assert found_recent, f"Expected mostly recent IDs, got: {ids}"
+
+    def test_trim_respects_timestamps(self):
+        """Test that trimming keeps the most recent findings by timestamp."""
+        store = ContextStore()
+
+        # Add findings with explicit timestamps
+        for i in range(10):
+            finding = Finding(
+                id=f"finding_{i}",
+                agent="linter",
+                timestamp=f"2025-01-0{i:01d}T00:00:00Z",  # Days 01-09
+                file="test.py",
+            )
+            store._findings[Tier.IMMEDIATE].append(finding)
+
+        # Trim to keep only 3
+        store._trim_tier_memory(Tier.IMMEDIATE, keep_count=3)
+
+        # Should have 3
+        assert len(store._findings[Tier.IMMEDIATE]) == 3
+
+        # Most recent (highest day number) should be kept
+        ids = [f.id for f in store._findings[Tier.IMMEDIATE]]
+        assert "finding_9" in ids
+        assert "finding_8" in ids
+        assert "finding_7" in ids
+
+
 if __name__ == "__main__":
     # Run tests
     pytest.main([__file__, "-v"])
