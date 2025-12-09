@@ -10,6 +10,21 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Telemetry helper function
+log_telemetry() {
+    local event_type=$1
+    local details=$2
+    local events_file=".devloop/events.jsonl"
+
+    if [ ! -d ".devloop" ]; then
+        return
+    fi
+
+    # Create JSONL entry (basic implementation without Python)
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "{\"event_type\": \"$event_type\", \"timestamp\": \"$timestamp\", $details}" >> "$events_file"
+}
+
 echo -e "${YELLOW}[CI Check] Running pre-push verification...${NC}"
 
 # Check if gh CLI is available
@@ -79,11 +94,18 @@ if [ "$CONCLUSION" = "failure" ] || [ "$CONCLUSION" = "timed_out" ] || [ "$CONCL
     echo -e "${RED}[CI Check] ❌ Last CI run failed with status: $CONCLUSION${NC}"
     echo -e "${RED}[CI Check] View the failed run: gh run list --branch $BRANCH${NC}"
     echo -e "${RED}[CI Check] Please fix CI issues before pushing${NC}"
+
+    # Log prevented bad push to telemetry
+    log_telemetry "pre_push_check" "\"success\": false, \"prevented_bad_push\": true, \"reason\": \"$CONCLUSION\""
+
     exit 1
 fi
 
 if [ "$CONCLUSION" = "success" ]; then
     echo -e "${GREEN}[CI Check] ✅ Latest CI run passed${NC}"
+
+    # Log successful pre-push check to telemetry
+    log_telemetry "pre_push_check" "\"success\": true, \"prevented_bad_push\": false"
 
     # After CI passes, extract DevLoop findings and create Beads issues
     echo -e "${YELLOW}[Findings] Extracting DevLoop findings...${NC}"

@@ -14,6 +14,7 @@ from rich.table import Table
 from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
 from .commands import summary as summary_cmd
+from .commands import telemetry as telemetry_cmd
 from devloop.agents import (
     AgentHealthMonitorAgent,
     FormatterAgent,
@@ -43,6 +44,7 @@ console = Console()
 app.add_typer(summary_cmd.app, name="summary")
 app.add_typer(custom_agents_cmd.app, name="custom")
 app.add_typer(feedback_cmd.app, name="feedback")
+app.add_typer(telemetry_cmd.app, name="telemetry")
 
 
 @app.command()

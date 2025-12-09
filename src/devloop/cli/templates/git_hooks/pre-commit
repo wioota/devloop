@@ -9,6 +9,21 @@
 # 4. Any existing pre-commit.old hook
 #
 
+# Telemetry helper function
+log_telemetry() {
+    local event_type=$1
+    local details=$2
+    local events_file=".devloop/events.jsonl"
+
+    if [ ! -d ".devloop" ]; then
+        return
+    fi
+
+    # Create JSONL entry (basic implementation without Python)
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "{\"event_type\": \"$event_type\", \"timestamp\": \"$timestamp\", $details}" >> "$events_file"
+}
+
 # Check if pyproject.toml changed but poetry.lock didn't (only in Poetry projects)
 if [ -f "poetry.lock" ]; then
     if git diff --cached --name-only | grep -q "pyproject.toml"; then
@@ -47,7 +62,12 @@ if git diff --cached --name-only | grep -qE '\.py$'; then
     if [ -x ".git/hooks/pre-commit-checks" ]; then
         ".git/hooks/pre-commit-checks"
         EXIT_CODE=$?
-        if [ $EXIT_CODE -ne 0 ]; then
+        
+        # Log pre-commit check to telemetry
+        if [ $EXIT_CODE -eq 0 ]; then
+            log_telemetry "pre_commit_check" "\"success\": true, \"checks_run\": 1"
+        else
+            log_telemetry "pre_commit_check" "\"success\": false, \"checks_run\": 1"
             exit $EXIT_CODE
         fi
     fi

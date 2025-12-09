@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 from .event import Event, EventBus
 from .feedback import FeedbackAPI
 from .performance import AgentResourceTracker, PerformanceMonitor
+from .telemetry import get_telemetry_logger
 
 
 @dataclass
@@ -174,6 +175,26 @@ class Agent(ABC):
                     await self.feedback_api.feedback_store.update_performance(
                         self.name, result.success, result.duration
                     )
+
+                # Log telemetry event
+                try:
+                    telemetry = get_telemetry_logger()
+                    telemetry.log_agent_execution(
+                        agent=self.name,
+                        duration_ms=int(result.duration * 1000),
+                        findings=(
+                            result.data.get("findings_count", 0) if result.data else 0
+                        ),
+                        severity_levels=(
+                            result.data.get("severity_levels", [])
+                            if result.data
+                            else []
+                        ),
+                        success=result.success,
+                        details={"message": result.message, **(result.data or {})},
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Failed to log telemetry: {e}")
 
                 # Publish result
                 await self._publish_result(result)
