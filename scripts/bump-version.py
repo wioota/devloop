@@ -20,7 +20,7 @@ def bump_version(new_version: str):
 
     files_to_update = {
         "pyproject.toml": (
-            r'version = ".*"',
+            r'^version = "\d+\.\d+\.\d+"',
             f'version = "{new_version}"'
         ),
     }
@@ -36,7 +36,7 @@ def bump_version(new_version: str):
     for file_path, (pattern, replacement) in files_to_update.items():
         path = Path(file_path)
         content = path.read_text()
-        new_content = re.sub(pattern, replacement, content)
+        new_content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
 
         if content == new_content:
             print(f"⚠ No changes made to {file_path} (pattern not found)")
