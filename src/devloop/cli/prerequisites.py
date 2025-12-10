@@ -18,11 +18,6 @@ class PrerequisiteChecker:
             "install_url": "https://cli.github.com",
             "critical": False,  # Pre-push hook can work without it
         },
-        "jq": {
-            "description": "JSON query tool (for parsing CI responses)",
-            "install_url": "https://jqlang.github.io/jq/download/",
-            "critical": False,  # Pre-push hook can work without it
-        },
         "bd": {
             "description": "Beads (for task management integration)",
             "install_url": "https://github.com/wioota/devloop",
@@ -114,21 +109,10 @@ class PrerequisiteChecker:
             return f"See documentation for {tool_name}"
 
         info = tools[tool_name]
-        if tool_name == "jq":
-            return f"""
-# Install jq
-# Ubuntu/Debian:
-sudo apt-get install -y jq
-
-# macOS:
-brew install jq
-
-# Other systems: {info['install_url']}
-"""
-        elif tool_name == "gh":
+        if tool_name == "gh":
             return f"""
 # Install GitHub CLI
-# See: {info['install_url']}
+# See: {info["install_url"]}
 
 # Ubuntu/Debian:
 sudo apt-get install -y gh
@@ -139,7 +123,7 @@ brew install gh
         elif tool_name == "bd":
             return f"""
 # Install Beads (bd)
-# See: {info['install_url']}
+# See: {info["install_url"]}
 
 pip install beads-mcp
 """

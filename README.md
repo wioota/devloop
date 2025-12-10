@@ -219,12 +219,6 @@ sudo apt-get install -y gh
 # macOS:
 brew install gh
 
-# JSON query tool (required for parsing CI responses)
-# Ubuntu/Debian:
-sudo apt-get install -y jq
-
-# macOS:
-brew install jq
 ```
 
 **For Task Management Integration (Optional):**
@@ -234,7 +228,7 @@ pip install beads-mcp
 ```
 
 **What happens if missing:**
-- `gh` + `jq`: Pre-push CI verification is skipped (but DevLoop still works)
+- `gh`: Pre-push CI verification is skipped (but DevLoop still works)
 - `bd`: Pre-push hook won't create task queue issues (but DevLoop still works)
 
 DevLoop will warn you during `devloop init` if any tools are missing and provide installation instructions. You can install them later and they'll be detected automatically.

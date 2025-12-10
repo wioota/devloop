@@ -34,28 +34,19 @@ if ! command -v gh &> /dev/null; then
     exit 0
 fi
 
-# Check if jq is available
-if ! command -v jq &> /dev/null; then
-    echo -e "${YELLOW}[CI Check] jq not found, skipping remote CI check${NC}"
-    echo -e "${YELLOW}[CI Check] Install jq to enable CI verification: https://jqlang.github.io/jq/download/${NC}"
-    exit 0
-fi
-
 # Get the branch being pushed
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 echo -e "${YELLOW}[CI Check] Checking CI status for branch: $BRANCH${NC}"
 
-# Check recent CI runs on this branch (get last completed run)
-LAST_RUN=$(gh run list --branch "$BRANCH" --limit 1 --json status,conclusion --jq '.[0]' 2>/dev/null || echo "")
+# Check recent CI runs on this branch using gh's built-in --jq (no external jq needed)
+STATUS=$(gh run list --branch "$BRANCH" --limit 1 --json status --jq '.[0].status' 2>/dev/null || echo "")
+CONCLUSION=$(gh run list --branch "$BRANCH" --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "")
 
-if [ -z "$LAST_RUN" ]; then
+if [ -z "$STATUS" ]; then
     echo -e "${YELLOW}[CI Check] No previous CI runs found${NC}"
     exit 0
 fi
-
-STATUS=$(echo "$LAST_RUN" | jq -r '.status' 2>/dev/null || echo "")
-CONCLUSION=$(echo "$LAST_RUN" | jq -r '.conclusion' 2>/dev/null || echo "")
 
 # If run is in progress, wait for completion (up to 2 minutes)
 if [ "$STATUS" != "completed" ]; then
@@ -69,9 +60,8 @@ if [ "$STATUS" != "completed" ]; then
         sleep $POLL_INTERVAL
         WAIT_TIME=$((WAIT_TIME + POLL_INTERVAL))
 
-        LAST_RUN=$(gh run list --branch "$BRANCH" --limit 1 --json status,conclusion --jq '.[0]' 2>/dev/null || echo "")
-        STATUS=$(echo "$LAST_RUN" | jq -r '.status' 2>/dev/null || echo "")
-        CONCLUSION=$(echo "$LAST_RUN" | jq -r '.conclusion' 2>/dev/null || echo "")
+        STATUS=$(gh run list --branch "$BRANCH" --limit 1 --json status --jq '.[0].status' 2>/dev/null || echo "")
+        CONCLUSION=$(gh run list --branch "$BRANCH" --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "")
 
         if [ "$STATUS" = "completed" ]; then
             echo -e "${YELLOW}[CI Check] CI completed with status: $CONCLUSION${NC}"

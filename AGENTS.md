@@ -707,7 +707,7 @@ Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
 ### CI Verification
 
-- Pre-push hook verifies GitHub Actions CI status (if `jq` is installed)
+- Pre-push hook verifies GitHub Actions CI status (requires `gh` CLI)
 - All tests must pass before pushing
 - Release tags are permanent - create a new tag if mistakes are made
 
