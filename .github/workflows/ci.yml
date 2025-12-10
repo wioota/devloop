@@ -7,7 +7,33 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  format-check:
+    name: Code Formatting (Black) - Fail Fast
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+    
+    - name: Run Black (code formatting check)
+      run: |
+        poetry run black --check src/ tests/
+      
   test:
+    needs: [format-check]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -50,6 +76,7 @@ jobs:
         path: .pytest_cache/
 
   lint:
+    needs: [format-check]
     runs-on: ubuntu-latest
 
     steps:
@@ -69,15 +96,12 @@ jobs:
       run: |
         poetry install --with dev
 
-    - name: Run Black (code formatting check)
-      run: |
-        poetry run black --check src/ tests/
-
     - name: Run Ruff (linting)
       run: |
         poetry run ruff check src/
 
   type-check:
+    needs: [format-check]
     runs-on: ubuntu-latest
 
     steps:

@@ -217,7 +217,7 @@
     }
   },
   "global": {
-    "mode": "report-only",
+    "mode": "fix-mode",
     "maxConcurrentAgents": 5,
     "notificationLevel": "summary",
     "resourceLimits": {},
@@ -238,7 +238,8 @@
     "autonomousFixes": {
       "enabled": true,
       "safetyLevel": "safe_only",
-      "optIn": false
+      "optIn": false,
+      "autoStageFixedFiles": true
     },
     "security": {
       "sandbox": {
