@@ -287,7 +287,9 @@ class TestReleaseManager:
             assert result.url == "refs/tags/v1.0.0"
 
     @patch("devloop.release.release_manager.subprocess.run")
-    def test_create_release_tag_already_exists(self, mock_subprocess, mock_provider_manager):
+    def test_create_release_tag_already_exists(
+        self, mock_subprocess, mock_provider_manager
+    ):
         """Test creating tag when tag already exists."""
         mock_subprocess.return_value = Mock(stdout="v1.0.0\n", returncode=0)
 
@@ -391,7 +393,8 @@ class TestReleaseManager:
                     assert result.success is False
                     # git tag commands should not be called if checks fail
                     tag_calls = [
-                        call for call in mock_subprocess.call_args_list
+                        call
+                        for call in mock_subprocess.call_args_list
                         if call and "tag" in str(call)
                     ]
                     assert len(tag_calls) == 0
@@ -412,9 +415,7 @@ class TestReleaseManager:
                 ):
                     # Test with explicit providers
                     config = ReleaseConfig(
-                        version="2.0.0",
-                        ci_provider="github",
-                        registry_provider="pypi"
+                        version="2.0.0", ci_provider="github", registry_provider="pypi"
                     )
                     manager = ReleaseManager(config)
 
@@ -446,4 +447,6 @@ class TestReleaseManager:
                     assert manager.get_ci_provider() is not None
                     assert manager.get_registry_provider() is not None
                     assert manager.config.ci_provider is None  # Not explicitly set
-                    assert manager.config.registry_provider is None  # Not explicitly set
+                    assert (
+                        manager.config.registry_provider is None
+                    )  # Not explicitly set

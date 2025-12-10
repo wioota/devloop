@@ -289,7 +289,9 @@ class TestMultipleRegistryRelease:
                         manager_artifactory = ReleaseManager(config_artifactory)
                         result_artifactory = manager_artifactory.publish_release()
                         assert result_artifactory.success is True
-                        assert result_artifactory.registry_provider_name == "Artifactory"
+                        assert (
+                            result_artifactory.registry_provider_name == "Artifactory"
+                        )
 
 
 class TestReleaseCheckCommand:
