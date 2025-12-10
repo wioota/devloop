@@ -768,6 +768,67 @@ devloop release publish 1.2.3 --registry artifactory
 
 Tag and CI checks only run once (when creating the first tag). Subsequent publishes to different registries reuse the existing tag.
 
+### Troubleshooting Auto-Detection
+
+If `devloop release` commands fail with "no provider available", the auto-detection couldn't find your CI or registry setup. Here's how to fix it:
+
+#### GitHub Actions Issues
+
+**Requirements for auto-detection:**
+- `gh` CLI installed (`brew install gh` or `apt install gh`)
+- Authenticated with GitHub: `gh auth login`
+
+**Verify:**
+```bash
+gh auth status
+```
+
+**If auto-detection fails:**
+```bash
+# Explicitly specify GitHub
+devloop release check 1.2.3 --ci github
+
+# Explicit CI with auto-detect registry
+devloop release publish 1.2.3 --ci github
+```
+
+#### PyPI Issues
+
+**Requirements for auto-detection:**
+- `poetry` CLI installed
+- PyPI token configured: `poetry config pypi-token.pypi <your-token>`
+- Network access to pypi.org
+
+**Verify:**
+```bash
+poetry --version
+poetry config pypi-token.pypi  # Should show your token (masked)
+```
+
+**If credentials missing:**
+```bash
+# Get token from https://pypi.org/account/
+poetry config pypi-token.pypi "pypi-AgEIcHlwaS5vcmc..."
+```
+
+**If auto-detection fails:**
+```bash
+# Explicitly specify PyPI
+devloop release check 1.2.3 --registry pypi
+
+# Explicit registry with auto-detect CI
+devloop release publish 1.2.3 --registry pypi
+```
+
+#### Both Providers Not Available
+
+If neither auto-detection works, explicitly specify both:
+```bash
+devloop release publish 1.2.3 --ci github --registry pypi
+```
+
+This will still validate that the tools are installed and authenticated before attempting the release.
+
 ---
 
 ## Future Considerations

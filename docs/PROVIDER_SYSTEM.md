@@ -409,6 +409,71 @@ conclusion = runs[0].conclusion
 - ✅ Type-safe and testable
 - ✅ Graceful degradation if provider unavailable
 
+## Troubleshooting Auto-Detection
+
+If release commands fail with "no provider available", auto-detection couldn't find your CI or registry setup.
+
+### GitHub Actions Issues
+
+**Requirements for auto-detection:**
+- `gh` CLI installed
+- Authenticated with GitHub: `gh auth login`
+
+**Verify installation:**
+```bash
+gh --version
+gh auth status
+```
+
+**Common issues:**
+- `gh: command not found` → Install: `brew install gh` or `apt install gh`
+- `Not authenticated` → Run: `gh auth login`
+- `Not a GitHub repository` → Provider won't auto-detect, use `--ci github` explicitly
+
+**Solution:**
+```bash
+# Explicitly specify if auto-detection fails
+devloop release publish 1.2.3 --ci github
+```
+
+### PyPI Issues
+
+**Requirements for auto-detection:**
+- `poetry` CLI installed
+- PyPI token in poetry config
+- Network access to pypi.org
+
+**Verify installation:**
+```bash
+poetry --version
+poetry config pypi-token.pypi  # Should show your token (masked)
+```
+
+**Common issues:**
+- `poetry: command not found` → Install: `pip install poetry`
+- `No credentials configured` → Run: `poetry config pypi-token.pypi <token>`
+- Token from: https://pypi.org/account/
+- Network blocked → Use explicit `--registry` to fail fast
+
+**Solution:**
+```bash
+# Configure credentials
+poetry config pypi-token.pypi "pypi-AgEIcHlwaS5vcmc..."
+
+# Or explicitly specify if auto-detection fails
+devloop release publish 1.2.3 --registry pypi
+```
+
+### Both Providers Not Available
+
+If both auto-detect fail:
+```bash
+# Explicitly specify both (will validate before attempting)
+devloop release publish 1.2.3 --ci github --registry pypi
+```
+
+This ensures the system validates that the required CLI tools are installed and authenticated before starting the release.
+
 ## Testing
 
 Mock providers for testing:
