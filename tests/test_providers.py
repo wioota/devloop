@@ -2,7 +2,12 @@
 
 import pytest
 
-from devloop.providers.ci_provider import CIProvider, RunConclusion, RunStatus, WorkflowRun
+from devloop.providers.ci_provider import (
+    CIProvider,
+    RunConclusion,
+    RunStatus,
+    WorkflowRun,
+)
 from devloop.providers.github_actions_provider import GitHubActionsProvider
 from devloop.providers.provider_manager import ProviderManager
 from devloop.providers.pypi_registry import PyPIRegistry
