@@ -508,10 +508,10 @@ gh run view <run-id> --log-failed
 - **Agent support**: Security scanner agents should flag hardcoded credentials
 
 #### Version Consistency
-- ✅ Keep version numbers synchronized across `pyproject.toml`, `setup.py`, `__version__`, release tags
+- ✅ `pyproject.toml` is the single source of truth (version is read dynamically via `importlib.metadata`)
 - ✅ Use semantic versioning (MAJOR.MINOR.PATCH)
 - ✅ Tag releases with matching version numbers (`git tag v1.2.3`)
-- **Automated**: Consider a version-bump script in your agent configuration
+- **Automated**: Use `python scripts/bump-version.py <version>` to update versions
 
 #### Breaking Changes
 - ✅ Document all breaking changes clearly in `CHANGELOG.md`
@@ -658,8 +658,9 @@ python scripts/bump-version.py 0.4.1
 ```
 
 This updates:
-- `pyproject.toml` (version field)
-- `src/devloop/__init__.py` (__version__)
+- `pyproject.toml` (version field - single source of truth)
+
+Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
 ### Full Release Checklist
 

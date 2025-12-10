@@ -23,10 +23,6 @@ def bump_version(new_version: str):
             r'version = ".*"',
             f'version = "{new_version}"'
         ),
-        "src/devloop/__init__.py": (
-            r'__version__ = ".*"',
-            f'__version__ = "{new_version}"'
-        ),
     }
 
     # Verify all files exist
@@ -49,8 +45,8 @@ def bump_version(new_version: str):
             print(f"✓ Updated {file_path}")
 
     print(f"\n✓ Version bumped to {new_version}")
-    print(f"\nNext steps:")
-    print(f"  git add pyproject.toml src/devloop/__init__.py")
+    print("\nNext steps:")
+    print("  git add pyproject.toml")
     print(f"  git commit -m 'chore: Bump version to {new_version}'")
     print(f"  git tag -a v{new_version} -m 'Release v{new_version}'")
     print(f"  git push origin main v{new_version}")

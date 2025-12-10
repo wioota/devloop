@@ -39,23 +39,8 @@ if [ -f "poetry.lock" ]; then
     fi
 fi
 
-# Check version consistency between pyproject.toml and __init__.py
-if git diff --cached --name-only | grep -qE '(pyproject.toml|src/devloop/__init__.py)'; then
-    if [ -f "pyproject.toml" ] && [ -f "src/devloop/__init__.py" ]; then
-        PYPROJECT_VERSION=$(grep '^version = ' pyproject.toml 2>/dev/null | sed 's/version = "\(.*\)"/\1/')
-        INIT_VERSION=$(grep '^__version__ = ' src/devloop/__init__.py 2>/dev/null | sed 's/__version__ = "\(.*\)"/\1/')
-
-        if [ -n "$PYPROJECT_VERSION" ] && [ -n "$INIT_VERSION" ] && [ "$PYPROJECT_VERSION" != "$INIT_VERSION" ]; then
-            echo "ERROR: Version mismatch detected!"
-            echo "  pyproject.toml:           $PYPROJECT_VERSION"
-            echo "  src/devloop/__init__.py:  $INIT_VERSION"
-            echo ""
-            echo "These must match. Update both files to the same version."
-            echo "Tip: Use 'python scripts/bump-version.py <version>' to update both at once."
-            exit 1
-        fi
-    fi
-fi
+# Version is now read dynamically from pyproject.toml via importlib.metadata
+# No need to check version consistency - pyproject.toml is the single source of truth
 
 # Run type checks and tests (only if there are Python changes)
 if git diff --cached --name-only | grep -qE '\.py$'; then
