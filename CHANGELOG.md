@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.1] - 2025-12-10
+
+### Improvements
+
+#### Dynamic Version Management
+- **Single source of truth for version** - `pyproject.toml` is now the only place version is defined
+- **Dynamic version reading** - Uses `importlib.metadata.version()` with fallback to `0.0.0.dev`
+- **Simplified bump-version.py** - Only updates `pyproject.toml`
+- **Removed version consistency check** from pre-commit hook (no longer needed)
+
+#### Reduced Dependencies
+- **Removed jq dependency** - Pre-push hook now uses `gh` CLI's built-in `--jq` flag
+- **Only `gh` CLI required** for CI verification (no external jq needed)
+
+---
+
 ## [0.4.0] - 2025-12-09
 
 ### Major Features
