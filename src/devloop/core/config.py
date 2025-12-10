@@ -317,7 +317,8 @@ class Config:
                 "triggers": ["git:post-push"],
                 "config": {
                     "check_interval_seconds": 30,
-                    "ci_platform": "github",
+                    "ci_provider": "github",
+                    "ci_config": {},
                 },
             }
 
@@ -339,6 +340,16 @@ class Config:
                 "logging": {},
                 "contextStore": {"enabled": True, "path": ".devloop/context"},
                 "autonomousFixes": {"enabled": True, "safetyLevel": "safe_only"},
+                "providers": {
+                    "ci": {
+                        "provider": "github",
+                        "config": {},
+                    },
+                    "registry": {
+                        "provider": "pypi",
+                        "config": {},
+                    },
+                },
             },
             "eventSystem": {"collectors": {}, "dispatcher": {}, "store": {}},
         }

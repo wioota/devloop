@@ -1,6 +1,5 @@
-"""CI Monitor Agent - Monitors GitHub Actions CI status."""
+"""CI Monitor Agent - Monitors CI system status (platform-agnostic)."""
 
-import json
 import subprocess
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
@@ -8,10 +7,12 @@ from typing import Any, Dict, List, Optional
 from devloop.core.agent import Agent, AgentResult
 from devloop.core.context_store import Finding, Severity
 from devloop.core.event import Event
+from devloop.providers.ci_provider import CIProvider, RunConclusion, RunStatus
+from devloop.providers.provider_manager import get_provider_manager
 
 
 class CIMonitorAgent(Agent):
-    """Monitors GitHub Actions CI status and reports failures."""
+    """Monitors CI status and reports failures (provider-agnostic)."""
 
     def __init__(
         self,
@@ -19,7 +20,9 @@ class CIMonitorAgent(Agent):
         triggers: List[str],
         event_bus: Any,
         check_interval: int = 300,
-    ):  # 5 minutes default
+        ci_provider: Optional[CIProvider] = None,
+        provider_name: str = "github",
+    ):
         """
         Initialize CI monitor agent.
 
@@ -28,14 +31,36 @@ class CIMonitorAgent(Agent):
             triggers: Event triggers for this agent
             event_bus: Event bus for publishing events
             check_interval: How often to check CI status (in seconds)
+            ci_provider: Optional pre-configured CIProvider. If not provided, auto-detects.
+            provider_name: CI provider name (e.g., "github", "gitlab") if ci_provider not provided
         """
         super().__init__(name, triggers, event_bus)
         self.check_interval = check_interval
         self.last_check: Optional[datetime] = None
         self.last_status: Optional[dict] = None
 
+        # Use provided provider or auto-detect
+        if ci_provider:
+            self.provider: Optional[CIProvider] = ci_provider
+        else:
+            manager = get_provider_manager()
+            provider = manager.get_ci_provider(provider_name)
+            if provider:
+                self.provider = provider
+            else:
+                # Fall back to auto-detection
+                self.provider = manager.auto_detect_ci_provider()
+
     async def handle(self, event: Event) -> AgentResult:
         """Handle events and check CI status."""
+        if not self.provider:
+            return AgentResult(
+                agent_name=self.name,
+                success=False,
+                duration=0,
+                error="No CI provider available",
+            )
+
         # Check if it's time for periodic check
         should_check = False
 
@@ -55,11 +80,29 @@ class CIMonitorAgent(Agent):
 
         # Check CI status
         try:
-            status = await self._check_ci_status()
-            self.last_check = datetime.now()
-            self.last_status = status
+            branch = self._get_current_branch()
+            if not branch:
+                return AgentResult(
+                    agent_name=self.name,
+                    success=False,
+                    duration=0,
+                    error="Could not determine current branch",
+                )
 
-            if not status:
+            # Check if provider is available
+            if not self.provider.is_available():
+                return AgentResult(
+                    agent_name=self.name,
+                    success=True,
+                    duration=0,
+                    message=f"CI provider '{self.provider.get_provider_name()}' not available",
+                )
+
+            # Get latest runs
+            runs = self.provider.list_runs(branch, limit=5)
+            self.last_check = datetime.now()
+
+            if not runs:
                 return AgentResult(
                     agent_name=self.name,
                     success=True,
@@ -68,7 +111,7 @@ class CIMonitorAgent(Agent):
                 )
 
             # Analyze status and create findings
-            findings = self._analyze_ci_status(status)
+            findings = self._analyze_runs(runs)
 
             if findings:
                 return AgentResult(
@@ -102,40 +145,8 @@ class CIMonitorAgent(Agent):
         time_since_check = datetime.now() - self.last_check
         return time_since_check > timedelta(seconds=self.check_interval)
 
-    async def _check_ci_status(self) -> Optional[dict]:
-        """
-        Check CI status using gh CLI.
-
-        Returns:
-            CI status dict or None if unavailable
-        """
-        # Check if gh CLI is available
-        try:
-            result = subprocess.run(
-                ["gh", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode != 0:
-                return None
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            return None
-
-        # Check if authenticated
-        try:
-            result = subprocess.run(
-                ["gh", "auth", "status"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if result.returncode != 0:
-                return None
-        except subprocess.TimeoutExpired:
-            return None
-
-        # Get current branch
+    def _get_current_branch(self) -> Optional[str]:
+        """Get the current git branch."""
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -144,92 +155,55 @@ class CIMonitorAgent(Agent):
                 check=True,
                 timeout=5,
             )
-            branch = result.stdout.strip()
+            return result.stdout.strip()
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return None
 
-        # Get latest workflow runs
-        try:
-            result = subprocess.run(
-                [
-                    "gh",
-                    "run",
-                    "list",
-                    "--branch",
-                    branch,
-                    "--limit",
-                    "5",
-                    "--json",
-                    "status,conclusion,name,databaseId,createdAt,workflowName",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=10,
-            )
+    def _analyze_runs(self, runs: List) -> list[Finding]:
+        """Analyze CI runs and create findings for issues."""
+        findings: list[Finding] = []
 
-            if result.stdout.strip():
-                runs = json.loads(result.stdout)
-                return {
-                    "branch": branch,
-                    "runs": runs,
-                    "checked_at": datetime.now().isoformat(),
-                }
-        except (
-            subprocess.CalledProcessError,
-            subprocess.TimeoutExpired,
-            json.JSONDecodeError,
-        ):
-            return None
+        # Ensure provider is available for messages
+        if not self.provider:
+            return findings
 
-        return None
-
-    def _analyze_ci_status(self, status: dict) -> list[Finding]:
-        """Analyze CI status and create findings for issues."""
-        findings = []
-        runs = status.get("runs", [])
-        branch = status.get("branch", "unknown")
-
-        # Group runs by workflow
+        # Group runs by workflow name
         workflows: Dict[str, list] = {}
         for run in runs:
-            workflow_name = run.get("workflowName", run.get("name", "Unknown"))
+            workflow_name = run.name
             if workflow_name not in workflows:
                 workflows[workflow_name] = []
             workflows[workflow_name].append(run)
 
         # Check each workflow's latest run
         for workflow_name, workflow_runs in workflows.items():
-            latest_run = workflow_runs[0]  # Already sorted by createdAt descending
-            conclusion = latest_run.get("conclusion")
-            status_val = latest_run.get("status")
-            run_id = latest_run.get("databaseId", "unknown")
+            latest_run = workflow_runs[0]
 
-            if conclusion == "failure":
+            if latest_run.conclusion == RunConclusion.FAILURE:
                 findings.append(
                     Finding(
-                        id=f"ci-{run_id}",
+                        id=f"ci-{latest_run.id}",
                         agent="ci-monitor",
                         timestamp=datetime.now().isoformat(),
                         file=".github/workflows/ci.yml",
                         category="ci",
                         severity=Severity.ERROR,
-                        message=f"CI workflow '{workflow_name}' failed on branch '{branch}' (Run #{run_id})",
-                        suggestion=f"View details: gh run view {run_id}\nRerun: gh run rerun {run_id}",
+                        message=f"CI workflow '{workflow_name}' failed on branch '{latest_run.branch}' (Run #{latest_run.id})",
+                        suggestion=f"View details: {latest_run.url}\nProvider: {self.provider.get_provider_name()}",
                         auto_fixable=False,
                     )
                 )
-            elif status_val == "in_progress":
+            elif latest_run.status == RunStatus.IN_PROGRESS:
                 findings.append(
                     Finding(
-                        id=f"ci-{run_id}",
+                        id=f"ci-{latest_run.id}",
                         agent="ci-monitor",
                         timestamp=datetime.now().isoformat(),
                         file=".github/workflows/ci.yml",
                         category="ci",
                         severity=Severity.INFO,
-                        message=f"CI workflow '{workflow_name}' is running on branch '{branch}' (Run #{run_id})",
-                        suggestion=f"Watch progress: gh run watch {run_id}",
+                        message=f"CI workflow '{workflow_name}' is running on branch '{latest_run.branch}' (Run #{latest_run.id})",
+                        suggestion=f"Watch progress at: {latest_run.url}",
                         auto_fixable=False,
                     )
                 )

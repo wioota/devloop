@@ -27,21 +27,44 @@ log_telemetry() {
 
 echo -e "${YELLOW}[CI Check] Running pre-push verification...${NC}"
 
-# Check if gh CLI is available
-if ! command -v gh &> /dev/null; then
-    echo -e "${YELLOW}[CI Check] gh CLI not found, skipping remote CI check${NC}"
-    echo -e "${YELLOW}[CI Check] Install GitHub CLI to enable CI verification: https://cli.github.com${NC}"
-    exit 0
+# Try to use devloop's provider-based system first
+CI_CHECK_OUTPUT=""
+if command -v python3 &> /dev/null; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PRE_PUSH_SCRIPT="$SCRIPT_DIR/../../cli/pre_push_check.py"
+    
+    if [ -f "$PRE_PUSH_SCRIPT" ]; then
+        CI_CHECK_OUTPUT=$(python3 "$PRE_PUSH_SCRIPT" 2>/dev/null)
+    fi
 fi
 
-# Get the branch being pushed
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
+# Parse provider output if available
+if [ -n "$CI_CHECK_OUTPUT" ]; then
+    CI_PROVIDER=$(echo "$CI_CHECK_OUTPUT" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('provider', 'unknown'))" 2>/dev/null || echo "")
+    STATUS=$(echo "$CI_CHECK_OUTPUT" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('status', ''))" 2>/dev/null || echo "")
+    CONCLUSION=$(echo "$CI_CHECK_OUTPUT" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('conclusion', '') or '')" 2>/dev/null || echo "")
+    CI_URL=$(echo "$CI_CHECK_OUTPUT" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('url', ''))" 2>/dev/null || echo "")
+    BRANCH=$(echo "$CI_CHECK_OUTPUT" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('branch', ''))" 2>/dev/null || echo "")
+fi
 
-echo -e "${YELLOW}[CI Check] Checking CI status for branch: $BRANCH${NC}"
+# Fall back to GitHub CLI if provider-based check didn't work
+if [ -z "$STATUS" ]; then
+    # Check if gh CLI is available
+    if ! command -v gh &> /dev/null; then
+        echo -e "${YELLOW}[CI Check] No CI provider available${NC}"
+        exit 0
+    fi
+    
+    # Get the branch being pushed
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    
+    # Check recent CI runs on this branch using gh's built-in --jq (no external jq needed)
+    STATUS=$(gh run list --branch "$BRANCH" --limit 1 --json status --jq '.[0].status' 2>/dev/null || echo "")
+    CONCLUSION=$(gh run list --branch "$BRANCH" --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "")
+    CI_PROVIDER="GitHub Actions"
+fi
 
-# Check recent CI runs on this branch using gh's built-in --jq (no external jq needed)
-STATUS=$(gh run list --branch "$BRANCH" --limit 1 --json status --jq '.[0].status' 2>/dev/null || echo "")
-CONCLUSION=$(gh run list --branch "$BRANCH" --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "")
+echo -e "${YELLOW}[CI Check] Checking CI status for branch: $BRANCH (${CI_PROVIDER})${NC}"
 
 if [ -z "$STATUS" ]; then
     echo -e "${YELLOW}[CI Check] No previous CI runs found${NC}"
