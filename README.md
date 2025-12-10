@@ -176,7 +176,9 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 
 ### Installation
 
-**Prerequisites:** Python 3.11+
+**Prerequisites:**
+- Python 3.11 or later
+- For release workflow: Poetry 1.7+ and GitHub CLI 2.78+
 
 #### Option 1: From PyPI (Recommended)
 
@@ -212,13 +214,27 @@ DevLoop automatically detects and uses several system tools. Install them for fu
 
 **For Pre-Push CI Verification (Optional but Recommended):**
 ```bash
-# GitHub CLI (for checking CI status before push)
+# GitHub CLI 2.78+ (for checking CI status before push)
 # Ubuntu/Debian:
 sudo apt-get install -y gh
 
 # macOS:
 brew install gh
 
+# Verify installation
+gh --version
+```
+
+**For Release Management (Optional but Recommended for Publishing):**
+```bash
+# Poetry 1.7+ (for package management and publishing)
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Verify installation
+poetry --version
+
+# Configure PyPI credentials (get token from https://pypi.org/account/)
+poetry config pypi-token.pypi "pypi-AgEIcHlwaS5vcmc..."
 ```
 
 **For Task Management Integration (Optional):**
@@ -228,8 +244,9 @@ pip install beads-mcp
 ```
 
 **What happens if missing:**
-- `gh`: Pre-push CI verification is skipped (but DevLoop still works)
-- `bd`: Pre-push hook won't create task queue issues (but DevLoop still works)
+- `gh` (2.78+): Pre-push CI verification is skipped (but DevLoop still works)
+- `poetry` (1.7+): Release workflow unavailable (but development still works)
+- `bd`: Task creation on push won't work (but DevLoop still works)
 
 DevLoop will warn you during `devloop init` if any tools are missing and provide installation instructions. You can install them later and they'll be detected automatically.
 
@@ -304,6 +321,43 @@ devloop custom-create my_agent pattern_matcher
 ```
 
 [View all CLI commands →](./docs/cli-commands.md)
+
+### Verify Installation & Version Compatibility
+
+After installation, verify everything is working:
+
+```bash
+# Check DevLoop version
+devloop --version
+
+# Verify system dependencies are detected
+devloop init --check-requirements
+
+# Check daemon status (if running)
+devloop status
+
+# Verify git hooks are installed (in your project)
+cat .git/hooks/pre-commit    # Should exist
+cat .git/hooks/pre-push      # Should exist
+```
+
+**Version compatibility:**
+- DevLoop 0.4.1+ requires Python 3.11+
+- Release workflow requires Poetry 1.7+ and GitHub CLI 2.78+
+- AGENTS.md template was updated in DevLoop 0.4.0+
+
+**If you're upgrading DevLoop:**
+```bash
+# Upgrade to latest
+pip install --upgrade devloop
+
+# Update your project's AGENTS.md (templates may have changed)
+devloop init --merge-templates /path/to/your/project
+
+# Restart the daemon
+devloop stop
+devloop watch .
+```
 
 ---
 
