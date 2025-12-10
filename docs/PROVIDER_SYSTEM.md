@@ -249,6 +249,25 @@ The `ReleaseManager.release()` method:
    - Happens automatically after successful publish
    - Only if all previous steps succeeded
 
+### CLI Usage
+
+```bash
+# Check if ready to release
+devloop release check 1.2.3
+
+# Publish a release
+devloop release publish 1.2.3
+
+# Publish with custom providers
+devloop release publish 1.2.3 --ci github --registry pypi
+
+# Dry-run (see what would happen)
+devloop release publish 1.2.3 --dry-run
+
+# Skip certain steps
+devloop release publish 1.2.3 --skip-tag --skip-publish
+```
+
 ### Example: PyPI + GitHub Actions
 
 ```python
