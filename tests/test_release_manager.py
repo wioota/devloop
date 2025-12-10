@@ -395,3 +395,55 @@ class TestReleaseManager:
                         if call and "tag" in str(call)
                     ]
                     assert len(tag_calls) == 0
+
+    def test_multi_provider_release(self, mock_provider_manager):
+        """Test release workflow with explicit provider specification."""
+        with patch(
+            "devloop.release.release_manager.get_provider_manager",
+            return_value=mock_provider_manager,
+        ):
+            with patch(
+                "devloop.release.release_manager.ReleaseManager._check_git_clean",
+                return_value=True,
+            ):
+                with patch(
+                    "devloop.release.release_manager.ReleaseManager._get_current_branch",
+                    return_value="main",
+                ):
+                    # Test with explicit providers
+                    config = ReleaseConfig(
+                        version="2.0.0",
+                        ci_provider="github",
+                        registry_provider="pypi"
+                    )
+                    manager = ReleaseManager(config)
+
+                    # Verify providers are retrieved with explicit names
+                    assert manager.get_ci_provider() is not None
+                    assert manager.get_registry_provider() is not None
+                    assert manager.config.ci_provider == "github"
+                    assert manager.config.registry_provider == "pypi"
+
+    def test_release_with_auto_detect(self, mock_provider_manager):
+        """Test release workflow with auto-detected providers."""
+        with patch(
+            "devloop.release.release_manager.get_provider_manager",
+            return_value=mock_provider_manager,
+        ):
+            with patch(
+                "devloop.release.release_manager.ReleaseManager._check_git_clean",
+                return_value=True,
+            ):
+                with patch(
+                    "devloop.release.release_manager.ReleaseManager._get_current_branch",
+                    return_value="main",
+                ):
+                    # Test with auto-detect (None)
+                    config = ReleaseConfig(version="2.0.0")
+                    manager = ReleaseManager(config)
+
+                    # Verify providers are auto-detected
+                    assert manager.get_ci_provider() is not None
+                    assert manager.get_registry_provider() is not None
+                    assert manager.config.ci_provider is None  # Not explicitly set
+                    assert manager.config.registry_provider is None  # Not explicitly set

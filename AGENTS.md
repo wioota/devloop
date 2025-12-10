@@ -649,20 +649,66 @@ Agents are configured via `.devloop/agents.json`:
 
 ## Release Process
 
-### Version Bumping
+> **📝 NOTE FOR MAINTAINERS**: Changes to this Release Process section should also be reflected in the AGENTS.md template distributed by `devloop init`. See [claude-agents-kro](https://github.com/wioota/devloop/issues/kro) for the template distribution system. Currently, this root AGENTS.md is authoritative, but future versions will automatically sync changes to packaged devloop via `devloop init --merge-templates`.
 
-**Always use the version bump script** to keep version numbers in sync across files:
+DevLoop uses a **provider-agnostic release workflow** that works with any CI system and any package registry. This section documents both the manual process and the automated release management system.
 
+### Provider-Agnostic Workflow
+
+The release process automatically detects your CI platform (GitHub Actions, GitLab CI, Jenkins, etc.) and package registry (PyPI, Artifactory, etc.) based on your repository structure. No manual provider selection is needed.
+
+See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider documentation, including setup for non-standard configurations.
+
+### Quick Release Commands
+
+Check if you're ready to release:
 ```bash
-python scripts/bump-version.py 0.4.1
+devloop release check 1.2.3
 ```
 
-This updates:
-- `pyproject.toml` (version field - single source of truth)
+Publish a release (full workflow):
+```bash
+devloop release publish 1.2.3
+```
 
-Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
+Additional options:
+```bash
+# Dry-run to see what would happen
+devloop release publish 1.2.3 --dry-run
 
-### Full Release Checklist
+# Specify explicit providers (if auto-detect fails)
+devloop release publish 1.2.3 --ci github --registry pypi
+
+# Skip specific steps
+devloop release publish 1.2.3 --skip-tag --skip-publish
+```
+
+### Automated Release Workflow
+
+The `devloop release` commands run the following steps automatically:
+
+1. **Pre-Release Checks** - Verifies all preconditions:
+   - Git working directory is clean (no uncommitted changes)
+   - You're on the correct release branch (default: `main`)
+   - CI passes on current branch (uses your CI provider)
+   - Package registry credentials are valid
+   - Version format is valid (semantic versioning: X.Y.Z)
+
+2. **Create Git Tag** - Creates annotated tag:
+   - Tag name: `v{version}` (configurable with `--tag-prefix`)
+   - Fails if tag already exists
+
+3. **Publish to Registry** - Publishes package:
+   - Uses detected or specified package registry
+   - Supports multiple registries per release (run multiple times)
+   - Returns package URL
+
+4. **Push Tag** - Pushes tag to remote repository:
+   - Only if all previous steps succeed
+
+### Manual Release Workflow
+
+If you need more control or if `devloop release` is unavailable:
 
 1. **Update CHANGELOG.md**
    ```markdown
@@ -676,10 +722,12 @@ Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
    - Improvement 1
    ```
 
-2. **Bump version**
+2. **Bump version** using the script (keep version numbers in sync):
    ```bash
    python scripts/bump-version.py X.Y.Z
    ```
+   
+   This updates `pyproject.toml` (single source of truth). Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
 3. **Update poetry.lock**
    ```bash
@@ -688,7 +736,7 @@ Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
 4. **Commit changes**
    ```bash
-   git add pyproject.toml src/devloop/__init__.py CHANGELOG.md poetry.lock
+   git add pyproject.toml CHANGELOG.md poetry.lock
    git commit -m "Release vX.Y.Z: Description of major changes"
    ```
 
@@ -702,14 +750,23 @@ Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
 - The pre-commit hook will validate formatting, types, and tests
 - If you need to bypass pre-commit for poetry.lock changes: `git commit --no-verify`
-- Always commit version and CHANGELOG updates together with the release tag
+- Always commit version and CHANGELOG updates before creating the release tag
 - Follow [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
-
-### CI Verification
-
-- Pre-push hook verifies GitHub Actions CI status (requires `gh` CLI)
-- All tests must pass before pushing
 - Release tags are permanent - create a new tag if mistakes are made
+
+### Multi-Provider Releases
+
+For projects that publish to multiple registries:
+
+```bash
+# Publish to PyPI
+devloop release publish 1.2.3 --registry pypi
+
+# Also publish to Artifactory (when provider available)
+devloop release publish 1.2.3 --registry artifactory
+```
+
+Tag and CI checks only run once (when creating the first tag). Subsequent publishes to different registries reuse the existing tag.
 
 ---
 
