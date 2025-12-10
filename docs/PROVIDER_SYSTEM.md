@@ -188,6 +188,149 @@ DevLoop automatically detects available providers based on repository structure:
    - Checks for custom `pyproject.toml` configuration
    - Checks for environment variables (PYPI_TOKEN, etc.)
 
+## Release Workflow
+
+DevLoop provides a high-level `ReleaseManager` that automates the entire release process using providers:
+
+```python
+from devloop.release import ReleaseManager, ReleaseConfig
+
+# Create release configuration
+config = ReleaseConfig(
+    version="1.0.0",
+    branch="main",
+    tag_prefix="v",
+    create_tag=True,
+    publish=True,
+    ci_provider=None,  # auto-detect
+    registry_provider=None,  # auto-detect
+)
+
+# Create release manager
+manager = ReleaseManager(config)
+
+# Execute full release workflow
+result = manager.release()
+
+if result.success:
+    print(f"✓ Released {result.version}")
+    print(f"  Tag: {result.url}")
+    print(f"  CI: {result.ci_provider_name}")
+    print(f"  Registry: {result.registry_provider_name}")
+else:
+    print(f"✗ Release failed: {result.error}")
+    for check in result.checks:
+        if not check.passed:
+            print(f"  - {check.check_name}: {check.message}")
+```
+
+### Release Workflow Steps
+
+The `ReleaseManager.release()` method:
+
+1. **Pre-Release Checks** - Verifies all preconditions are met:
+   - Git working directory is clean
+   - On correct branch (configured in `ReleaseConfig`)
+   - CI passes on current branch (via CI provider)
+   - Registry credentials are valid (via registry provider)
+   - Version format is valid (semantic versioning)
+
+2. **Create Tag** - Creates git tag for the release:
+   - Checks tag doesn't already exist
+   - Creates annotated git tag
+   - Tag name is configurable (default: `v{version}`)
+
+3. **Publish** - Publishes package to registry:
+   - Uses configured or auto-detected registry provider
+   - Publishes with semantic version
+   - Returns package URL
+
+4. **Push Tag** - Pushes tag to remote repository:
+   - Happens automatically after successful publish
+   - Only if all previous steps succeeded
+
+### Example: PyPI + GitHub Actions
+
+```python
+from devloop.release import ReleaseManager, ReleaseConfig
+
+config = ReleaseConfig(
+    version="1.2.3",
+    branch="main",
+    ci_provider="github",
+    registry_provider="pypi",
+)
+
+manager = ReleaseManager(config)
+result = manager.release()
+
+# Result will include:
+# - ci_provider_name: "GitHub Actions"
+# - registry_provider_name: "PyPI"
+# - All pre-release checks from GitHub Actions and PyPI
+```
+
+### Example: PyPI + GitLab CI
+
+```python
+from devloop.release import ReleaseManager, ReleaseConfig
+
+config = ReleaseConfig(
+    version="1.2.3",
+    branch="main",
+    ci_provider="gitlab",  # GitLab CI provider (when available)
+    registry_provider="pypi",
+)
+
+manager = ReleaseManager(config)
+result = manager.release()
+
+# Result will include:
+# - ci_provider_name: "GitLab CI"
+# - registry_provider_name: "PyPI"
+```
+
+### Example: Multiple Registries
+
+For projects publishing to multiple registries:
+
+```python
+from devloop.release import ReleaseManager, ReleaseConfig
+
+# Publish to PyPI
+pypi_config = ReleaseConfig(
+    version="1.2.3",
+    registry_provider="pypi",
+)
+ReleaseManager(pypi_config).release()
+
+# Also publish to Artifactory (when provider available)
+artifactory_config = ReleaseConfig(
+    version="1.2.3",
+    registry_provider="artifactory",
+)
+ReleaseManager(artifactory_config).release()
+```
+
+### Programmatic Access to CI/Registry
+
+For lower-level control, use providers directly:
+
+```python
+from devloop.providers.provider_manager import get_provider_manager
+from devloop.providers.ci_provider import RunConclusion
+
+manager = get_provider_manager()
+ci = manager.get_ci_provider("github")
+registry = manager.get_registry_provider("pypi")
+
+# Check CI status before publishing
+status = ci.get_status("main")
+if status.conclusion == RunConclusion.SUCCESS:
+    # Publish package
+    registry.publish(".", "1.0.0")
+```
+
 ## Integration Examples
 
 ### Pre-push Hook
@@ -214,22 +357,6 @@ agent = CIMonitorAgent(
     event_bus=event_bus,
     ci_provider=provider
 )
-```
-
-### Release Workflow
-
-```python
-from devloop.providers.provider_manager import get_provider_manager
-
-manager = get_provider_manager()
-ci = manager.get_ci_provider("github")
-registry = manager.get_registry_provider("pypi")
-
-# Check CI status before publishing
-status = ci.get_status("main")
-if status.conclusion == RunConclusion.SUCCESS:
-    # Publish package
-    registry.publish(".", "1.0.0")
 ```
 
 ## Migration Guide
