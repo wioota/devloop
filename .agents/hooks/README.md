@@ -49,13 +49,14 @@ devloop amp_findings
 - Blocks modifications to protected files
 - Prevents accidental overwrites of critical state
 - Provides helpful error messages with alternatives
+- Supports whitelisting for legitimate modifications
 
 **Protected files**:
 - `.beads/` — Issue tracking state
 - `.devloop/` — Agent findings and context
 - `.git/` — Repository metadata
 - `.agents/hooks/` — Verification scripts
-- `.claude/` — Claude Code configuration
+- `.claude/` — Claude Code configuration (except whitelist file)
 - `AGENTS.md`, `CODING_RULES.md`, `AMP_ONBOARDING.md` — Documentation
 
 **Exit codes**:
@@ -76,7 +77,38 @@ If you need to modify this file:
 1. Use manual editing via terminal: nano ".beads/issues.jsonl"
 2. Or ask the user to make the change manually
 3. Or describe what you're trying to do so the user can help
+4. To whitelist this file, add it to .claude/file-protection-whitelist.json
 ```
+
+#### Whitelist Configuration
+
+If you need to allow Claude to modify protected files, create `.claude/file-protection-whitelist.json`:
+
+```json
+{
+  "allowed_patterns": [
+    ".beads/custom-data.json",
+    ".devloop/reports/monthly.txt"
+  ]
+}
+```
+
+**Pattern matching**:
+- Patterns use substring matching (e.g., `.beads/` matches any file in `.beads/`)
+- Full file paths work (e.g., `.beads/issues.jsonl` matches exactly)
+- Patterns are case-sensitive
+
+**Example whitelists**:
+```json
+{
+  "allowed_patterns": [
+    ".beads/findings.json",
+    ".devloop/user-config.yaml"
+  ]
+}
+```
+
+This allows Claude to write to those specific files while protecting everything else.
 
 ---
 
@@ -195,7 +227,43 @@ ps aux | grep devloop
 
 2. Or describe what needs to be changed so user can help
 
-3. File protection can be adjusted by editing `.agents/hooks/claude-file-protection`
+3. Whitelist the file in `.claude/file-protection-whitelist.json`:
+   ```json
+   {
+     "allowed_patterns": [".beads/custom-file.json"]
+   }
+   ```
+
+### Missing Dependencies
+
+**If Python, jq, or other tools are missing:**
+
+The hooks are designed to fail gracefully. They will:
+- Exit with code 0 (success) if dependencies are missing
+- Not block Claude Code from continuing
+- Log errors (visible in Claude Code verbose mode with Ctrl+O)
+
+**To fix missing dependencies**:
+```bash
+# Python 3.8+ is required
+which python3
+
+# jq is required for JSON parsing (in stop hook)
+which jq
+sudo apt-get install jq  # Linux
+brew install jq          # macOS
+```
+
+### Hooks Running on Non-Desktop Claude Code
+
+**Issue**: Environment variable `CLAUDE_CODE_REMOTE` is "true"
+
+In web-based Claude Code, hooks cannot access your local filesystem. They will:
+- Exit gracefully without errors
+- Not block Claude Code
+- Be invisible to the user
+
+This is expected behavior. Use Claude Code desktop for full hook support.
 
 ---
 

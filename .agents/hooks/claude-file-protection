@@ -4,6 +4,8 @@
 #
 # Prevents accidental modifications to critical DevLoop and Git files
 # that could corrupt state or break workflows.
+#
+# File protection can be customized via .claude/file-protection-whitelist.json
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 0
@@ -17,6 +19,7 @@ python3 << EOF
 import json
 import sys
 import os
+from pathlib import Path
 
 try:
     with open('$input_file') as f:
@@ -43,7 +46,7 @@ try:
     except:
         pass
     
-    # Protected patterns
+    # Protected patterns (default)
     protected_patterns = [
         '.beads/',
         '.devloop/',
@@ -54,6 +57,22 @@ try:
         'CODING_RULES.md',
         'AMP_ONBOARDING.md',
     ]
+    
+    # Load whitelist if it exists
+    whitelist = []
+    whitelist_file = Path('.claude/file-protection-whitelist.json')
+    if whitelist_file.exists():
+        try:
+            with open(whitelist_file) as f:
+                whitelist_data = json.load(f)
+                whitelist = whitelist_data.get('allowed_patterns', [])
+        except:
+            pass
+    
+    # Check if file is whitelisted (allowed despite being protected)
+    is_whitelisted = any(pattern in file_path for pattern in whitelist)
+    if is_whitelisted:
+        sys.exit(0)
     
     # Check if file matches protected pattern
     is_protected = any(pattern in file_path for pattern in protected_patterns)
@@ -67,6 +86,7 @@ If you need to modify this file:
 1. Use manual editing via terminal: nano "{file_path}"
 2. Or ask the user to make the change manually
 3. Or describe what you're trying to do
+4. To whitelist this file, add it to .claude/file-protection-whitelist.json
 """
         sys.stderr.write(error_msg)
         sys.exit(2)  # Exit code 2 = blocking error
