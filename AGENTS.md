@@ -651,13 +651,29 @@ Agents are configured via `.devloop/agents.json`:
 
 > **📝 NOTE FOR MAINTAINERS**: Changes to this Release Process section should also be reflected in the AGENTS.md template distributed by `devloop init`. See [claude-agents-kro](https://github.com/wioota/devloop/issues/kro) for the template distribution system. Currently, this root AGENTS.md is authoritative, but future versions will automatically sync changes to packaged devloop via `devloop init --merge-templates`.
 
-DevLoop uses a **provider-agnostic release workflow** that works with any CI system and any package registry. This section documents both the manual process and the automated release management system.
+DevLoop uses a **provider-agnostic release workflow** that works with any CI system and any package registry. No vendor lock-in—use GitHub Actions, GitLab CI, Jenkins, CircleCI, or any other platform. Publish to PyPI, npm, Artifactory, Docker registries, or custom artifact stores.
 
-### Provider-Agnostic Workflow
+This section documents both the automated CLI commands and the manual process for maximum flexibility.
 
-The release process automatically detects your CI platform (GitHub Actions, GitLab CI, Jenkins, etc.) and package registry (PyPI, Artifactory, etc.) based on your repository structure. No manual provider selection is needed.
+### Supported CI Platforms
 
-See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider documentation, including setup for non-standard configurations.
+DevLoop automatically detects and works with:
+- **GitHub Actions** - Via `gh` CLI
+- **GitLab CI/CD** - Via `glab` CLI (community support)
+- **Jenkins** - Via Jenkins API (community support)
+- **CircleCI** - Via CircleCI API (planned)
+- **Custom CI Systems** - Via manual configuration
+
+### Supported Package Registries
+
+DevLoop automatically detects and publishes to:
+- **PyPI** - Via `poetry` or `twine`
+- **npm** - Via npm CLI
+- **Docker Registry** - Via Docker CLI
+- **Artifactory** - Via Artifactory REST API (planned)
+- **Custom Registries** - Via manual configuration
+
+See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider documentation, including setup for non-standard or custom configurations.
 
 ### Quick Release Commands
 
@@ -708,8 +724,9 @@ The `devloop release` commands run the following steps automatically:
 
 ### Manual Release Workflow
 
-If you need more control or if `devloop release` is unavailable:
+If you need more control or if `devloop release` is unavailable, follow these steps for your project type:
 
+**For Python projects (pyproject.toml)**:
 1. **Update CHANGELOG.md**
    ```markdown
    ## [X.Y.Z] - YYYY-MM-DD
@@ -729,9 +746,10 @@ If you need more control or if `devloop release` is unavailable:
    
    This updates `pyproject.toml` (single source of truth). Note: `src/devloop/__init__.py` reads version dynamically from package metadata.
 
-3. **Update poetry.lock**
+3. **Update dependency lock file**
    ```bash
-   poetry lock
+   poetry lock   # For poetry projects
+   pip freeze > requirements.txt  # For pip projects
    ```
 
 4. **Commit changes**
@@ -746,13 +764,29 @@ If you need more control or if `devloop release` is unavailable:
    git push origin main vX.Y.Z
    ```
 
+**For other project types (Node.js, Docker, etc.)**:
+Replace the version file (`package.json` for npm, etc.) in step 2, and update the lock file appropriately in step 3.
+
+### Release Checklist
+
+Before pushing your release tag:
+
+1. ✅ All CI tests pass (`devloop release check <version>` or manual CI check)
+2. ✅ CHANGELOG.md updated with release notes
+3. ✅ Version bumped in all relevant files
+4. ✅ Lock files updated (`poetry.lock`, `package-lock.json`, etc.)
+5. ✅ No uncommitted changes: `git status` should be clean
+6. ✅ Release notes include migration guides (if breaking changes)
+7. ✅ Manual testing on clean environment (for critical releases)
+
 ### Notes
 
 - The pre-commit hook will validate formatting, types, and tests
-- If you need to bypass pre-commit for poetry.lock changes: `git commit --no-verify`
+- If you need to bypass pre-commit for lock file changes: `git commit --no-verify`
 - Always commit version and CHANGELOG updates before creating the release tag
 - Follow [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 - Release tags are permanent - create a new tag if mistakes are made
+- DevLoop automatically syncs release information to your CI platform
 
 ### Multi-Provider Releases
 
@@ -772,62 +806,104 @@ Tag and CI checks only run once (when creating the first tag). Subsequent publis
 
 If `devloop release` commands fail with "no provider available", the auto-detection couldn't find your CI or registry setup. Here's how to fix it:
 
-#### GitHub Actions Issues
+#### General Debugging
 
-**Requirements for auto-detection:**
-- `gh` CLI installed (`brew install gh` or `apt install gh`)
-- Authenticated with GitHub: `gh auth login`
-
-**Verify:**
+Check what providers are available:
 ```bash
+devloop release debug  # Shows detected CI and registry
+```
+
+This helps identify which auto-detection failed.
+
+#### CI Provider Setup
+
+For your specific CI platform:
+
+**GitHub Actions**:
+```bash
+# Requirements: gh CLI installed and authenticated
+which gh
 gh auth status
-```
 
-**If auto-detection fails:**
-```bash
-# Explicitly specify GitHub
+# If missing: brew install gh (macOS) or apt install gh (Linux)
+gh auth login
+
+# Then retry with explicit provider
 devloop release check 1.2.3 --ci github
-
-# Explicit CI with auto-detect registry
-devloop release publish 1.2.3 --ci github
 ```
 
-#### PyPI Issues
-
-**Requirements for auto-detection:**
-- `poetry` CLI installed
-- PyPI token configured: `poetry config pypi-token.pypi <your-token>`
-- Network access to pypi.org
-
-**Verify:**
+**GitLab CI**:
 ```bash
+# Requirements: glab CLI and GitLab token
+which glab
+glab auth status
+
+# If missing or not logged in
+glab auth login
+
+devloop release check 1.2.3 --ci gitlab
+```
+
+**Jenkins**:
+```bash
+# Requirements: curl or API access to Jenkins
+# Set environment variables:
+export JENKINS_URL="https://your-jenkins.example.com"
+export JENKINS_TOKEN="your-token"
+export JENKINS_USER="your-user"
+
+devloop release check 1.2.3 --ci jenkins
+```
+
+#### Package Registry Setup
+
+For your specific registry:
+
+**PyPI**:
+```bash
+# Requirements: poetry and PyPI token
 poetry --version
-poetry config pypi-token.pypi  # Should show your token (masked)
-```
 
-**If credentials missing:**
-```bash
-# Get token from https://pypi.org/account/
-poetry config pypi-token.pypi "pypi-AgEIcHlwaS5vcmc..."
-```
+# Configure token
+poetry config pypi-token.pypi "pypi-..."
 
-**If auto-detection fails:**
-```bash
-# Explicitly specify PyPI
 devloop release check 1.2.3 --registry pypi
-
-# Explicit registry with auto-detect CI
-devloop release publish 1.2.3 --registry pypi
 ```
 
-#### Both Providers Not Available
+**npm**:
+```bash
+# Requirements: npm CLI and authentication
+npm --version
+npm whoami  # Should show your npm username
 
-If neither auto-detection works, explicitly specify both:
+# If not logged in
+npm login
+
+devloop release check 1.2.3 --registry npm
+```
+
+**Docker Registry**:
+```bash
+# Requirements: Docker CLI and authentication
+docker --version
+docker ps  # Should work if authenticated
+
+devloop release check 1.2.3 --registry docker
+```
+
+**Custom Registry**:
+For non-standard registries, see [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for custom provider setup.
+
+#### Manual Override
+
+If auto-detection still fails, explicitly specify both:
 ```bash
 devloop release publish 1.2.3 --ci github --registry pypi
 ```
 
-This will still validate that the tools are installed and authenticated before attempting the release.
+This will validate that the tools are installed and authenticated before attempting the release.
+
+See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider setup and troubleshooting for your specific CI/registry combination.
 
 ---
 
