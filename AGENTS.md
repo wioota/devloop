@@ -397,6 +397,142 @@ See [INSTALLATION_AUTOMATION.md](./INSTALLATION_AUTOMATION.md) for complete tech
 
 ---
 
+## Amp Thread Context Capture
+
+When using DevLoop within Amp threads, DevLoop automatically captures thread context to enable cross-thread pattern detection and self-improvement insights.
+
+### How It Works
+
+DevLoop logs all CLI commands with optional Amp thread context:
+- **Thread ID**: `T-{uuid}` format
+- **Thread URL**: Full ampcode.com thread URL
+- **Timestamp**: When the command was executed
+- **Context**: Working directory, environment, exit code
+
+This data enables the self-improvement agent to:
+1. Detect patterns repeated across multiple threads
+2. Identify messaging or feature gaps
+3. Suggest improvements based on user behavior
+4. Create actionable Beads issues with thread references
+
+### Usage
+
+#### Option 1: Auto-Detection (Recommended for Amp Users)
+
+If you're using Amp with devloop integrated, thread context is captured automatically:
+
+```bash
+# In Amp thread, just run devloop normally
+devloop watch
+devloop format
+bd ready
+
+# Thread context is automatically injected
+```
+
+#### Option 2: Manual Thread ID (For CI/Scripts)
+
+Pass thread context explicitly:
+
+```bash
+export AMP_THREAD_ID="T-7f395a45-7fae-4983-8de0-d02e61d30183"
+export AMP_THREAD_URL="https://ampcode.com/threads/T-7f395a45-7fae-4983-8de0-d02e61d30183"
+
+devloop watch
+```
+
+Or inline:
+
+```bash
+AMP_THREAD_ID=T-abc123 devloop format
+```
+
+### Data Privacy
+
+- ✅ **Local Only**: Thread IDs are stored in `.devloop/` (never uploaded)
+- ✅ **Minimal Data**: Only thread ID and URL are captured, not thread content
+- ✅ **Opt-in**: Users control whether to set `AMP_THREAD_ID`
+- ✅ **Analysis Local**: All pattern detection happens locally
+
+### Self-Improvement Agent
+
+The self-improvement agent uses thread context to:
+
+1. **Cross-Thread Pattern Detection**
+   - "Same question asked in 5 different threads" → Missing feature/documentation
+   - "User manually fixed agent output 3 times" → Messaging or quality issue
+
+2. **Evidence-Based Insights**
+   - Surfaces patterns with thread references
+   - Shows which threads the pattern was detected in
+   - Creates actionable Beads issues with `discovered-from` links
+
+3. **Continuous Improvement**
+   - Monitors user behavior across sessions
+   - Detects silent failures (agent ran but user ignored output)
+   - Suggests UX/messaging improvements based on actual usage
+
+### Viewing Captured Data
+
+To see what's being logged:
+
+```bash
+# View recent CLI actions
+tail -f ~/.devloop/cli-actions.jsonl
+
+# View Amp thread analysis
+tail -f ~/.devloop/amp-thread-log.jsonl
+
+# View detected patterns (once implemented)
+devloop insights --thread T-abc123
+```
+
+### Example: Detection in Action
+
+**Scenario**: Formatter doesn't auto-fix all issues
+
+```
+Thread T-abc123:
+- Claude: "Format this code"
+- DevLoop: Runs formatter
+- User: Manually formats some files
+
+Thread T-def456:
+- Claude: "Format this code"
+- DevLoop: Runs formatter
+- User: Manually formats same file type
+
+Thread T-ghi789:
+- Claude: "Format this code"
+- DevLoop: Runs formatter
+- User: Manually formats again
+```
+
+**Self-Improvement Agent Detects Pattern**:
+- Pattern: "user_manual_fix_after_agent" (3 threads)
+- Severity: Medium
+- Message: "Formatter not auto-applying fixes to certain file types"
+- Creates Beads issue: `devloop#42 - Formatter incomplete on TypeScript files`
+
+### For Amp Users
+
+When Claude helps with devloop tasks:
+
+```
+User: "Run the linter on this code"
+
+Claude: "I'll run devloop linter for you"
+        devloop watch
+
+Later (after multiple threads):
+Claude: "The self-improvement agent noticed a pattern: users need to manually
+         fix formatting in 3 different threads. I've created a Beads issue
+         devloop#42 to improve the formatter. See:
+         .beads/issues.jsonl for discovered issues."
+```
+
+---
+
 ## Development Discipline
 
 ### Task Management with Beads (REQUIRED)

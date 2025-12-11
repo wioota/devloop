@@ -5,6 +5,7 @@ import logging
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -13,12 +14,6 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
-from .commands import audit as audit_cmd
-from .commands import custom_agents as custom_agents_cmd
-from .commands import feedback as feedback_cmd
-from .commands import release as release_cmd
-from .commands import summary as summary_cmd
-from .commands import telemetry as telemetry_cmd
 from devloop.agents import (
     AgentHealthMonitorAgent,
     FormatterAgent,
@@ -37,8 +32,16 @@ from devloop.core import (
     EventBus,
     context_store,
     event_store,
+    get_action_logger,
 )
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
+
+from .commands import audit as audit_cmd
+from .commands import custom_agents as custom_agents_cmd
+from .commands import feedback as feedback_cmd
+from .commands import release as release_cmd
+from .commands import summary as summary_cmd
+from .commands import telemetry as telemetry_cmd
 
 app = typer.Typer(
     help="DevLoop - Development workflow automation", add_completion=False
@@ -57,19 +60,56 @@ _original_app = app
 
 
 class _WrappedApp:
-    """Wrapper app that intercepts Click commands before Typer processes them."""
+    """Wrapper app that intercepts Click commands before Typer processes them.
+
+    Also logs all CLI commands with optional Amp thread context for self-improvement agent.
+    """
 
     def __init__(self, typer_app):
         self.typer_app = typer_app
+        self.action_logger = get_action_logger()
 
     def __call__(self, *args, **kwargs):
-        """Handle command invocation."""
-        if len(sys.argv) > 1 and sys.argv[1] == "audit":
-            # Delegate to Click for audit command
-            audit_cmd.audit(sys.argv[2:], standalone_mode=False)
-            return
-        # Otherwise, run the Typer app normally
-        return self.typer_app(*args, **kwargs)
+        """Handle command invocation with action logging."""
+        start_time = time.time()
+        exit_code = None
+        error_message = None
+
+        try:
+            if len(sys.argv) > 1 and sys.argv[1] == "audit":
+                # Delegate to Click for audit command
+                audit_cmd.audit(sys.argv[2:], standalone_mode=False)
+                exit_code = 0
+                return
+
+            # Run the Typer app normally
+            return self.typer_app(*args, **kwargs)
+        except SystemExit as e:
+            exit_code = (
+                e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+            )
+            raise
+        except Exception as e:
+            exit_code = 1
+            error_message = str(e)
+            raise
+        finally:
+            # Log the command execution (even if it failed)
+            try:
+                duration_ms = int((time.time() - start_time) * 1000)
+                command = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "devloop"
+
+                self.action_logger.log_cli_command(
+                    command=command,
+                    exit_code=exit_code,
+                    duration_ms=duration_ms,
+                    error_message=error_message,
+                )
+            except Exception as log_error:
+                # Don't let logging errors break the CLI
+                logging.getLogger(__name__).debug(
+                    f"Failed to log CLI action: {log_error}"
+                )
 
     def __getattr__(self, name):
         """Delegate attribute access to the wrapped Typer app."""
