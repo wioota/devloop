@@ -1,0 +1,134 @@
+{
+  "name": "devloop-vscode",
+  "displayName": "DevLoop",
+  "description": "Real-time agent feedback and inline quick fixes for DevLoop",
+  "version": "0.1.0",
+  "publisher": "devloop",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "devloop",
+    "linter",
+    "agents",
+    "quality",
+    "automation"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "workspaceContains:**/.devloop/agents.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "DevLoop",
+      "properties": {
+        "devloop.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable DevLoop agent feedback"
+        },
+        "devloop.autoFix.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable auto-fix suggestions"
+        },
+        "devloop.autoFix.safetyLevel": {
+          "type": "string",
+          "enum": ["safe_only", "medium_risk", "all"],
+          "default": "safe_only",
+          "description": "Safety level for auto-fixes"
+        },
+        "devloop.diagnostics.showBackgroundFindings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show background-tier findings in diagnostics"
+        },
+        "devloop.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show DevLoop status in status bar"
+        },
+        "devloop.lsp.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python interpreter for LSP server"
+        },
+        "devloop.lsp.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable LSP server debug logging"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "devloop.openDashboard",
+        "title": "DevLoop: Open Agent Dashboard"
+      },
+      {
+        "command": "devloop.applyAllFixes",
+        "title": "DevLoop: Apply All Safe Fixes"
+      },
+      {
+        "command": "devloop.refreshDiagnostics",
+        "title": "DevLoop: Refresh Diagnostics"
+      },
+      {
+        "command": "devloop.pauseAgent",
+        "title": "DevLoop: Pause Agent"
+      },
+      {
+        "command": "devloop.resumeAgent",
+        "title": "DevLoop: Resume Agent"
+      },
+      {
+        "command": "devloop.showAgentConfig",
+        "title": "DevLoop: Open Agent Configuration"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "devloop.openDashboard",
+          "when": "devloop.enabled"
+        },
+        {
+          "command": "devloop.applyAllFixes",
+          "when": "devloop.enabled"
+        },
+        {
+          "command": "devloop.refreshDiagnostics",
+          "when": "devloop.enabled"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.40.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}
