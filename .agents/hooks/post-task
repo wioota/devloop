@@ -5,7 +5,7 @@
 # 
 # This hook ensures:
 # 1. All work is committed and pushed (via verify-task-complete)
-# 2. Code quality checks pass (formatting, linting, types, tests)
+# 2. Uses cached check results from pre-commit (fast non-blocking)
 # 3. DevLoop findings are extracted and filed as Beads issues
 
 set -e
@@ -40,22 +40,36 @@ echo ""
 echo "✅ Commit & push verification passed"
 echo ""
 
-# Step 2: Run common code quality checks (non-blocking for Amp tasks)
-# These are the same checks that run in git pre-commit, but we run them
-# after task completion so developers can see any issues
-SKIP_VERSION_CHECK=1 SKIP_LOCK_CHECK=1 .agents/verify-common-checks || {
-    # Non-blocking - just warn about quality issues
-    echo ""
-    echo "⚠️  Some code quality checks failed (non-blocking in post-task)"
-    echo "     Consider fixing these issues in your next task:"
-    echo "     - Run 'poetry run black src/' for formatting"
-    echo "     - Run 'poetry run ruff check src/ --fix' for linting"
-    echo "     - Run 'poetry run mypy ...' for type checking"
-    echo "     - Run 'poetry run pytest' for tests"
-    echo ""
-}
+# Step 2: Check cached quality results (non-blocking for Amp tasks)
+# These checks already ran in pre-commit hook, so use cached result
+echo "[Quality] Checking quality check results..."
 
-# Step 3: Extract DevLoop findings to Beads issues
+CACHE_DIR="$PROJECT_ROOT/.devloop/check-cache"
+CACHE_RESULT_FILE="$CACHE_DIR/result.json"
+
+if [ -f "$CACHE_RESULT_FILE" ]; then
+    cached_exit_code=$(grep -o '"exit_code": [0-9]*' "$CACHE_RESULT_FILE" | grep -o '[0-9]*')
+    cached_timestamp=$(grep -o '"date": "[^"]*"' "$CACHE_RESULT_FILE" | cut -d'"' -f4)
+    
+    echo "[Quality] Last check results: $cached_timestamp"
+    
+    if [ "$cached_exit_code" -eq 0 ]; then
+        echo "[Quality] ✅ All quality checks passed (cached result)"
+    else
+        echo ""
+        echo "⚠️  Some code quality checks failed (non-blocking in post-task)"
+        echo "     Consider fixing these issues in your next task:"
+        echo "     - Run 'poetry run black src/' for formatting"
+        echo "     - Run 'poetry run ruff check src/ --fix' for linting"
+        echo "     - Run 'poetry run mypy ...' for type checking"
+        echo "     - Run 'poetry run pytest' for tests"
+        echo ""
+    fi
+else
+    echo "[Quality] 📝 No cached results (quality checks may not have run)"
+fi
+
+# Step 3: Extract DevLoop findings to Beads issues (non-blocking)
 echo ""
 echo "[Findings] Extracting DevLoop findings..."
 

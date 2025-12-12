@@ -1,15 +1,20 @@
 #!/bin/bash
 #
-# Common verification checks used by both Git hooks and Amp hooks
-# 
-# Runs:
+# Common verification checks - Thin wrapper around verify-all for backward compatibility
+#
+# This script consolidates:
 # 1. Poetry lock file sync validation
 # 2. Version consistency checks
-# 3. Pre-commit checks (formatting, linting, type checking, tests)
+# 3. Code quality checks (delegated to verify-all)
+# 4. Beads sync
 #
 # Used by:
 # - .git/hooks/pre-commit (before committing)
 # - .agents/hooks/post-task (after Amp task completion)
+#
+# Supports skip flags:
+# - SKIP_LOCK_CHECK=1: Skip poetry.lock validation
+# - SKIP_VERSION_CHECK=1: Skip version consistency check
 #
 
 set -e
@@ -44,8 +49,7 @@ HAS_FAILURES=0
 # ============================================================================
 if [ "$SKIP_LOCK_CHECK" != "1" ] && [ -f "poetry.lock" ]; then
     if [ -f "pyproject.toml" ]; then
-        # Only check if pyproject.toml is in staged changes
-        # (if called from pre-commit)
+        # Only check if pyproject.toml is in staged changes (if called from pre-commit)
         if git diff --cached --name-only 2>/dev/null | grep -q "pyproject.toml"; then
             if ! git diff --cached --name-only 2>/dev/null | grep -q "poetry.lock"; then
                 echo -e "${YELLOW}[Verify] Checking poetry.lock sync...${NC}"
@@ -78,13 +82,11 @@ if [ "$SKIP_VERSION_CHECK" != "1" ] && [ -f "pyproject.toml" ] && [ -f "src/devl
 fi
 
 # ============================================================================
-# Check 3: Pre-commit checks (formatting, linting, type checking, tests)
+# Check 3: Code quality checks (delegated to unified verify-all script)
 # ============================================================================
-PRE_COMMIT_CHECKS_SCRIPT="$PROJECT_ROOT/.git/hooks/pre-commit-checks"
-if [ -x "$PRE_COMMIT_CHECKS_SCRIPT" ]; then
-    if ! "$PRE_COMMIT_CHECKS_SCRIPT"; then
-        HAS_FAILURES=1
-    fi
+echo -e "${YELLOW}[Verify] Running unified code quality checks...${NC}"
+if ! "$PROJECT_ROOT/.agents/verify-all"; then
+    HAS_FAILURES=1
 fi
 
 # ============================================================================
