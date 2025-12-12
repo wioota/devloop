@@ -1,6 +1,7 @@
 """Agent marketplace - discover, install, and manage community agents."""
 
 from .cache import RegistryCache
+from .installer import AgentInstaller, InstallationRecord
 from .metadata import AgentMetadata, Dependency, Rating
 from .registry import AgentRegistry, RegistryConfig
 from .registry_client import RegistryClient, create_registry_client
@@ -18,4 +19,6 @@ __all__ = [
     "SearchEngine",
     "SearchFilter",
     "create_search_filter",
+    "AgentInstaller",
+    "InstallationRecord",
 ]

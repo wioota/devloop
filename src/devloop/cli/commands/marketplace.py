@@ -10,10 +10,8 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 
-from devloop.marketplace import (
-    RegistryClient,
-    RegistryConfig,
-)
+from devloop.marketplace import RegistryClient, RegistryConfig
+from devloop.marketplace.installer import AgentInstaller
 from devloop.marketplace.registry import AgentRegistry
 
 
@@ -297,6 +295,79 @@ def stats() -> None:
             stats_text.append(f"  {cat}: {count}\n")
 
     console.print(Panel(stats_text, title="[bold]Marketplace Statistics[/bold]"))
+
+
+def _get_installer() -> AgentInstaller:
+    """Get or create an agent installer."""
+    marketplace_dir = get_marketplace_dir()
+    config = RegistryConfig(registry_dir=marketplace_dir)
+    registry = AgentRegistry(config)
+    client = RegistryClient(registry)
+    return AgentInstaller(marketplace_dir, client)
+
+
+@app.command()
+def install(
+    name: str = typer.Argument(..., help="Agent name to install"),
+    version: Optional[str] = typer.Option(None, help="Specific version"),
+    force: bool = typer.Option(
+        False, help="Force installation even if already installed"
+    ),
+) -> None:
+    """Install an agent from the marketplace."""
+    installer = _get_installer()
+
+    success, msg = installer.install(name, version, force=force)
+
+    if success:
+        console.print(f"[green]✓ {msg}[/green]")
+    else:
+        console.print(f"[red]✗ {msg}[/red]")
+
+
+@app.command()
+def uninstall(
+    name: str = typer.Argument(..., help="Agent name to uninstall"),
+    force: bool = typer.Option(False, help="Remove even if other agents depend on it"),
+) -> None:
+    """Uninstall an agent."""
+    installer = _get_installer()
+
+    success, msg = installer.uninstall(name, remove_dependencies=force)
+
+    if success:
+        console.print(f"[green]✓ {msg}[/green]")
+    else:
+        console.print(f"[red]✗ {msg}[/red]")
+
+
+@app.command()
+def list_installed() -> None:
+    """List installed agents."""
+    installer = _get_installer()
+
+    installed = installer.list_installed()
+
+    if not installed:
+        console.print("[yellow]No agents installed.[/yellow]")
+        return
+
+    table = Table(title="Installed Agents")
+    table.add_column("Name", style="cyan")
+    table.add_column("Version", style="magenta")
+    table.add_column("Installed", style="green")
+    table.add_column("Type")
+
+    for record in installed:
+        type_str = "Direct" if record.installed_by_user else "Dependency"
+        table.add_row(
+            record.agent_name,
+            record.version,
+            record.installed_at[:10],  # Just the date
+            type_str,
+        )
+
+    console.print(table)
 
 
 if __name__ == "__main__":
