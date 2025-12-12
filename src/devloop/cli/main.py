@@ -589,46 +589,116 @@ def init(
             config.save(config_file)
             console.print(f"\n[green]✓[/green] Created: {config_file}")
 
-    # Check for and manage AGENTS.md with Beads integration
+    # Check for and manage AGENTS.md with DevLoop template
     agents_md = path / "AGENTS.md"
+    devloop_template = (
+        Path(__file__).parent / "templates" / "devloop_agents_template.md"
+    )
+
+    # Legacy beads template (for backward compatibility)
     beads_template = claude_dir / "beads_template.md"
 
-    if beads_template.exists():
-        beads_content = beads_template.read_text()
+    # Check if AGENTS.md needs DevLoop content
+    needs_devloop_content = False
+    if agents_md.exists():
+        content = agents_md.read_text()
+        # Check for critical DevLoop sections
+        missing_sections = []
+        if "Task Management with Beads" not in content:
+            missing_sections.append("Beads task management")
+        if "NO MARKDOWN FILES FOR PLANNING" not in content:
+            missing_sections.append("No markdown files rule")
+        if (
+            "Secrets Management & Token Security" not in content
+            and "Secrets Management" not in content
+        ):
+            missing_sections.append("Token security")
+        if "Development Discipline" not in content:
+            missing_sections.append("Development discipline")
 
-        if agents_md.exists():
-            # Check if AGENTS.md already has Beads section
-            content = agents_md.read_text()
-            if "Task Management with Beads" not in content:
-                # Inject Beads section after first heading
-                lines = content.split("\n")
-                insert_pos = 0
-                for i, line in enumerate(lines):
-                    if line.startswith("# ") and i > 0:
-                        insert_pos = i + 1
-                        break
+        needs_devloop_content = len(missing_sections) > 0
 
-                # Insert Beads section
-                new_content = (
-                    "\n".join(lines[:insert_pos])
-                    + "\n\n"
-                    + beads_content
-                    + "\n\n"
-                    + "\n".join(lines[insert_pos:])
-                )
-                agents_md.write_text(new_content)
+        if needs_devloop_content:
+            # Create a merge instruction for Claude
+            merge_instruction = claude_dir / "DEVLOOP_SETUP_TODO.md"
+            instruction_content = f"""# DevLoop Setup - AGENTS.md Update Needed
+
+**Action Required:** The AGENTS.md file is missing critical DevLoop sections.
+
+## Missing Sections:
+{chr(10).join(f'- {section}' for section in missing_sections)}
+
+## Instructions for Claude/AI Agent:
+
+Please merge the DevLoop template content from `.devloop/devloop_agents_template.md` into `AGENTS.md`.
+
+**Important merge guidelines:**
+1. **Do NOT duplicate** existing content - only add missing sections
+2. **Preserve** all existing project-specific content
+3. **Maintain** the existing document structure and headings
+4. **Merge intelligently** - if a section partially exists, enhance it with template content
+5. **Respect** the document flow - place sections logically
+
+**Recommended approach:**
+1. Read the existing `AGENTS.md` to understand current structure
+2. Read `.devloop/devloop_agents_template.md` to see required content
+3. For each missing section, find the best insertion point
+4. Merge content without duplication
+5. Delete this file after successful merge
+
+**Key sections to ensure are present:**
+- ⚠️ IMPORTANT: Task Management with Beads (at the top)
+- Issue Tracking with bd (beads)
+- ⛔️ NO MARKDOWN FILES FOR PLANNING (absolute rules)
+- Development Discipline
+- Secrets Management & Token Security
+- Absolute Rules for AI Agents
+
+**Template location:** `.devloop/devloop_agents_template.md`
+
+Once merged, delete this file: `.devloop/DEVLOOP_SETUP_TODO.md`
+"""
+            # Copy template to .devloop for reference
+            devloop_template_copy = claude_dir / "devloop_agents_template.md"
+            if devloop_template.exists():
+                import shutil
+
+                shutil.copy(devloop_template, devloop_template_copy)
+                merge_instruction.write_text(instruction_content)
                 console.print(
-                    f"[green]✓[/green] Injected Beads section into {agents_md}"
+                    "\n[yellow]⚠ Action needed:[/yellow] AGENTS.md is missing DevLoop sections"
                 )
-        else:
-            # Create AGENTS.md from template
+                console.print(f"[cyan]→[/cyan] Created: {merge_instruction}")
+                console.print(f"[cyan]→[/cyan] Template: {devloop_template_copy}")
+                console.print("\n[cyan]Next steps:[/cyan]")
+                console.print(
+                    "  1. Open your project in Claude Code or similar AI assistant"
+                )
+                console.print(
+                    '  2. Ask Claude to: "Please merge the DevLoop template into AGENTS.md as described in .devloop/DEVLOOP_SETUP_TODO.md"'
+                )
+                console.print(
+                    "  3. Claude will intelligently merge the sections without duplication"
+                )
+    else:
+        # Create new AGENTS.md from devloop template
+        if devloop_template.exists():
+            import shutil
+
+            shutil.copy(devloop_template, agents_md)
+            console.print(
+                f"[green]✓[/green] Created: {agents_md} (from DevLoop template)"
+            )
+        elif beads_template.exists():
+            # Fallback to legacy beads template
+            beads_content = beads_template.read_text()
             template_header = """# Development Workflow
 
 This project uses background agents and Beads for task management.
 
 """
             agents_md.write_text(template_header + beads_content)
-            console.print(f"[green]✓[/green] Created: {agents_md}")
+            console.print(f"[green]✓[/green] Created: {agents_md} (legacy template)")
 
     # Handle Claude.md symlink for Claude code tools
     claude_md = path / "CLAUDE.md"
