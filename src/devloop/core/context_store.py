@@ -6,10 +6,12 @@ import asyncio
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Literal
+
+from devloop.security.path_validator import PathValidationError, PathValidator
 
 logger = logging.getLogger(__name__)
 
@@ -148,16 +150,39 @@ class ContextStore:
     - auto_fixed: Log of silent fixes
     """
 
-    def __init__(self, context_dir: Path | str | None = None):
+    def __init__(
+        self, context_dir: Path | str | None = None, enable_path_validation: bool = True
+    ):
         """
         Initialize context store.
 
         Args:
             context_dir: Directory for context files. Defaults to .devloop/context
+            enable_path_validation: Enable path validation for security (default: True)
         """
         if context_dir is None:
             context_dir = Path.cwd() / ".devloop" / "context"
         self.context_dir = Path(context_dir)
+
+        # Initialize path validator for security
+        project_root = Path.cwd().resolve()
+        self.path_validator = PathValidator(
+            project_root, allow_symlinks=False  # Disallow symlinks for security
+        )
+        self.enable_path_validation = enable_path_validation
+
+        # Validate context directory if validation is enabled
+        if self.enable_path_validation:
+            try:
+                resolved_context_dir = self.context_dir.resolve()
+                if not self.path_validator.is_within_project(resolved_context_dir):
+                    raise PathValidationError(
+                        f"Context directory must be within project: {self.context_dir}"
+                    )
+            except PathValidationError as e:
+                logger.error(f"Invalid context directory: {e}")
+                raise
+
         self._lock = asyncio.Lock()
         self._findings: Dict[Tier, List[Finding]] = {
             Tier.IMMEDIATE: [],
@@ -191,6 +216,19 @@ class ContextStore:
         # Convert dict to Finding if needed
         if isinstance(finding, dict):
             finding = Finding(**finding)
+
+        # Validate file path for security (if enabled)
+        if self.enable_path_validation and finding.file:
+            try:
+                # Check if file path is within project boundaries
+                if not self.path_validator.is_within_project(finding.file):
+                    logger.warning(
+                        f"Ignoring finding with file path outside project: {finding.file}"
+                    )
+                    return
+            except (PathValidationError, OSError) as e:
+                logger.warning(f"Invalid file path in finding: {finding.file}: {e}")
+                return
 
         # Compute relevance score
         if user_context:
@@ -561,7 +599,7 @@ class ContextStore:
         Returns:
             Number of findings removed
         """
-        from datetime import datetime, UTC, timedelta
+        from datetime import UTC, datetime, timedelta
 
         cutoff_time = datetime.now(UTC) - timedelta(hours=hours_to_keep)
         cutoff_iso = cutoff_time.isoformat()

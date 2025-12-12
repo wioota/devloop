@@ -9,6 +9,7 @@ from watchdog.observers import Observer
 
 from devloop.collectors.base import BaseCollector
 from devloop.core.event import EventBus
+from devloop.security.path_validator import PathValidator
 
 
 class FileSystemCollector(BaseCollector, FileSystemEventHandler):
@@ -32,6 +33,14 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
         self.observer = Observer()
         self._loop = None  # Store reference to the event loop
 
+        # Initialize path validator with project root
+        project_root = Path.cwd().resolve()
+        self.path_validator = PathValidator(
+            project_root,
+            allow_symlinks=False,  # Reject symlinks for security
+            blocked_patterns=["*.exe", "*.dll", "*.so"],  # Block executables
+        )
+
     def should_ignore(self, path: str) -> bool:
         """Check if path should be ignored."""
         path_obj = Path(path)
@@ -49,11 +58,21 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
+        # Validate path before emitting event
+        if not self.path_validator.is_within_project(event.src_path):
+            self.logger.warning(f"Ignoring path outside project: {event.src_path}")
+            return
+
         self._emit_event_sync("file:created", event.src_path)
 
     def on_modified(self, event: FileSystemEvent) -> None:
         """Handle file/directory modified."""
         if event.is_directory or self.should_ignore(event.src_path):
+            return
+
+        # Validate path before emitting event
+        if not self.path_validator.is_within_project(event.src_path):
+            self.logger.warning(f"Ignoring path outside project: {event.src_path}")
             return
 
         self._emit_event_sync("file:modified", event.src_path)
@@ -63,6 +82,16 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
+        # Validate path before emitting event (deleted files won't exist, so just check pattern)
+        try:
+            path_obj = Path(event.src_path).resolve()
+            path_obj.relative_to(self.path_validator.project_root)
+        except (ValueError, OSError):
+            self.logger.warning(
+                f"Ignoring deleted path outside project: {event.src_path}"
+            )
+            return
+
         self._emit_event_sync("file:deleted", event.src_path)
 
     def on_moved(self, event: FileSystemEvent) -> None:
@@ -70,10 +99,24 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
         if event.is_directory or self.should_ignore(event.src_path):
             return
 
+        # Validate both source and destination paths
+        if not self.path_validator.is_within_project(event.src_path):
+            self.logger.warning(
+                f"Ignoring moved path outside project: {event.src_path}"
+            )
+            return
+
+        dest_path = event.dest_path if hasattr(event, "dest_path") else None
+        if dest_path and not self.path_validator.is_within_project(dest_path):
+            self.logger.warning(
+                f"Ignoring moved path with dest outside project: {dest_path}"
+            )
+            return
+
         self._emit_event_sync(
             "file:moved",
             event.src_path,
-            {"dest_path": event.dest_path if hasattr(event, "dest_path") else None},
+            {"dest_path": dest_path},
         )
 
     def _emit_event_sync(

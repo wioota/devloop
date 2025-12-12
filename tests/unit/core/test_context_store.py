@@ -1,18 +1,17 @@
 """Unit tests for context store."""
 
 import json
-from pathlib import Path
-from datetime import datetime, UTC
-import tempfile
 import shutil
+import tempfile
+from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
-
 from devloop.core.context_store import (
     ContextStore,
     Finding,
-    Severity,
     ScopeType,
+    Severity,
     Tier,
     UserContext,
 )
@@ -138,7 +137,7 @@ class TestContextStoreBasicOperations:
     @pytest.fixture
     def store(self, temp_context_dir):
         """Create a context store with temp directory."""
-        return ContextStore(context_dir=temp_context_dir)
+        return ContextStore(context_dir=temp_context_dir, enable_path_validation=False)
 
     @pytest.mark.asyncio
     async def test_initialize_creates_directory(self, store, temp_context_dir):
@@ -439,7 +438,7 @@ class TestMemoryManagement:
         """Test that memory is trimmed when a tier exceeds threshold."""
         temp_dir = tempfile.mkdtemp()
         try:
-            store = ContextStore(context_dir=temp_dir)
+            store = ContextStore(context_dir=temp_dir, enable_path_validation=False)
             await store.initialize()
 
             # Add many findings to exceed threshold (500)

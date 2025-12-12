@@ -8,6 +8,9 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from devloop.security.audit_logger import get_audit_logger
+from devloop.security.cgroups_helper import CgroupsManager
+from devloop.security.path_validator import PathValidationError
 from devloop.security.sandbox import (
     CommandNotAllowedError,
     SandboxConfig,
@@ -15,8 +18,6 @@ from devloop.security.sandbox import (
     SandboxResult,
     SandboxTimeoutError,
 )
-from devloop.security.audit_logger import get_audit_logger
-from devloop.security.cgroups_helper import CgroupsManager
 
 logger = logging.getLogger(__name__)
 
@@ -137,8 +138,29 @@ class BubblewrapSandbox(SandboxExecutor):
             CommandNotAllowedError: If command fails security validation
             SandboxTimeoutError: If execution exceeds timeout
             RuntimeError: If sandbox execution fails
+            PathValidationError: If cwd path is invalid or malicious
         """
         audit_logger = get_audit_logger()
+
+        # Validate working directory for security
+        try:
+            cwd = Path(cwd).resolve()  # Resolve symlinks
+            if not cwd.exists():
+                raise PathValidationError(f"Working directory does not exist: {cwd}")
+            if not cwd.is_dir():
+                raise PathValidationError(
+                    f"Working directory is not a directory: {cwd}"
+                )
+            # Check for any symlink components in the path
+            for parent in cwd.parents:
+                if parent.is_symlink():
+                    raise PathValidationError(
+                        f"Working directory contains symlink component: {parent}"
+                    )
+        except (OSError, RuntimeError) as e:
+            raise PathValidationError(
+                f"Failed to validate working directory: {e}"
+            ) from e
 
         if not self.validate_command(cmd):
             # Log blocked command attempt
