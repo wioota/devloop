@@ -44,6 +44,7 @@ from .commands import feedback as feedback_cmd
 from .commands import release as release_cmd
 from .commands import summary as summary_cmd
 from .commands import telemetry as telemetry_cmd
+from .commands import tools as tools_cmd
 
 app = typer.Typer(
     help="DevLoop - Development workflow automation", add_completion=False
@@ -55,6 +56,7 @@ app.add_typer(custom_agents_cmd.app, name="custom")
 app.add_typer(feedback_cmd.app, name="feedback")
 app.add_typer(release_cmd.app, name="release")
 app.add_typer(telemetry_cmd.app, name="telemetry")
+app.add_typer(tools_cmd.app, name="tools")
 
 # Wrap Typer app to handle Click-based audit command
 # Note: We can't use add_typer with Click groups due to Typer version compatibility
