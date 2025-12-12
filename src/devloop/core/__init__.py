@@ -12,6 +12,7 @@ from .amp_thread_mapper import (
 )
 from .config import Config, ConfigWrapper
 from .context_store import context_store
+from .daemon_health import DaemonHealthCheck, check_daemon_health
 from .event import Event, EventBus, Priority
 from .event_store import event_store
 from .manager import AgentManager
@@ -36,10 +37,12 @@ __all__ = [
     "AgentResult",
     "AmpThreadEntry",
     "AmpThreadMapper",
+    "check_daemon_health",
     "CLIAction",
     "Config",
     "ConfigWrapper",
     "context_store",
+    "DaemonHealthCheck",
     "DetectedPattern",
     "Event",
     "EventBus",

@@ -35,6 +35,7 @@ from devloop.core import (
     get_action_logger,
 )
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
+from devloop.core.daemon_health import DaemonHealthCheck, check_daemon_health
 
 from .commands import audit as audit_cmd
 from .commands import custom_agents as custom_agents_cmd
@@ -404,6 +405,10 @@ async def watch_async(path: Path, config_path: Path | None):
     # Start cleanup task (run every hour to remove old findings/events)
     cleanup_task = asyncio.create_task(_cleanup_old_data(context_store, event_store))
 
+    # Start daemon health check (heartbeat every 30 seconds)
+    health_check = DaemonHealthCheck(path, heartbeat_interval=30)
+    await health_check.start()
+
     # Create and register agents based on configuration
     if config.is_agent_enabled("linter"):
         linter_config = config.get_agent_config("linter") or {}
@@ -497,6 +502,7 @@ async def watch_async(path: Path, config_path: Path | None):
 
     # Stop everything
     cleanup_task.cancel()
+    await health_check.stop()
     await agent_manager.stop_all()
     await fs_collector.stop()
 
@@ -846,6 +852,30 @@ def status():
         table.add_row(agent_name, enabled, triggers)
 
     console.print(table)
+
+
+@app.command()
+def daemon_status(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
+    """Check daemon health and status."""
+    health_result = check_daemon_health(path)
+
+    status = health_result["status"]
+    emoji = {"HEALTHY": "✅", "UNHEALTHY": "❌", "ERROR": "⚠️"}.get(status, "❓")
+
+    console.print(f"\n{emoji} Daemon Status: [bold]{status}[/bold]")
+    console.print(f"Message: {health_result['message']}")
+
+    if health_result.get("pid"):
+        console.print(f"PID: {health_result['pid']}")
+    if health_result.get("uptime_seconds"):
+        uptime = health_result["uptime_seconds"]
+        hours = int(uptime // 3600)
+        minutes = int((uptime % 3600) // 60)
+        console.print(f"Uptime: {hours}h {minutes}m")
+
+    if not health_result["healthy"]:
+        console.print("\n[yellow]Daemon may need to be restarted[/yellow]")
+        console.print("Run: [cyan]devloop stop && devloop watch .[/cyan]")
 
 
 @app.command()

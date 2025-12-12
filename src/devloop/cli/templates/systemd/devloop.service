@@ -1,0 +1,35 @@
+[Unit]
+Description=DevLoop Development Workflow Automation
+Documentation=https://github.com/wioota/devloop
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/dev/%i
+ExecStart=/usr/bin/env devloop watch --foreground %h/dev/%i
+Restart=always
+RestartSec=5
+StandardOutput=append:%h/.devloop/devloop.log
+StandardError=append:%h/.devloop/devloop-error.log
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=25%
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/dev/%i/.devloop
+
+# Health check and restart policy
+# Restart if process exits with non-zero code
+# Wait 5 seconds between restart attempts
+# Restart up to 5 times in 10 minutes
+StartLimitInterval=600
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
