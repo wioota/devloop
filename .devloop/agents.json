@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "enabled": true,
   "agents": {
     "linter": {
@@ -171,7 +171,10 @@
       ],
       "config": {
         "check_interval": 300,
-        "monitor_branches": ["main", "develop"],
+        "monitor_branches": [
+          "main",
+          "develop"
+        ],
         "notify_on_failure": true,
         "auto_check_after_push": true
       }
@@ -217,7 +220,7 @@
     }
   },
   "global": {
-    "mode": "fix-mode",
+    "mode": "report-only",
     "maxConcurrentAgents": 5,
     "notificationLevel": "summary",
     "resourceLimits": {},
@@ -279,6 +282,10 @@
           "SNYK_TOKEN"
         ]
       }
+    },
+    "daemon": {
+      "heartbeatInterval": 30,
+      "healthCheckEnabled": true
     }
   },
   "eventSystem": {

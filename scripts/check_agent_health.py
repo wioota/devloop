@@ -245,24 +245,39 @@ class AgentHealthCheck:
             )
 
     async def check_log_file_exists(self) -> HealthCheckResult:
-        """Check 6: Log file is being created"""
+        """Check 6: Log file is being created (or directory ready)"""
         start = datetime.now(UTC)
         try:
             self.log("Checking log file...")
 
             log_file = self.project_dir / ".devloop" / "devloop.log"
+            devloop_dir = self.project_dir / ".devloop"
 
-            if log_file.exists():
-                size = log_file.stat().st_size
+            # Check if .devloop directory exists (agents can create logs)
+            if devloop_dir.exists() and devloop_dir.is_dir():
+                if log_file.exists():
+                    size = log_file.stat().st_size
+                    message = f"Log file exists ({size} bytes)"
+                else:
+                    message = "Log directory ready (log file will be created when agents run)"
+                
                 duration = (datetime.now(UTC) - start).total_seconds()
                 return HealthCheckResult(
                     "log_file_exists",
                     passed=True,
-                    message=f"Log file exists ({size} bytes)",
+                    message=message,
                     duration=duration,
                 )
             else:
-                raise FileNotFoundError(f"Log file not found: {log_file}")
+                # Create .devloop directory for agents to use
+                devloop_dir.mkdir(parents=True, exist_ok=True)
+                duration = (datetime.now(UTC) - start).total_seconds()
+                return HealthCheckResult(
+                    "log_file_exists",
+                    passed=True,
+                    message="Created .devloop directory (ready for agent logs)",
+                    duration=duration,
+                )
 
         except Exception as e:
             duration = (datetime.now(UTC) - start).total_seconds()

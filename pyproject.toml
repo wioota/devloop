@@ -89,6 +89,7 @@ markers = [
     "integration: marks tests as integration tests",
     "performance: marks tests as performance benchmarks",
     "security: marks tests as security tests",
+    "benchmark: marks tests as benchmarks",
 ]
 
 [tool.mypy]
