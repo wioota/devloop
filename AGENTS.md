@@ -687,10 +687,79 @@ gh run view <run-id> --log-failed
 **For public/published software**, add extra care to your DevLoop workflow:
 
 #### Secrets Management
-- ❌ Never commit API keys, tokens, credentials, or private configuration
-- ✅ Use environment variables and CI/CD secrets (GitHub Secrets, etc.)
+
+DevLoop provides comprehensive token security features to prevent credential exposure.
+
+**Never Do:**
+- ❌ Commit API keys, tokens, or credentials to version control
+- ❌ Pass tokens as command-line arguments (visible in process lists)
+- ❌ Hardcode tokens in code or configuration files
+- ❌ Log full tokens or include them in error messages
+- ❌ Store tokens in shell history
+
+**Always Do:**
+- ✅ Use environment variables for all tokens (`GITHUB_TOKEN`, `PYPI_TOKEN`, etc.)
+- ✅ Enable token expiry and rotation (30-90 days recommended)
+- ✅ Use read-only or project-scoped tokens when possible
 - ✅ Scan commits for accidentally leaked secrets before pushing
-- **Agent support**: Security scanner agents should flag hardcoded credentials
+- ✅ Use CI/CD secrets managers (GitHub Secrets, GitLab CI/CD Variables)
+
+**DevLoop Token Security Features:**
+
+```python
+from devloop.security import get_github_token, sanitize_log, sanitize_command
+
+# Get token from environment (never hardcode)
+token = get_github_token()
+
+if not token:
+    print("Set GITHUB_TOKEN environment variable")
+    exit(1)
+
+# Check expiry
+if token.is_expired():
+    print("Token has expired, please rotate")
+    exit(1)
+
+if token.expires_soon(days=7):
+    print("⚠️  Token expires soon, consider rotating")
+
+# Sanitize logs (automatic token hiding)
+log_msg = f"Authenticating with {token.value}"
+safe_msg = sanitize_log(log_msg)  # "Authenticating with gh****"
+logger.info(safe_msg)
+
+# Sanitize commands (hide tokens in process list)
+cmd = ["curl", "--token", token.value, "api.github.com"]
+safe_cmd = sanitize_command(cmd)  # ["curl", "--token", "****", "api.github.com"]
+```
+
+**Token Validation:**
+
+DevLoop automatically validates tokens and warns about security issues:
+- Detects placeholder values ("changeme", "token", "password")
+- Validates token format for GitHub, GitLab, PyPI
+- Warns when tokens are passed as command arguments
+- Checks token expiry dates
+
+**OAuth2 for User-Facing Apps:**
+
+For applications with interactive users, use OAuth2 instead of personal tokens:
+
+```python
+from devloop.security import get_token_manager
+
+manager = get_token_manager()
+print(manager.recommend_oauth2("github"))
+```
+
+OAuth2 provides:
+- User-scoped access (not tied to a single account)
+- Automatic token refresh
+- Revocable access without password changes
+- Better audit trail
+
+**See Also:** [docs/TOKEN_SECURITY.md](./docs/TOKEN_SECURITY.md) for complete token security guide.
 
 #### Version Consistency
 - ✅ `pyproject.toml` is the single source of truth (version is read dynamically via `importlib.metadata`)
