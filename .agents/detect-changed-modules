@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# Detect changed modules from git diff
+#
+# Analyzes staged and unstaged changes to determine which modules were affected.
+# Used for intelligent test/type-check filtering to avoid full suite runs.
+#
+# Output: Space-separated list of affected modules
+#   Examples: "core agents" or "core agents providers"
+#
+# Returns exit code 1 if >30% of codebase changed (fall back to full suite)
+#
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Determine script directory and project root
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+
+# ============================================================================
+# Helper: Get list of changed Python files (staged + working directory)
+# ============================================================================
+get_changed_files() {
+    local scope="${1:-.}"  # Default to current directory
+    
+    # Get staged files
+    git diff --cached --name-only --diff-filter=d -- "$scope/*.py" 2>/dev/null || true
+    
+    # Get unstaged files
+    git diff --name-only --diff-filter=d -- "$scope/*.py" 2>/dev/null || true
+    
+    # Also include untracked Python files
+    git ls-files --others --exclude-standard -- "$scope/*.py" 2>/dev/null || true
+}
+
+# ============================================================================
+# Helper: Extract module name from file path
+# ============================================================================
+get_module_from_file() {
+    local file="$1"
+    
+    # Skip test files for now (we'll detect them separately)
+    if [[ "$file" =~ ^tests/ ]]; then
+        echo "tests"
+        return
+    fi
+    
+    # Extract module: src/devloop/MODULE/... → MODULE
+    if [[ "$file" =~ ^src/devloop/([^/]+)/ ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+}
+
+# ============================================================================
+# Main detection logic
+# ============================================================================
+
+echo -e "${YELLOW}[Detect-Modules] Analyzing changes...${NC}" >&2
+
+# Get all changed files
+CHANGED_FILES=$(get_changed_files)
+
+# If no changes, return empty
+if [ -z "$CHANGED_FILES" ]; then
+    echo -e "${GREEN}[Detect-Modules] No changes detected${NC}" >&2
+    exit 0
+fi
+
+# Count total Python files in src/
+TOTAL_PY_FILES=$(find src -name "*.py" -type f 2>/dev/null | wc -l)
+
+# Count changed Python files
+NUM_CHANGED=$(echo "$CHANGED_FILES" | wc -l)
+
+# If >30% of codebase changed, fall back to full suite
+if [ $TOTAL_PY_FILES -gt 0 ] && [ $NUM_CHANGED -gt 0 ]; then
+    THRESHOLD=$((TOTAL_PY_FILES * 30 / 100))
+    if [ $NUM_CHANGED -gt $THRESHOLD ]; then
+        echo -e "${YELLOW}[Detect-Modules] >30% of codebase changed ($NUM_CHANGED/$TOTAL_PY_FILES files)${NC}" >&2
+        echo -e "${YELLOW}[Detect-Modules] Running full test suite (not filtered)${NC}" >&2
+        exit 1  # Signal: fall back to full suite
+    fi
+fi
+
+# Extract unique modules
+MODULES=""
+while IFS= read -r file; do
+    MODULE=$(get_module_from_file "$file")
+    if [ -n "$MODULE" ] && [ "$MODULE" != "tests" ]; then
+        # Add to set (avoid duplicates)
+        if ! echo "$MODULES" | grep -qw "$MODULE"; then
+            MODULES="$MODULES $MODULE"
+        fi
+    done
+done <<< "$CHANGED_FILES"
+
+# Check for test file changes
+if echo "$CHANGED_FILES" | grep -q "^tests/"; then
+    MODULES="$MODULES tests"
+fi
+
+# Trim whitespace and output
+MODULES=$(echo "$MODULES" | xargs)
+
+if [ -z "$MODULES" ]; then
+    echo -e "${YELLOW}[Detect-Modules] No module-specific changes detected${NC}" >&2
+    exit 0
+fi
+
+echo -e "${GREEN}[Detect-Modules] Affected modules: $MODULES${NC}" >&2
+echo "$MODULES"
+exit 0

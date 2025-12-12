@@ -88,7 +88,7 @@ compute_file_hash() {
 }
 
 # ============================================================================
-# Helper: Run all checks in parallel (via Amp subagent or fallback)
+# Helper: Run all checks in parallel (with smart module filtering)
 # ============================================================================
 run_all_checks() {
     local start_time=$(date +%s)
@@ -96,6 +96,17 @@ run_all_checks() {
     
     echo -e "${BLUE}[Verify-All] Running code quality checks (parallel)...${NC}"
     echo ""
+    
+    # Detect changed modules for smart filtering
+    CHANGED_MODULES=$("$PROJECT_ROOT/.agents/detect-changed-modules" 2>/dev/null || echo "")
+    SMART_FILTER=$?  # 0 = use filtering, 1 = fall back to full suite
+    
+    if [ $SMART_FILTER -eq 0 ] && [ -n "$CHANGED_MODULES" ]; then
+        echo -e "${YELLOW}[Verify-All] Smart filtering enabled for modules: $CHANGED_MODULES${NC}"
+    else
+        echo -e "${YELLOW}[Verify-All] Running full test suite (large changes detected)${NC}"
+        CHANGED_MODULES=""
+    fi
     
     # Run checks in parallel using bash background processes
     echo -e "${YELLOW}[Verify-All] Running checks in parallel...${NC}"
@@ -110,10 +121,26 @@ run_all_checks() {
         poetry run ruff check src/ >"$temp_dir/ruff.txt" 2>&1 &
         local ruff_pid=$!
         
-        (cd src && poetry run mypy devloop/core/ devloop/agents/ >"$temp_dir/mypy.txt" 2>&1) &
+        # mypy: Use smart filtering if available
+        local mypy_cmd="cd src && poetry run mypy devloop/core/ devloop/agents/"
+        if [ -n "$CHANGED_MODULES" ] && [ "$CHANGED_MODULES" != "tests" ]; then
+            # Filter mypy to changed files
+            local changed_files=$(git diff --cached --name-only --diff-filter=d -- '*.py' src/devloop/ 2>/dev/null | tr '\n' ' ')
+            if [ -n "$changed_files" ]; then
+                mypy_cmd="cd src && poetry run mypy $changed_files"
+            fi
+        fi
+        (eval "$mypy_cmd") >"$temp_dir/mypy.txt" 2>&1 &
         local mypy_pid=$!
         
-        poetry run pytest tests/ -q >"$temp_dir/pytest.txt" 2>&1 &
+        # pytest: Use smart filtering if available
+        local pytest_cmd="poetry run pytest tests/ -q"
+        if [ -n "$CHANGED_MODULES" ] && [ "$CHANGED_MODULES" != "tests" ]; then
+            # Filter pytest by module name
+            local test_filter=$(echo "$CHANGED_MODULES" | tr ' ' '|')
+            pytest_cmd="poetry run pytest tests/ -k '$test_filter' -q"
+        fi
+        (eval "$pytest_cmd") >"$temp_dir/pytest.txt" 2>&1 &
         local pytest_pid=$!
         
         # Wait for all and collect results
