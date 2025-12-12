@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# Cleanup background jobs - Removes stale background job records
+#
+# Monitors and removes:
+# - Finished background job PIDs (process no longer running)
+# - Old job records (>24 hours)
+#
+# Used by: Post-task hook or manually for cleanup
+#
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+BG_JOBS_DIR="$PROJECT_ROOT/.devloop/bg-jobs"
+
+if [ ! -d "$BG_JOBS_DIR" ]; then
+    echo -e "${YELLOW}No background jobs directory found${NC}"
+    exit 0
+fi
+
+echo -e "${YELLOW}[Cleanup] Cleaning up background jobs...${NC}"
+
+# Count initial jobs
+INITIAL_COUNT=$(find "$BG_JOBS_DIR" -name "*.pid" -type f 2>/dev/null | wc -l)
+
+# Remove finished jobs (PID no longer running)
+for pid_file in "$BG_JOBS_DIR"/*.pid; do
+    [ -f "$pid_file" ] || continue
+    
+    PID=$(cat "$pid_file" 2>/dev/null || echo "")
+    if [ -z "$PID" ]; then
+        # Invalid PID file, remove it
+        rm -f "$pid_file"
+        continue
+    fi
+    
+    # Check if process is still running
+    if ! kill -0 "$PID" 2>/dev/null; then
+        # Process finished, remove the record
+        rm -f "$pid_file"
+        echo -e "${GREEN}✅ Removed finished job PID: $PID${NC}"
+    fi
+done
+
+# Remove old job records (>24 hours)
+find "$BG_JOBS_DIR" -name "*.pid" -mtime +1 -delete 2>/dev/null || true
+
+# Final count
+FINAL_COUNT=$(find "$BG_JOBS_DIR" -name "*.pid" -type f 2>/dev/null | wc -l)
+REMOVED=$((INITIAL_COUNT - FINAL_COUNT))
+
+if [ $REMOVED -gt 0 ]; then
+    echo -e "${GREEN}✅ Removed $REMOVED stale job records${NC}"
+else
+    echo -e "${YELLOW}ℹ️  No stale jobs found${NC}"
+fi
+
+# Remove empty directory
+if [ -z "$(ls -A "$BG_JOBS_DIR" 2>/dev/null)" ]; then
+    rmdir "$BG_JOBS_DIR" 2>/dev/null || true
+fi

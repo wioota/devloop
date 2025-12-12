@@ -69,19 +69,42 @@ else
     echo "[Quality] 📝 No cached results (quality checks may not have run)"
 fi
 
-# Step 3: Extract DevLoop findings to Beads issues (non-blocking)
+# Step 3: Extract DevLoop findings to Beads issues (async background)
 echo ""
-echo "[Findings] Extracting DevLoop findings..."
+echo "[Findings] Starting async findings extraction..."
 
 FINDINGS_SCRIPT=".agents/hooks/extract-findings-to-beads"
+BG_JOBS_DIR="$PROJECT_ROOT/.devloop/bg-jobs"
+
 if [ -x "$FINDINGS_SCRIPT" ]; then
-    if "$FINDINGS_SCRIPT"; then
-        echo "[Findings] ✅ DevLoop findings processed"
+    # Run findings extraction in background (non-blocking)
+    mkdir -p "$BG_JOBS_DIR"
+    
+    # Spawn in background and capture PID
+    "$FINDINGS_SCRIPT" >> "$PROJECT_ROOT/.devloop/findings-extraction.log" 2>&1 &
+    BG_PID=$!
+    
+    # Store PID for monitoring
+    echo "$BG_PID" > "$BG_JOBS_DIR/$BG_PID.pid"
+    
+    echo "[Findings] ✅ Async extraction started (PID: $BG_PID)"
+    echo "[Findings]    Findings will be extracted in background"
+    echo "[Findings]    Check .devloop/findings-extraction.log for progress"
+    
+    # Optional: with timeout, wait up to 30s but don't block
+    if timeout 30s wait $BG_PID 2>/dev/null; then
+        echo "[Findings] ✅ Background extraction completed"
     else
-        echo "[Findings] ⚠️  Could not process DevLoop findings (non-blocking)"
+        echo "[Findings] ℹ️  Extraction still running in background"
     fi
 else
     echo "[Findings] 📝 Extract-findings script not found (optional)"
+fi
+
+# Cleanup stale background jobs
+echo "[Cleanup] Removing stale background jobs..."
+if [ -x ".agents/cleanup-bg-jobs" ]; then
+    .agents/cleanup-bg-jobs 2>/dev/null || true
 fi
 
 echo ""
