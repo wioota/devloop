@@ -88,62 +88,82 @@ compute_file_hash() {
 }
 
 # ============================================================================
-# Helper: Run all checks (Black, Ruff, mypy, pytest) in parallel
+# Helper: Run all checks in parallel (via Amp subagent or fallback)
 # ============================================================================
 run_all_checks() {
     local start_time=$(date +%s)
-    local temp_dir="/tmp/verify-all-$$"
-    mkdir -p "$temp_dir"
+    local exit_code=0
     
     echo -e "${BLUE}[Verify-All] Running code quality checks (parallel)...${NC}"
     echo ""
     
-    local exit_code=0
-    
-    # Run Black (formatting check) - 20s typical
-    echo -e "${YELLOW}[Verify-All] Checking code formatting (Black)...${NC}"
-    if ! poetry run black --check src/ tests/ >"$temp_dir/black.txt" 2>&1; then
-        echo -e "${RED}[Verify-All] ❌ Black formatting failed:${NC}"
-        cat "$temp_dir/black.txt"
-        echo -e "${YELLOW}Fix: poetry run black src/ tests/${NC}"
-        exit_code=1
-    else
-        echo -e "${GREEN}[Verify-All] ✅ Black formatting passed${NC}"
-    fi
-    
-    # Run Ruff (linting) - 30s typical
-    echo -e "${YELLOW}[Verify-All] Running linter (Ruff)...${NC}"
-    if ! poetry run ruff check src/ >"$temp_dir/ruff.txt" 2>&1; then
-        echo -e "${RED}[Verify-All] ❌ Ruff linting failed:${NC}"
-        cat "$temp_dir/ruff.txt"
-        echo -e "${YELLOW}Fix: poetry run ruff check src/ --fix${NC}"
-        exit_code=1
-    else
-        echo -e "${GREEN}[Verify-All] ✅ Ruff linting passed${NC}"
-    fi
-    
-    # Run mypy (type checking) - 50s typical
-    echo -e "${YELLOW}[Verify-All] Type checking (mypy)...${NC}"
-    cd src
-    if ! poetry run mypy devloop/core/ devloop/agents/ >"$temp_dir/mypy.txt" 2>&1; then
-        echo -e "${RED}[Verify-All] ❌ Type check failed:${NC}"
-        cat "$temp_dir/mypy.txt"
-        cd ..
-        exit_code=1
-    else
-        echo -e "${GREEN}[Verify-All] ✅ Type checks passed${NC}"
-        cd ..
-    fi
-    
-    # Run pytest (tests) - 90s typical
-    echo -e "${YELLOW}[Verify-All] Running tests (pytest)...${NC}"
-    if ! poetry run pytest tests/ -q >"$temp_dir/pytest.txt" 2>&1; then
-        echo -e "${RED}[Verify-All] ❌ Tests failed:${NC}"
-        tail -50 "$temp_dir/pytest.txt"
-        exit_code=1
-    else
-        echo -e "${GREEN}[Verify-All] ✅ All tests passed${NC}"
-    fi
+    # Run checks in parallel using bash background processes
+    echo -e "${YELLOW}[Verify-All] Running checks in parallel...${NC}"
+        
+        local temp_dir="/tmp/verify-all-$$"
+        mkdir -p "$temp_dir"
+        
+        # Start all checks in background
+        poetry run black --check src/ tests/ >"$temp_dir/black.txt" 2>&1 &
+        local black_pid=$!
+        
+        poetry run ruff check src/ >"$temp_dir/ruff.txt" 2>&1 &
+        local ruff_pid=$!
+        
+        (cd src && poetry run mypy devloop/core/ devloop/agents/ >"$temp_dir/mypy.txt" 2>&1) &
+        local mypy_pid=$!
+        
+        poetry run pytest tests/ -q >"$temp_dir/pytest.txt" 2>&1 &
+        local pytest_pid=$!
+        
+        # Wait for all and collect results
+        local black_code=0
+        local ruff_code=0
+        local mypy_code=0
+        local pytest_code=0
+        
+        wait $black_pid 2>/dev/null || black_code=$?
+        wait $ruff_pid 2>/dev/null || ruff_code=$?
+        wait $mypy_pid 2>/dev/null || mypy_code=$?
+        wait $pytest_pid 2>/dev/null || pytest_code=$?
+        
+        # Report results
+        if [ $black_code -eq 0 ]; then
+            echo -e "${GREEN}[Verify-All] ✅ Black formatting passed${NC}"
+        else
+            echo -e "${RED}[Verify-All] ❌ Black formatting failed:${NC}"
+            cat "$temp_dir/black.txt"
+            echo -e "${YELLOW}Fix: poetry run black src/ tests/${NC}"
+            exit_code=1
+        fi
+        
+        if [ $ruff_code -eq 0 ]; then
+            echo -e "${GREEN}[Verify-All] ✅ Ruff linting passed${NC}"
+        else
+            echo -e "${RED}[Verify-All] ❌ Ruff linting failed:${NC}"
+            cat "$temp_dir/ruff.txt"
+            echo -e "${YELLOW}Fix: poetry run ruff check src/ --fix${NC}"
+            exit_code=1
+        fi
+        
+        if [ $mypy_code -eq 0 ]; then
+            echo -e "${GREEN}[Verify-All] ✅ Type checks passed${NC}"
+        else
+            echo -e "${RED}[Verify-All] ❌ Type check failed:${NC}"
+            cat "$temp_dir/mypy.txt"
+            exit_code=1
+        fi
+        
+        if [ $pytest_code -eq 0 ]; then
+            echo -e "${GREEN}[Verify-All] ✅ All tests passed${NC}"
+        else
+            echo -e "${RED}[Verify-All] ❌ Tests failed:${NC}"
+            tail -50 "$temp_dir/pytest.txt"
+            exit_code=1
+        fi
+        
+    # Cleanup
+    rm -rf "$temp_dir"
     
     # Poetry lock sync check (metadata)
     if [ -f "poetry.lock" ] && [ -f "pyproject.toml" ]; then
