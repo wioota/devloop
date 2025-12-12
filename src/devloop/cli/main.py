@@ -161,6 +161,26 @@ def amp_context():
         )
 
 
+@app.command()
+def health():
+    """Show operational health status of agents."""
+    from pathlib import Path
+
+    from devloop.core.operational_health import OperationalHealthAnalyzer
+
+    devloop_dir = Path.cwd() / ".devloop"
+
+    if not devloop_dir.exists():
+        console.print(
+            "[yellow]No .devloop directory found. Start agents with 'devloop watch .' first.[/yellow]"
+        )
+        return
+
+    analyzer = OperationalHealthAnalyzer(devloop_dir)
+    report = analyzer.generate_health_report()
+    console.print(report)
+
+
 def setup_logging(verbose: bool = False):
     """Setup logging configuration."""
     level = logging.DEBUG if verbose else logging.INFO
