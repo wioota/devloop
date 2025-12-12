@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Clear check cache - Remove cached verification results
+#
+# Use when:
+# - You want to force a full check run
+# - Cache may be corrupted
+# - You're debugging cache issues
+#
+# Note: Cache is automatically invalidated when files change,
+# so manual clearing is rarely needed.
+#
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Get project root
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+CACHE_DIR="$PROJECT_ROOT/.devloop/check-cache"
+
+if [ ! -d "$CACHE_DIR" ]; then
+    echo -e "${YELLOW}No cache directory found at $CACHE_DIR${NC}"
+    exit 0
+fi
+
+echo -e "${YELLOW}Clearing check cache...${NC}"
+
+# Remove cache files
+rm -f "$CACHE_DIR/file-hash.txt"
+rm -f "$CACHE_DIR/result.json"
+
+# Optional: Remove old cache entries (>24h)
+find "$CACHE_DIR" -name "*.json" -mtime +1 -delete 2>/dev/null || true
+
+echo -e "${GREEN}✅ Check cache cleared${NC}"
+echo "Next commit will run full checks and rebuild cache."
