@@ -3,7 +3,10 @@
 from typing import Any, Dict, Optional
 
 from devloop.providers.ci_provider import CIProvider
+from devloop.providers.circleci_provider import CircleCIProvider
 from devloop.providers.github_actions_provider import GitHubActionsProvider
+from devloop.providers.gitlab_ci_provider import GitLabCIProvider
+from devloop.providers.jenkins_provider import JenkinsProvider
 from devloop.providers.pypi_registry import PyPIRegistry
 from devloop.providers.registry_provider import PackageRegistry
 
@@ -15,6 +18,11 @@ class ProviderManager:
     _CI_PROVIDERS = {
         "github": GitHubActionsProvider,
         "github-actions": GitHubActionsProvider,
+        "gitlab": GitLabCIProvider,
+        "gitlab-ci": GitLabCIProvider,
+        "jenkins": JenkinsProvider,
+        "circleci": CircleCIProvider,
+        "circle-ci": CircleCIProvider,
     }
 
     _REGISTRY_PROVIDERS = {
@@ -118,7 +126,13 @@ class ProviderManager:
         return list(self._REGISTRY_PROVIDERS.keys())
 
     def auto_detect_ci_provider(self) -> Optional[CIProvider]:
-        """Auto-detect the CI provider based on repository structure.
+        """Auto-detect the CI provider based on repository structure and available tools.
+
+        Detection priority:
+        1. GitHub Actions (if gh CLI is available and authenticated)
+        2. GitLab CI (if glab CLI is available and authenticated)
+        3. Jenkins (if JENKINS_URL environment variable is set)
+        4. CircleCI (if CIRCLECI_PROJECT_SLUG environment variable is set)
 
         Returns:
             Detected CIProvider instance or None if unable to detect
@@ -128,7 +142,21 @@ class ProviderManager:
         if gh_provider and gh_provider.is_available():
             return gh_provider
 
-        # Could add detection for GitLab, Jenkins, etc. here
+        # Try GitLab CI
+        gitlab_provider = self.get_ci_provider("gitlab")
+        if gitlab_provider and gitlab_provider.is_available():
+            return gitlab_provider
+
+        # Try Jenkins
+        jenkins_provider = self.get_ci_provider("jenkins")
+        if jenkins_provider and jenkins_provider.is_available():
+            return jenkins_provider
+
+        # Try CircleCI
+        circleci_provider = self.get_ci_provider("circleci")
+        if circleci_provider and circleci_provider.is_available():
+            return circleci_provider
+
         return None
 
     def auto_detect_registry_provider(self) -> Optional[PackageRegistry]:

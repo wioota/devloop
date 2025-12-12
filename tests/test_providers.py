@@ -1,14 +1,16 @@
 """Tests for provider abstraction layer."""
 
 import pytest
-
 from devloop.providers.ci_provider import (
     CIProvider,
     RunConclusion,
     RunStatus,
     WorkflowRun,
 )
+from devloop.providers.circleci_provider import CircleCIProvider
 from devloop.providers.github_actions_provider import GitHubActionsProvider
+from devloop.providers.gitlab_ci_provider import GitLabCIProvider
+from devloop.providers.jenkins_provider import JenkinsProvider
 from devloop.providers.provider_manager import ProviderManager
 from devloop.providers.pypi_registry import PyPIRegistry
 from devloop.providers.registry_provider import PackageRegistry
@@ -47,6 +49,11 @@ class TestCIProvider:
         providers = manager.list_ci_providers()
         assert "github" in providers
         assert "github-actions" in providers
+        assert "gitlab" in providers
+        assert "gitlab-ci" in providers
+        assert "jenkins" in providers
+        assert "circleci" in providers
+        assert "circle-ci" in providers
 
     def test_provider_manager_list_registry_providers(self):
         """Test provider manager lists available registry providers."""
@@ -72,6 +79,70 @@ class TestCIProvider:
         assert run.name == "test-workflow"
         assert run.status == RunStatus.COMPLETED
         assert run.conclusion == RunConclusion.SUCCESS
+
+    def test_gitlab_ci_provider_initialization(self):
+        """Test GitLab CI provider can be initialized."""
+        provider = GitLabCIProvider()
+        assert provider is not None
+        assert provider.get_provider_name() == "GitLab CI"
+
+    def test_jenkins_provider_initialization(self):
+        """Test Jenkins provider can be initialized."""
+        provider = JenkinsProvider()
+        assert provider is not None
+        assert provider.get_provider_name() == "Jenkins"
+
+    def test_circleci_provider_initialization(self):
+        """Test CircleCI provider can be initialized."""
+        provider = CircleCIProvider()
+        assert provider is not None
+        assert provider.get_provider_name() == "CircleCI"
+
+    def test_gitlab_provider_via_manager(self):
+        """Test GitLab provider can be retrieved via manager."""
+        manager = ProviderManager()
+        provider = manager.get_ci_provider("gitlab")
+        assert provider is not None
+        assert isinstance(provider, GitLabCIProvider)
+
+    def test_jenkins_provider_via_manager(self):
+        """Test Jenkins provider can be retrieved via manager."""
+        manager = ProviderManager()
+        provider = manager.get_ci_provider("jenkins")
+        assert provider is not None
+        assert isinstance(provider, JenkinsProvider)
+
+    def test_circleci_provider_via_manager(self):
+        """Test CircleCI provider can be retrieved via manager."""
+        manager = ProviderManager()
+        provider = manager.get_ci_provider("circleci")
+        assert provider is not None
+        assert isinstance(provider, CircleCIProvider)
+
+    def test_gitlab_status_mapping(self):
+        """Test GitLab status mapping is correct."""
+        provider = GitLabCIProvider()
+        assert provider.STATUS_MAP["running"] == RunStatus.IN_PROGRESS
+        assert provider.STATUS_MAP["success"] == RunStatus.COMPLETED
+        assert provider.CONCLUSION_MAP["success"] == RunConclusion.SUCCESS
+        assert provider.CONCLUSION_MAP["failed"] == RunConclusion.FAILURE
+
+    def test_jenkins_status_mapping(self):
+        """Test Jenkins status mapping is correct."""
+        provider = JenkinsProvider()
+        assert provider.STATUS_MAP["SUCCESS"] == RunStatus.COMPLETED
+        assert provider.STATUS_MAP["FAILURE"] == RunStatus.COMPLETED
+        assert provider.STATUS_MAP[None] == RunStatus.IN_PROGRESS
+        assert provider.CONCLUSION_MAP["SUCCESS"] == RunConclusion.SUCCESS
+        assert provider.CONCLUSION_MAP["FAILURE"] == RunConclusion.FAILURE
+
+    def test_circleci_status_mapping(self):
+        """Test CircleCI status mapping is correct."""
+        provider = CircleCIProvider()
+        assert provider.STATUS_MAP["running"] == RunStatus.IN_PROGRESS
+        assert provider.STATUS_MAP["success"] == RunStatus.COMPLETED
+        assert provider.CONCLUSION_MAP["success"] == RunConclusion.SUCCESS
+        assert provider.CONCLUSION_MAP["failed"] == RunConclusion.FAILURE
 
 
 class TestRegistryProvider:

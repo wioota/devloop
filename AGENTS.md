@@ -913,9 +913,9 @@ This section documents both the automated CLI commands and the manual process fo
 
 DevLoop automatically detects and works with:
 - **GitHub Actions** - Via `gh` CLI
-- **GitLab CI/CD** - Via `glab` CLI (community support)
-- **Jenkins** - Via Jenkins API (community support)
-- **CircleCI** - Via CircleCI API (planned)
+- **GitLab CI/CD** - Via `glab` CLI
+- **Jenkins** - Via Jenkins REST API
+- **CircleCI** - Via CircleCI API v2
 - **Custom CI Systems** - Via manual configuration
 
 ### Supported Package Registries
