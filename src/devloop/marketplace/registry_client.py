@@ -1,13 +1,15 @@
 """Client for interacting with agent registries (local and remote)."""
 
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
 import hashlib
+import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+from .cache import RegistryCache
 from .metadata import AgentMetadata
 from .registry import AgentRegistry, RegistryConfig
+from .search import SearchEngine
 
 
 logger = logging.getLogger(__name__)
@@ -17,13 +19,19 @@ class RegistryClient:
     """Client for searching and managing agents in registries."""
 
     def __init__(
-        self, local_registry: AgentRegistry, remote_urls: Optional[List[str]] = None
+        self,
+        local_registry: AgentRegistry,
+        remote_urls: Optional[List[str]] = None,
+        cache_ttl_hours: int = 24,
     ):
         """Initialize registry client."""
         self.local = local_registry
         self.remote_urls = remote_urls or []
-        self._remote_cache: Dict[str, List[AgentMetadata]] = {}
-        self._cache_timestamps: Dict[str, datetime] = {}
+        self.search_engine = SearchEngine()
+
+        # Setup caching
+        cache_dir = local_registry.config.registry_dir / "cache"
+        self.cache = RegistryCache(cache_dir, ttl_hours=cache_ttl_hours)
 
     def search(
         self,
