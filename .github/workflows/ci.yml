@@ -225,3 +225,36 @@ jobs:
       with:
         name: snyk-report
         path: snyk-report.json
+
+  health-check:
+    needs: [test]
+    runs-on: ubuntu-latest
+    name: Agent Health Check
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+
+    - name: Run agent health check
+      run: |
+        poetry run python scripts/check_agent_health.py
+
+    - name: Upload health report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: health-check-report
+        path: .devloop/health_check.json
