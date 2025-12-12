@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2025-12-13
+
+### Major Features
+
+#### IDE Integration
+- **VSCode Extension with LSP** - Real-time agent feedback in editor with inline quick fixes
+- **Multi-language support** - Python, JavaScript/TypeScript, and more
+- **Status bar integration** - Displays agent status and finding counts
+
+#### Provider System (Multi-CI/Registry Support)
+- **Provider abstraction layer** - CI-agnostic design (GitHub Actions, GitLab CI, Jenkins, CircleCI ready)
+- **Pluggable registries** - Package registry abstraction (PyPI, npm, Docker, etc.)
+- **Release workflow abstraction** - Generic publish/tag process across providers
+- **Automatic provider detection** - Detects available CI and registry automatically
+- **Migration guides** - Documentation for GitLab CI, Jenkins, and other platforms
+
+#### Security & Token Management
+- **Comprehensive token security** - Token validation, expiry checking, OAuth2 support
+- **Token sanitization** - Automatic hiding in logs and process lists
+- **Secret scanning** - Detects placeholder values and insecure patterns
+- **Environment variable isolation** - Secure token storage without command-line exposure
+
+#### System Reliability
+- **Config schema versioning** - Automatic migration between config versions
+- **Proper daemon supervision** - Process health monitoring and restart handling
+- **Transactional I/O** - Checksums, atomic writes, corruption recovery
+- **Self-healing filesystem** - Detects and repairs corrupted files
+- **Beads integration** - Automatic issue creation from detected patterns
+
+#### Development Experience
+- **AGENTS.md template system** - Self-executing template merge for Amp integration
+- **Amp thread context capture** - Cross-thread pattern detection and analytics
+- **Smart agent filtering** - Module-based test selection for faster feedback
+- **Cache cleanup utilities** - Automated cleanup of stale caches
+
+### Improvements
+
+#### Code Quality
+- **Fixed test warnings** - All pytest marks properly registered
+- **Increased test threshold resilience** - mypy latency tests now 5000ms timeout
+- **Removed unused imports** - 46+ cleanup for cleaner codebase
+- **Health check robustness** - Log file check handles missing logs gracefully
+
+#### Testing
+- **All 527 tests passing** - Comprehensive test coverage
+- **Performance benchmarks** - Validated agent latency and throughput
+- **Security tests** - Sandbox escape prevention and token security
+- **Integration tests** - End-to-end workflow verification
+
+#### Documentation
+- **Provider system documentation** - Complete setup guides
+- **Token security guide** - Best practices for credential management
+- **VSCode extension guide** - Installation and usage instructions
+- **Amp integration documentation** - Thread context capture and analytics
+
+### Bug Fixes
+- **Health check stability** - No longer fails on CI when log file missing
+- **Pre-push hook reliability** - Better CI status verification
+- **Test isolation** - Fixed async test cleanup issues
+
+### Dependencies
+- Added VSCode API dependencies for extension
+- Added provider abstraction libraries
+- Added token management and validation libraries
+
+---
+
 ## [Unreleased]
 
 ---
