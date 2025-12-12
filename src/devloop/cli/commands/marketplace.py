@@ -1,0 +1,303 @@
+"""Marketplace commands for discovering, searching, and managing agents."""
+
+import logging
+from pathlib import Path
+from typing import Optional
+
+import typer
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+
+from devloop.marketplace import (
+    RegistryClient,
+    RegistryConfig,
+)
+from devloop.marketplace.registry import AgentRegistry
+
+
+logger = logging.getLogger(__name__)
+app = typer.Typer(help="Agent marketplace commands", add_completion=False)
+console = Console()
+
+
+def get_marketplace_dir() -> Path:
+    """Get marketplace configuration directory."""
+    # Use .devloop/marketplace for now, will be configurable later
+    devloop_dir = Path.home() / ".devloop"
+    marketplace_dir = devloop_dir / "marketplace"
+    return marketplace_dir
+
+
+def get_registry_client() -> RegistryClient:
+    """Get or create marketplace registry client."""
+    marketplace_dir = get_marketplace_dir()
+    config = RegistryConfig(registry_dir=marketplace_dir)
+    registry = AgentRegistry(config)
+
+    # TODO: Load remote registry URLs from config
+    remote_urls = []
+
+    return RegistryClient(registry, remote_urls)
+
+
+@app.command()
+def search(
+    query: str = typer.Argument(..., help="Search query (agent name or keyword)"),
+    category: Optional[str] = typer.Option(None, help="Filter by category"),
+    min_rating: float = typer.Option(0.0, help="Minimum rating (1-5)"),
+    limit: int = typer.Option(20, help="Maximum results to show"),
+    remote: bool = typer.Option(True, help="Search remote registries"),
+) -> None:
+    """Search for agents in the marketplace."""
+    client = get_registry_client()
+
+    categories = [category] if category else None
+    results = client.search(
+        query,
+        search_remote=remote,
+        categories=categories,
+        min_rating=min_rating,
+        max_results=limit,
+    )
+
+    all_results = results.get("local", []) + results.get("remote", [])
+
+    if not all_results:
+        console.print("[yellow]No agents found matching your search.[/yellow]")
+        return
+
+    # Display results in a table
+    table = Table(title=f"Search Results: {query}")
+    table.add_column("Name", style="cyan")
+    table.add_column("Version", style="magenta")
+    table.add_column("Author", style="green")
+    table.add_column("Rating", style="yellow")
+    table.add_column("Downloads")
+    table.add_column("Status")
+
+    for agent in all_results[:limit]:
+        rating_str = f"★ {agent.rating.average:.1f}" if agent.rating else "N/A"
+        status_tags = []
+        if agent.trusted:
+            status_tags.append("[green]✓ Trusted[/green]")
+        if agent.experimental:
+            status_tags.append("[yellow]⚠ Experimental[/yellow]")
+        if agent.deprecated:
+            status_tags.append("[red]✗ Deprecated[/red]")
+
+        status = ", ".join(status_tags) if status_tags else "-"
+
+        table.add_row(
+            agent.name,
+            agent.version,
+            agent.author,
+            rating_str,
+            str(agent.downloads),
+            status,
+        )
+
+    console.print(table)
+
+
+@app.command()
+def info(
+    name: str = typer.Argument(..., help="Agent name"),
+    version: Optional[str] = typer.Option(None, help="Specific version"),
+) -> None:
+    """Show detailed information about an agent."""
+    client = get_registry_client()
+    agent = client.get_agent(name, version)
+
+    if not agent:
+        console.print(f"[red]Agent not found: {name}[/red]")
+        return
+
+    # Build info panel
+    info_text = Text()
+    info_text.append("Name:        ", style="bold")
+    info_text.append(f"{agent.name}\n")
+
+    info_text.append("Version:     ", style="bold")
+    info_text.append(f"{agent.version}\n")
+
+    info_text.append("Author:      ", style="bold")
+    info_text.append(f"{agent.author}\n")
+
+    info_text.append("License:     ", style="bold")
+    info_text.append(f"{agent.license}\n")
+
+    if agent.homepage:
+        info_text.append("Homepage:    ", style="bold")
+        info_text.append(f"{agent.homepage}\n")
+
+    if agent.repository:
+        info_text.append("Repository:  ", style="bold")
+        info_text.append(f"{agent.repository}\n")
+
+    info_text.append("\nDescription:\n", style="bold")
+    info_text.append(agent.description + "\n")
+
+    if agent.categories:
+        info_text.append("\nCategories:  ", style="bold")
+        info_text.append(", ".join(agent.categories) + "\n")
+
+    if agent.keywords:
+        info_text.append("Keywords:    ", style="bold")
+        info_text.append(", ".join(agent.keywords) + "\n")
+
+    if agent.rating:
+        info_text.append("\nRating:      ", style="bold")
+        info_text.append(
+            f"★ {agent.rating.average:.1f} ({agent.rating.count} ratings)\n"
+        )
+
+    info_text.append("Downloads:   ", style="bold")
+    info_text.append(f"{agent.downloads}\n")
+
+    # Requirements
+    info_text.append("\nRequirements:\n", style="bold")
+    info_text.append(f"  Python:      {agent.python_version}\n")
+    info_text.append(f"  DevLoop:     {agent.devloop_version}\n")
+
+    if agent.dependencies:
+        info_text.append("  Dependencies:\n", style="bold")
+        for dep in agent.dependencies:
+            optional = " (optional)" if dep.optional else ""
+            info_text.append(f"    - {dep.name} {dep.version}{optional}\n")
+
+    # Status
+    if agent.deprecated:
+        info_text.append("\n[red]⚠ DEPRECATED[/red]")
+        if agent.deprecation_message:
+            info_text.append(f": {agent.deprecation_message}")
+    elif agent.trusted:
+        info_text.append("\n[green]✓ Verified by DevLoop maintainers[/green]")
+    elif agent.experimental:
+        info_text.append("\n[yellow]⚠ Experimental - use with caution[/yellow]")
+
+    console.print(Panel(info_text, title=f"[bold]{agent.name}[/bold]"))
+
+
+@app.command()
+def list(
+    category: Optional[str] = typer.Option(None, help="Filter by category"),
+    limit: int = typer.Option(20, help="Maximum agents to show"),
+    sort: str = typer.Option("rating", help="Sort by: rating, downloads, name"),
+) -> None:
+    """List agents in the marketplace."""
+    client = get_registry_client()
+
+    if category:
+        agents = client.get_agents_by_category(category, limit=limit)
+        title = f"Agents in {category}"
+    else:
+        agents = client.get_popular_agents(limit=limit)
+        title = "Popular Agents"
+
+    if not agents:
+        console.print("[yellow]No agents found.[/yellow]")
+        return
+
+    table = Table(title=title)
+    table.add_column("Name", style="cyan")
+    table.add_column("Version", style="magenta")
+    table.add_column("Author", style="green")
+    table.add_column("Rating")
+    table.add_column("Downloads")
+
+    for agent in agents:
+        rating_str = f"★ {agent.rating.average:.1f}" if agent.rating else "N/A"
+        table.add_row(
+            agent.name,
+            agent.version,
+            agent.author,
+            rating_str,
+            str(agent.downloads),
+        )
+
+    console.print(table)
+
+
+@app.command()
+def categories() -> None:
+    """List all agent categories."""
+    client = get_registry_client()
+    categories = client.get_categories()
+
+    if not categories:
+        console.print("[yellow]No categories available.[/yellow]")
+        return
+
+    table = Table(title="Agent Categories")
+    table.add_column("Category", style="cyan")
+    table.add_column("Count")
+
+    for cat, count in sorted(categories.items(), key=lambda x: -x[1]):
+        table.add_row(cat, str(count))
+
+    console.print(table)
+
+
+@app.command()
+def rate(
+    name: str = typer.Argument(..., help="Agent name"),
+    rating: float = typer.Argument(..., help="Rating (1-5 stars)"),
+) -> None:
+    """Rate an agent."""
+    if not 1 <= rating <= 5:
+        console.print("[red]Rating must be between 1 and 5.[/red]")
+        return
+
+    client = get_registry_client()
+
+    if client.rate_agent(name, rating):
+        agent = client.get_agent(name)
+        if agent and agent.rating:
+            console.print(
+                f"[green]✓ Rated {name} {rating} stars[/green]\n"
+                f"New average: ★ {agent.rating.average:.1f} ({agent.rating.count} ratings)"
+            )
+    else:
+        console.print(f"[red]Failed to rate agent: {name}[/red]")
+
+
+@app.command()
+def stats() -> None:
+    """Show marketplace statistics."""
+    client = get_registry_client()
+    stats = client.get_registry_stats()
+
+    local_stats = stats["local"]
+
+    stats_text = Text()
+    stats_text.append("Total Agents:        ", style="bold")
+    stats_text.append(f"{local_stats['total_agents']}\n")
+
+    stats_text.append("Active Agents:       ", style="bold")
+    stats_text.append(f"{local_stats['active_agents']}\n")
+
+    stats_text.append("Trusted Agents:      ", style="bold")
+    stats_text.append(f"{local_stats['trusted_agents']}\n")
+
+    stats_text.append("Total Downloads:     ", style="bold")
+    stats_text.append(f"{local_stats['total_downloads']}\n")
+
+    stats_text.append("Average Rating:      ", style="bold")
+    stats_text.append(f"★ {local_stats['average_rating']:.1f}\n")
+
+    if local_stats["categories"]:
+        stats_text.append(
+            f"\nCategories ({len(local_stats['categories'])}):\n", style="bold"
+        )
+        for cat, count in sorted(
+            local_stats["categories"].items(), key=lambda x: -x[1]
+        )[:10]:
+            stats_text.append(f"  {cat}: {count}\n")
+
+    console.print(Panel(stats_text, title="[bold]Marketplace Statistics[/bold]"))
+
+
+if __name__ == "__main__":
+    app()
