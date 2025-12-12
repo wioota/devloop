@@ -112,12 +112,38 @@ Add to MCP config (e.g., `~/.config/claude/config.json`):
 
 Then use `mcp__beads__*` functions instead of CLI commands.
 
+### ⛔️ EXTREME IMPORTANCE: NO MARKDOWN FILES FOR PLANNING
+
+**THIS IS AN ABSOLUTE RULE FOR ALL AGENTS. NO EXCEPTIONS.**
+
+**DO NOT CREATE ANY MARKDOWN FILES** unless:
+1. Explicitly requested by the user, OR
+2. It is one of these 6 permanent files ONLY:
+   - README.md
+   - CHANGELOG.md
+   - AGENTS.md
+   - CODING_RULES.md
+   - LICENSE
+   - .github/copilot-instructions.md
+
+**ANY OTHER MARKDOWN FILE IS FORBIDDEN.** This includes:
+- ❌ `*_PLAN.md` files
+- ❌ `*_ANALYSIS.md` files
+- ❌ `*_SUMMARY.md` files
+- ❌ `*_STRATEGY.md` files
+- ❌ `*_STATUS.md` files
+- ❌ `*_DESIGN.md` files
+- ❌ `*_NOTES.md` files
+- ❌ Any other ad-hoc markdown planning/analysis/tracking files
+
+**USE BEADS FOR EVERYTHING ELSE.**
+
 ### Managing AI-Generated Planning Documents
 
-**CRITICAL**: This project distinguishes between permanent documentation, ephemeral planning documents, and active work.
+**CRITICAL**: This project **completely prohibits** ephemeral planning markdown documents. All work uses Beads exclusively.
 
-#### Permanent Documentation (Root Level ONLY)
-Keep ONLY essential, permanent documentation in the repository root:
+#### Permanent Documentation (Root Level ONLY - 6 Files)
+Keep ONLY these 6 essential files in repository root:
 - **README.md** - Project overview, quick start, links to docs
 - **CHANGELOG.md** - Release notes and version history
 - **AGENTS.md** - Architecture and development guidelines (this file)
@@ -125,10 +151,18 @@ Keep ONLY essential, permanent documentation in the repository root:
 - **LICENSE** - License file
 - **.github/copilot-instructions.md** - GitHub Copilot instructions
 
-#### All Work MUST Use Beads (NOT Markdown)
-**CRITICAL**: Do NOT create ANY markdown files for planning, tracking, or status. Everything goes in Beads.
+All other documentation must be in the codebase or committed later as permanent docs.
 
-**INSTEAD**: Create Beads issues for all work:
+#### All Work MUST Use Beads (MANDATORY - NOT Markdown)
+
+**NO EXCEPTIONS.** Create Beads issues for everything:
+- Planning features
+- Tracking status
+- Documenting decisions
+- Recording analysis
+- Writing design specs
+- Tracking bugs
+
 ```bash
 bd create "Task title" -t task|feature|epic|bug -p 0-4 -d "Full description and details"
 ```
@@ -136,7 +170,7 @@ bd create "Task title" -t task|feature|epic|bug -p 0-4 -d "Full description and 
 Beads provides all needed structure:
 - Task/epic/feature/bug/chore types
 - Priority levels (0-4)
-- Descriptions for details and planning
+- Detailed descriptions for planning/design/analysis
 - Dependencies (blocks, related, parent-child, discovered-from)
 - Status tracking (open, in_progress, closed)
 - Synced to git for persistence
@@ -146,42 +180,57 @@ Beads provides all needed structure:
 - Status update? `bd update <id> --status in_progress`
 - Found issue during work? `bd create "Bug found" -p 1 --deps discovered-from:<parent-id>`
 - Documenting decision? Add to issue description with `bd update <id> -d "Decision: ..."`
+- Recording analysis? `bd create "Analysis: Component X" -d "Investigation results: ... Findings: ..."`
 
-#### Directory Structure
+#### Directory Structure (Strictly Enforced)
 ```
 project-root/
-├── README.md                    # Permanent (system overview)
-├── CHANGELOG.md                 # Permanent (version history)
-├── AGENTS.md                    # Permanent (architecture & dev guidelines)
-├── CODING_RULES.md              # Permanent (development standards)
-├── LICENSE                      # Permanent
+├── README.md                    # ONLY permanent doc in root
+├── CHANGELOG.md                 # ONLY permanent doc in root
+├── AGENTS.md                    # ONLY permanent doc in root
+├── CODING_RULES.md              # ONLY permanent doc in root
+├── LICENSE                      # ONLY permanent doc in root
 ├── .github/
-│   └── copilot-instructions.md  # Permanent (AI assistant instructions)
+│   └── copilot-instructions.md  # ONLY permanent doc here
 ├── .beads/
-│   └── issues.jsonl             # ACTIVE WORK TRACKING (only source of truth for all tasks)
+│   └── issues.jsonl             # ALL PLANNING/TRACKING GOES HERE (single source of truth)
 └── src/
 ```
 
-#### Benefits
-- ✅ Clean repository root
-- ✅ Single source of truth for all work (Beads - synced via git)
-- ✅ No duplicate tracking systems
-- ✅ Easy to sync work across branches/machines
-- ✅ All planning/design documented in Beads issue descriptions
-- ✅ Prevents AI agents from creating orphaned markdown files
+**NO OTHER .md FILES IN ROOT.** No `*_PLAN.md`, `*_ANALYSIS.md`, `*_NOTES.md`, etc.
 
-### Important Rules
+#### Benefits of This Approach
+- ✅ Single source of truth for all work (Beads via git)
+- ✅ Dependency tracking prevents duplicate work
+- ✅ Ready work detection (`bd ready`)
+- ✅ Clean repository - no orphaned planning files
+- ✅ Full history and traceability
+- ✅ Works across branches and machines
+- ✅ AI agents cannot clutter repo with analysis documents
 
-- ✅ Use bd for ALL task tracking (MANDATORY - planning, design, status, everything)
-- ✅ Always use `--json` flag for programmatic use
-- ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `bd ready` before asking "what should I work on?"
-- ✅ Put all planning/design in issue descriptions via `bd create`
-- ✅ Update status with `bd update <id> --status in_progress`
-- ❌ Do NOT create ANY markdown files for planning, tracking, status, or design
-- ❌ Do NOT use external issue trackers
-- ❌ Do NOT duplicate tracking systems
-- ❌ Do NOT clutter repo root with any planning documents
+### Absolute Rules for AI Agents
+
+**MANDATORY RULES - ZERO TOLERANCE**
+
+1. ✅ **BEFORE** creating any file, ask: "Is this one of the 6 permanent docs?"
+2. ✅ **IF NOT**, use Beads: `bd create "..."`
+3. ✅ Use bd for ALL task tracking (planning, design, status, analysis, everything)
+4. ✅ Always use `--json` flag for programmatic use
+5. ✅ Link discovered work with `discovered-from` dependencies
+6. ✅ Check `bd ready` before asking "what should I work on?"
+7. ✅ Update status with `bd update <id> --status in_progress`
+8. ✅ Close issues with `bd close <id> --reason "..."`
+9. ✅ Commit `.beads/issues.jsonl` together with code changes
+
+**FORBIDDEN - NO EXCEPTIONS**
+
+- ❌ **NEVER** create `*_PLAN.md` files
+- ❌ **NEVER** create `*_ANALYSIS.md` files
+- ❌ **NEVER** create `*_SUMMARY.md` files
+- ❌ **NEVER** create any ad-hoc markdown planning documents
+- ❌ **NEVER** use external issue trackers
+- ❌ **NEVER** duplicate tracking systems
+- ❌ **NEVER** clutter repo root with planning documents
 
 For more details, see README.md and QUICKSTART.md.
 

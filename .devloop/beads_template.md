@@ -1,3 +1,29 @@
+## ⛔️ EXTREME IMPORTANCE: NO MARKDOWN FILES FOR PLANNING
+
+**THIS IS AN ABSOLUTE RULE FOR ALL AGENTS. NO EXCEPTIONS.**
+
+**DO NOT CREATE ANY MARKDOWN FILES** unless:
+1. Explicitly requested by the user, OR
+2. It is one of these 6 permanent files ONLY:
+   - README.md
+   - CHANGELOG.md
+   - AGENTS.md
+   - CODING_RULES.md
+   - LICENSE
+   - .github/copilot-instructions.md
+
+**ANY OTHER MARKDOWN FILE IS FORBIDDEN.** This includes:
+- ❌ `*_PLAN.md` files
+- ❌ `*_ANALYSIS.md` files
+- ❌ `*_SUMMARY.md` files
+- ❌ `*_STRATEGY.md` files
+- ❌ `*_STATUS.md` files
+- ❌ `*_DESIGN.md` files
+- ❌ `*_NOTES.md` files
+- ❌ Any other ad-hoc markdown planning/analysis/tracking files
+
+**USE BEADS FOR EVERYTHING ELSE.**
+
 ## Task Management with Beads
 
 **All work must be tracked in Beads, NOT in markdown files.**
@@ -73,11 +99,16 @@ bd close bd-42 --reason "Completed" --json
    git push origin main
    ```
 
-### All Work MUST Use Beads (NOT Markdown)
+### All Work MUST Use Beads (MANDATORY - NOT Markdown)
 
-**CRITICAL**: Do NOT create ANY markdown files for planning, tracking, or status. Everything goes in Beads.
+**NO EXCEPTIONS.** Create Beads issues for everything:
+- Planning features
+- Tracking status
+- Documenting decisions
+- Recording analysis
+- Writing design specs
+- Tracking bugs
 
-**INSTEAD**: Create Beads issues for all work:
 ```bash
 bd create "Task title" -t task|feature|epic|bug -p 0-4 -d "Full description and details"
 ```
@@ -85,7 +116,7 @@ bd create "Task title" -t task|feature|epic|bug -p 0-4 -d "Full description and 
 Beads provides all needed structure:
 - Task/epic/feature/bug/chore types
 - Priority levels (0-4)
-- Descriptions for details and planning
+- Detailed descriptions for planning/design/analysis
 - Dependencies (blocks, related, parent-child, discovered-from)
 - Status tracking (open, in_progress, closed)
 - Synced to git for persistence
@@ -95,16 +126,28 @@ Beads provides all needed structure:
 - Status update? `bd update <id> --status in_progress`
 - Found issue during work? `bd create "Bug found" -p 1 --deps discovered-from:<parent-id>`
 - Documenting decision? Add to issue description with `bd update <id> -d "Decision: ..."`
+- Recording analysis? `bd create "Analysis: Component X" -d "Investigation results: ... Findings: ..."`
 
-### Important Rules
+### Absolute Rules for AI Agents
 
-- ✅ Use bd for ALL task tracking (MANDATORY - planning, design, status, everything)
-- ✅ Always use `--json` flag for programmatic use
-- ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `bd ready` before asking "what should I work on?"
-- ✅ Put all planning/design in issue descriptions via `bd create`
-- ✅ Update status with `bd update <id> --status in_progress`
-- ❌ Do NOT create ANY markdown files for planning, tracking, status, or design
-- ❌ Do NOT use external issue trackers
-- ❌ Do NOT duplicate tracking systems
-- ❌ Do NOT clutter repo root with any planning documents
+**MANDATORY RULES - ZERO TOLERANCE**
+
+1. ✅ **BEFORE** creating any file, ask: "Is this one of the 6 permanent docs?"
+2. ✅ **IF NOT**, use Beads: `bd create "..."`
+3. ✅ Use bd for ALL task tracking (planning, design, status, analysis, everything)
+4. ✅ Always use `--json` flag for programmatic use
+5. ✅ Link discovered work with `discovered-from` dependencies
+6. ✅ Check `bd ready` before asking "what should I work on?"
+7. ✅ Update status with `bd update <id> --status in_progress`
+8. ✅ Close issues with `bd close <id> --reason "..."`
+9. ✅ Commit `.beads/issues.jsonl` together with code changes
+
+**FORBIDDEN - NO EXCEPTIONS**
+
+- ❌ **NEVER** create `*_PLAN.md` files
+- ❌ **NEVER** create `*_ANALYSIS.md` files
+- ❌ **NEVER** create `*_SUMMARY.md` files
+- ❌ **NEVER** create any ad-hoc markdown planning documents
+- ❌ **NEVER** use external issue trackers
+- ❌ **NEVER** duplicate tracking systems
+- ❌ **NEVER** clutter repo root with planning documents
