@@ -1,10 +1,19 @@
 """Configuration management for devloop."""
 
 import json
+import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from dataclasses import dataclass
+from .config_schema import (
+    CURRENT_SCHEMA_VERSION,
+    ConfigValidationError,
+    migrate_config,
+    validate_config,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -102,8 +111,19 @@ class Config:
         self.config_path = Path(config_path)
         self._config: Optional[Dict[str, Any]] = None
 
-    def load(self) -> Dict[str, Any]:
-        """Load configuration from file."""
+    def load(self, validate: bool = True, migrate: bool = True) -> Dict[str, Any]:
+        """Load configuration from file with optional validation and migration.
+
+        Args:
+            validate: If True, validate config schema (fail-fast on errors)
+            migrate: If True, automatically migrate old config versions
+
+        Returns:
+            Configuration dictionary
+
+        Raises:
+            ConfigValidationError: If validation fails
+        """
         # Always reload for development - remove caching for now
         if not self.config_path.exists():
             # Return default config
@@ -111,10 +131,50 @@ class Config:
         else:
             try:
                 with open(self.config_path, "r") as f:
-                    return json.load(f)
+                    config = json.load(f)
+
+                # Migrate config if needed
+                if migrate:
+                    config = self._migrate_if_needed(config)
+
+                # Validate config
+                if validate:
+                    validate_config(config, fail_fast=True)
+
+                return config
+
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Warning: Could not load config from {self.config_path}: {e}")
+                logger.warning(f"Could not load config from {self.config_path}: {e}")
                 return self._get_default_config()
+            except ConfigValidationError as e:
+                logger.error(f"Config validation failed: {e}")
+                raise
+
+    def _migrate_if_needed(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Migrate config if version is outdated.
+
+        Args:
+            config: Configuration dictionary
+
+        Returns:
+            Migrated configuration (and saves to disk if migration occurred)
+        """
+        try:
+            migrated = migrate_config(config)
+
+            # Save migrated config back to disk
+            if migrated != config:
+                logger.info(
+                    f"Config migrated to version {migrated.get('version', 'unknown')}"
+                )
+                self._config = migrated
+                self.save(self.config_path)
+
+            return migrated
+
+        except Exception as e:
+            logger.error(f"Config migration failed: {e}")
+            raise
 
     def get_global_config(self) -> GlobalConfig:
         """Get global configuration."""
@@ -323,7 +383,7 @@ class Config:
             }
 
         return {
-            "version": "1.0.0",
+            "version": CURRENT_SCHEMA_VERSION,
             "enabled": True,
             "agents": agents,
             "global": {
@@ -336,6 +396,10 @@ class Config:
                     "checkIntervalSeconds": 10,
                     "enforcementAction": "pause",
                     "resumeThresholdPercent": 0.8,
+                },
+                "daemon": {
+                    "heartbeatInterval": 30,
+                    "healthCheckEnabled": True,
                 },
                 "logging": {},
                 "contextStore": {"enabled": True, "path": ".devloop/context"},

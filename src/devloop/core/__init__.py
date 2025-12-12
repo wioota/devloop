@@ -11,6 +11,13 @@ from .amp_thread_mapper import (
     get_amp_thread_mapper,
 )
 from .config import Config, ConfigWrapper
+from .config_schema import (
+    CURRENT_SCHEMA_VERSION,
+    ConfigMigrationError,
+    ConfigValidationError,
+    migrate_config,
+    validate_config,
+)
 from .context_store import context_store
 from .daemon_health import DaemonHealthCheck, check_daemon_health
 from .event import Event, EventBus, Priority
@@ -40,8 +47,11 @@ __all__ = [
     "check_daemon_health",
     "CLIAction",
     "Config",
+    "ConfigMigrationError",
+    "ConfigValidationError",
     "ConfigWrapper",
     "context_store",
+    "CURRENT_SCHEMA_VERSION",
     "DaemonHealthCheck",
     "DetectedPattern",
     "Event",
@@ -51,6 +61,7 @@ __all__ = [
     "get_amp_thread_mapper",
     "get_pattern_detector",
     "log_cli_command",
+    "migrate_config",
     "Pattern",
     "PatternAnalyzer",
     "PatternContext",
@@ -61,4 +72,5 @@ __all__ = [
     "AgentManager",
     "ThreadInsight",
     "UserManualAction",
+    "validate_config",
 ]
