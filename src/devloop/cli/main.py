@@ -619,66 +619,84 @@ def init(
         needs_devloop_content = len(missing_sections) > 0
 
         if needs_devloop_content:
-            # Create a merge instruction for Claude
-            merge_instruction = claude_dir / "DEVLOOP_SETUP_TODO.md"
-            instruction_content = f"""# DevLoop Setup - AGENTS.md Update Needed
-
-**Action Required:** The AGENTS.md file is missing critical DevLoop sections.
-
-## Missing Sections:
-{chr(10).join(f'- {section}' for section in missing_sections)}
-
-## Instructions for Claude/AI Agent:
-
-Please merge the DevLoop template content from `.devloop/devloop_agents_template.md` into `AGENTS.md`.
-
-**Important merge guidelines:**
-1. **Do NOT duplicate** existing content - only add missing sections
-2. **Preserve** all existing project-specific content
-3. **Maintain** the existing document structure and headings
-4. **Merge intelligently** - if a section partially exists, enhance it with template content
-5. **Respect** the document flow - place sections logically
-
-**Recommended approach:**
-1. Read the existing `AGENTS.md` to understand current structure
-2. Read `.devloop/devloop_agents_template.md` to see required content
-3. For each missing section, find the best insertion point
-4. Merge content without duplication
-5. Delete this file after successful merge
-
-**Key sections to ensure are present:**
-- ⚠️ IMPORTANT: Task Management with Beads (at the top)
-- Issue Tracking with bd (beads)
-- ⛔️ NO MARKDOWN FILES FOR PLANNING (absolute rules)
-- Development Discipline
-- Secrets Management & Token Security
-- Absolute Rules for AI Agents
-
-**Template location:** `.devloop/devloop_agents_template.md`
-
-Once merged, delete this file: `.devloop/DEVLOOP_SETUP_TODO.md`
-"""
             # Copy template to .devloop for reference
             devloop_template_copy = claude_dir / "devloop_agents_template.md"
             if devloop_template.exists():
                 import shutil
 
                 shutil.copy(devloop_template, devloop_template_copy)
-                merge_instruction.write_text(instruction_content)
-                console.print(
-                    "\n[yellow]⚠ Action needed:[/yellow] AGENTS.md is missing DevLoop sections"
+
+                # Inject self-executing merge instruction directly into AGENTS.md
+                instruction_section = f"""
+
+---
+
+## 🔧 DevLoop Setup Required
+
+**⚠️ ACTION FOR AI ASSISTANT (Claude/Copilot):** This AGENTS.md is missing critical DevLoop sections.
+
+### Missing Sections:
+{chr(10).join(f'- {section}' for section in missing_sections)}
+
+### Instructions:
+
+Please complete this setup automatically:
+
+1. **Read the template**: `.devloop/devloop_agents_template.md`
+2. **Merge missing sections** into this AGENTS.md file
+3. **Follow merge guidelines** (see below)
+4. **Delete this entire section** (🔧 DevLoop Setup Required) after merging
+
+### Merge Guidelines:
+
+- ✅ **Do NOT duplicate** existing content - only add missing sections
+- ✅ **Preserve** all existing project-specific content
+- ✅ **Maintain** the existing document structure and headings
+- ✅ **Merge intelligently** - if a section partially exists, enhance it
+- ✅ **Respect** document flow - place sections in logical order
+
+### Required Sections:
+
+- ⚠️ Task Management with Beads (at the top, after title)
+- ⛔️ NO MARKDOWN FILES FOR PLANNING (absolute rules)
+- Development Discipline (commit/push requirements)
+- Secrets Management & Token Security
+- Absolute Rules for AI Agents
+
+**Template location:** `.devloop/devloop_agents_template.md`
+
+**Delete this section after successful merge.**
+
+---
+
+"""
+                # Insert at the beginning of the file (after title if present)
+                lines = content.split("\n")
+                insert_pos = 0
+
+                # Find first heading
+                for i, line in enumerate(lines):
+                    if line.startswith("# "):
+                        insert_pos = i + 1
+                        break
+
+                # Insert the instruction
+                new_content = (
+                    "\n".join(lines[:insert_pos])
+                    + instruction_section
+                    + "\n".join(lines[insert_pos:])
                 )
-                console.print(f"[cyan]→[/cyan] Created: {merge_instruction}")
-                console.print(f"[cyan]→[/cyan] Template: {devloop_template_copy}")
-                console.print("\n[cyan]Next steps:[/cyan]")
+                agents_md.write_text(new_content)
+
                 console.print(
-                    "  1. Open your project in Claude Code or similar AI assistant"
+                    "\n[green]✓[/green] Injected DevLoop setup instructions into AGENTS.md"
                 )
                 console.print(
-                    '  2. Ask Claude to: "Please merge the DevLoop template into AGENTS.md as described in .devloop/DEVLOOP_SETUP_TODO.md"'
+                    f"[cyan]→[/cyan] Template copied to: {devloop_template_copy}"
                 )
+                console.print("\n[cyan]Next step:[/cyan]")
                 console.print(
-                    "  3. Claude will intelligently merge the sections without duplication"
+                    "  • Open this project in Claude Code/Amp - it will automatically merge the template!"
                 )
     else:
         # Create new AGENTS.md from devloop template
