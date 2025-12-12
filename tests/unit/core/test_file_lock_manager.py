@@ -11,7 +11,6 @@ from devloop.core.file_lock_manager import (
     FileLockContext,
     FileVersion,
     LockMode,
-    get_file_lock_manager,
 )
 
 

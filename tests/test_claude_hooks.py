@@ -11,8 +11,6 @@ Tests the hooks that run automatically in Claude Code:
 import json
 import os
 import subprocess
-import sys
-import tempfile
 from pathlib import Path
 from typing import Optional
 

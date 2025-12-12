@@ -1,14 +1,12 @@
 """Security and safety tests for auto-fix functionality."""
 
 import asyncio
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from devloop.core.auto_fix import AutoFix
-from devloop.core.backup_manager import BackupManager
 from devloop.core.config import AutonomousFixesConfig
 from devloop.core.context_store import Finding
 
@@ -110,7 +108,7 @@ def test_requires_explicit_opt_in(auto_fix_instance, temp_project):
 def test_creates_backup_before_fix(auto_fix_instance, temp_project):
     """Test that backup is created before applying fix."""
     test_file = temp_project / "test.py"
-    original_content = test_file.read_text()
+    test_file.read_text()
     finding_id = "find-backup-test-001"
 
     finding = make_finding(

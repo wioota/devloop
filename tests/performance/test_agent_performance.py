@@ -10,15 +10,11 @@ Run with: pytest tests/performance/test_agent_performance.py -v --tb=short
 """
 
 import asyncio
-import json
 import logging
 import os
 import psutil
 import subprocess
-import tempfile
 import time
-from pathlib import Path
-from typing import Dict, List
 
 import pytest
 
@@ -129,10 +125,11 @@ class TestAgentLatency:
         ), f"Black latency {duration_ms:.1f}ms exceeds 1000ms target"
 
     @pytest.mark.asyncio
+    @pytest.mark.performance
     async def test_type_checker_tool_latency(self, test_workspace):
         """Measure type checker tool execution time (mypy).
 
-        Target: <2000ms for typical Python file (slower due to mypy)
+        Target: <3000ms for typical Python file (slower due to mypy startup)
         """
         py_file = test_workspace / "example.py"
 
@@ -153,10 +150,10 @@ class TestAgentLatency:
 
         logger.info(f"mypy latency: {duration_ms:.1f}ms")
 
-        # Target: <2000ms (mypy can be slow)
+        # Target: <3000ms (mypy startup is ~1-2s, actual checking adds time)
         assert (
-            duration_ms < 2000
-        ), f"mypy latency {duration_ms:.1f}ms exceeds 2000ms target"
+            duration_ms < 3000
+        ), f"mypy latency {duration_ms:.1f}ms exceeds 3000ms target"
 
 
 class TestResourceUsage:
@@ -178,7 +175,7 @@ class TestResourceUsage:
         # Queue 1000 events
         for i in range(1000):
             event = Event(
-                type=f"file:save",
+                type="file:save",
                 source="test",
                 priority=Priority.NORMAL,
                 payload={"index": i, "data": "x" * 1000},
@@ -219,7 +216,7 @@ class TestResourceUsage:
 
         for i in range(num_events):
             event = Event(
-                type=f"file:save",
+                type="file:save",
                 source="test",
                 priority=Priority.NORMAL,
                 payload={"index": i},

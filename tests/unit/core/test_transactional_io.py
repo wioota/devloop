@@ -1,7 +1,6 @@
 """Tests for transactional I/O operations."""
 
 import json
-from pathlib import Path
 
 import pytest
 from devloop.core.transactional_io import (
@@ -389,14 +388,14 @@ class TestSelfHealing:
         backup_file.write_text(json.dumps(original_data))
 
         # Also copy checksum to backup
-        checksum_backup = backup_dir / "important.json.sha256"
+        backup_dir / "important.json.sha256"
         tf.checksum_path.write_text(tf.checksum_path.read_text())
 
         # Corrupt the data file
         data_file.write_text('{"key": "corrupted"}')
 
         healer = SelfHealing(tmp_path)
-        repaired = healer.repair_corrupted_files(backup_dir)
+        healer.repair_corrupted_files(backup_dir)
 
         # Note: This test will fail because we need to also restore checksums
         # The current implementation doesn't handle checksum restoration

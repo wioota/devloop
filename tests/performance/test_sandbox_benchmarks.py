@@ -6,9 +6,7 @@ Target: <15% overhead, <100ms startup time.
 
 import pytest
 import time
-from pathlib import Path
 import asyncio
-import subprocess
 from devloop.security.sandbox import SandboxConfig
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 from devloop.security.no_sandbox import NoSandbox
@@ -74,7 +72,7 @@ class TestStartupOverhead:
             (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
         )
 
-        print(f"\n=== Simple Command (echo) ===")
+        print("\n=== Simple Command (echo) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
         print(f"No sandbox avg: {avg_nosandbox:.2f}ms")
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
@@ -121,7 +119,7 @@ class TestStartupOverhead:
             (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
         )
 
-        print(f"\n=== Python Script Execution ===")
+        print("\n=== Python Script Execution ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
         print(f"No sandbox avg: {avg_nosandbox:.2f}ms")
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
@@ -168,7 +166,7 @@ class TestIOOverhead:
             (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
         )
 
-        print(f"\n=== File Read (cat 14KB file) ===")
+        print("\n=== File Read (cat 14KB file) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
         print(f"No sandbox avg: {avg_nosandbox:.2f}ms")
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
@@ -222,7 +220,7 @@ print(result)
             (overhead_ms / avg_nosandbox) * 100 if avg_nosandbox > 0 else 0
         )
 
-        print(f"\n=== CPU-Intensive (math.sqrt x10000) ===")
+        print("\n=== CPU-Intensive (math.sqrt x10000) ===")
         print(f"Sandboxed avg: {avg_sandboxed:.2f}ms")
         print(f"No sandbox avg: {avg_nosandbox:.2f}ms")
         print(f"Overhead: {overhead_ms:.2f}ms ({overhead_percent:.1f}%)")
@@ -254,8 +252,8 @@ class TestMemoryOverhead:
         )
 
         assert result.exit_code == 0
-        print(f"\n=== Memory Overhead ===")
-        print(f"(Memory profiling requires additional tooling)")
+        print("\n=== Memory Overhead ===")
+        print("(Memory profiling requires additional tooling)")
         print(f"Execution successful: {result.exit_code == 0}")
 
 

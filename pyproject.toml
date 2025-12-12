@@ -85,6 +85,11 @@ target-version = "py311"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: marks tests as integration tests",
+    "performance: marks tests as performance benchmarks",
+    "security: marks tests as security tests",
+]
 
 [tool.mypy]
 python_version = "0.4.1"

@@ -1,13 +1,12 @@
 """Tests for release workflow management."""
 
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from devloop.providers.ci_provider import RunConclusion, RunStatus, WorkflowRun
-from devloop.providers.registry_provider import PackageVersion
-from devloop.release import ReleaseConfig, ReleaseManager, ReleaseResult
+from devloop.release import ReleaseConfig, ReleaseManager
 
 
 class TestReleaseConfig:

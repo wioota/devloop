@@ -1,7 +1,6 @@
 """Tests for backup manager functionality."""
 
 import json
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -171,8 +170,8 @@ def test_rollback_all(backup_manager, temp_project):
     test_file2.write_text("original2\n")
 
     # Create backups
-    backup_id1 = backup_manager.create_backup(test_file1, "formatter", "Change 1")
-    backup_id2 = backup_manager.create_backup(test_file2, "linter", "Change 2")
+    backup_manager.create_backup(test_file1, "formatter", "Change 1")
+    backup_manager.create_backup(test_file2, "linter", "Change 2")
 
     # Modify files
     test_file1.write_text("modified1\n")
@@ -223,7 +222,7 @@ def test_cleanup_old_backups(backup_manager, temp_project):
     test_file = temp_project / "test.py"
 
     # Create a backup
-    backup_id = backup_manager.create_backup(test_file, "formatter", "Old backup")
+    backup_manager.create_backup(test_file, "formatter", "Old backup")
 
     # Cleanup backups older than 0 days (should remove everything)
     removed = backup_manager.cleanup_old_backups(days=0)
@@ -238,7 +237,7 @@ def test_atomic_operations(backup_manager, temp_project):
     test_file = temp_project / "test.py"
 
     # Create backup
-    backup_id = backup_manager.create_backup(test_file, "formatter", "Test")
+    backup_manager.create_backup(test_file, "formatter", "Test")
 
     # Verify change log is valid JSON (atomic write worked)
     log_data = json.loads(backup_manager.change_log_file.read_text())
@@ -249,7 +248,7 @@ def test_atomic_operations(backup_manager, temp_project):
 def test_checksum_verification(backup_manager, temp_project):
     """Test checksum computation and verification."""
     test_file = temp_project / "test.py"
-    original_content = test_file.read_text()
+    test_file.read_text()
 
     # Create backup
     backup_id = backup_manager.create_backup(test_file, "formatter", "Test")

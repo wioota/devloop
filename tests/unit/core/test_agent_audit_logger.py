@@ -5,7 +5,6 @@ import tempfile
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -653,7 +652,6 @@ class TestAgentAuditLogger:
             )
 
         # Query last 100 entries
-        import time
 
         start = time.time()
         entries = logger.query_recent(limit=100)

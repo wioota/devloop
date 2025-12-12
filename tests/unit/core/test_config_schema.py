@@ -3,8 +3,6 @@
 import pytest
 from devloop.core.config_schema import (
     CURRENT_SCHEMA_VERSION,
-    MIN_SUPPORTED_VERSION,
-    ConfigMigrationError,
     ConfigMigrator,
     ConfigValidationError,
     ConfigValidator,

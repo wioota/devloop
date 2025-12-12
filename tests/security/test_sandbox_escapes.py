@@ -5,7 +5,6 @@ and prevent various attack vectors.
 """
 
 import pytest
-from pathlib import Path
 from devloop.security.sandbox import (
     SandboxConfig,
     CommandNotAllowedError,

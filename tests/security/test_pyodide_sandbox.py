@@ -4,7 +4,6 @@ Tests the PyodideSandbox implementation in POC mode (without full Pyodide instal
 """
 
 import pytest
-from pathlib import Path
 import shutil
 import os
 

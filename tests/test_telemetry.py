@@ -4,7 +4,6 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
 
 from devloop.core.telemetry import (
     EventSeverity,
@@ -298,7 +297,7 @@ def test_telemetry_logger_creates_directory():
     """Test that logger creates directory if it doesn't exist."""
     with tempfile.TemporaryDirectory() as tmpdir:
         log_file = Path(tmpdir) / "subdir" / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+        TelemetryLogger(log_file)
 
         # Directory should be created
         assert log_file.parent.exists()
