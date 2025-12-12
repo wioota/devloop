@@ -35,6 +35,14 @@ from .pattern_detector import (
     PatternDetector,
     get_pattern_detector,
 )
+from .transactional_io import (
+    ChecksumMismatchError,
+    SelfHealing,
+    TransactionalFile,
+    TransactionError,
+    TransactionRecovery,
+    initialize_transaction_system,
+)
 
 __all__ = [
     "Action Logger",
@@ -70,7 +78,13 @@ __all__ = [
     "PatternMatch",
     "Priority",
     "AgentManager",
+    "ChecksumMismatchError",
+    "initialize_transaction_system",
+    "SelfHealing",
     "ThreadInsight",
+    "TransactionalFile",
+    "TransactionError",
+    "TransactionRecovery",
     "UserManualAction",
     "validate_config",
 ]

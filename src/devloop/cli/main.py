@@ -36,6 +36,7 @@ from devloop.core import (
 )
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
 from devloop.core.daemon_health import DaemonHealthCheck, check_daemon_health
+from devloop.core.transactional_io import initialize_transaction_system
 
 from .commands import audit as audit_cmd
 from .commands import custom_agents as custom_agents_cmd
@@ -379,6 +380,9 @@ async def watch_async(path: Path, config_path: Path | None):
 
     # Create event bus
     event_bus = EventBus()
+
+    # Initialize transaction system (recovery and self-healing)
+    initialize_transaction_system(path / ".devloop")
 
     # Initialize context store
     context_store.context_dir = path / ".devloop" / "context"
