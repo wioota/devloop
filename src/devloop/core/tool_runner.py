@@ -3,6 +3,7 @@ Tool Runner - Execute tools from the tool registry with error handling.
 """
 
 import logging
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -270,8 +271,7 @@ class ToolRunner:
 
         try:
             result = subprocess.run(
-                fix_cmd,
-                shell=True,
+                shlex.split(fix_cmd),
                 cwd=str(self.cwd),
                 capture_output=True,
                 text=True,
