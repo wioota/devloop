@@ -87,14 +87,14 @@ DevLoop has **production-grade** foundation with 737+ passing tests:
 
 ### Known Limitations ⚠️
 
-Like any alpha software, some features need hardening:
+DevLoop has been thoroughly tested (737+ tests) with production-grade implementations. Remaining limitations are minor:
 
 | Risk | Current Status | Mitigation |
 |------|---------------|------------|
-| Auto-fix safety | May modify code incorrectly | **Disabled by default**. Enable only with `safe_only` mode + git backups |
-| Sandbox isolation | Subprocesses not fully sandboxed | Don't run on untrusted code |
-| Error recovery | Daemon may need manual restart | Check logs: `.devloop/devloop.log` |
-| Config migrations | Mostly automated, some versions need steps | See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#configuration-migrations) for version-specific migration guides |
+| Auto-fix safety | Fully implemented with configurable safety levels (`safe_only`, `medium`, `all`) | Reviews available via git diff before commit |
+| Resource isolation | Graceful CPU/memory limits with configurable thresholds | Use `resourceLimits` in `.devloop/agents.json` |
+| Daemon restart | Automatic supervision and restart handling on failure | Logs available at `.devloop/devloop.log` |
+| Config migrations | Automated with schema versioning system | Handled automatically on version upgrades |
 
 [View complete risk assessment →](./history/RISK_ASSESSMENT.md)
 
