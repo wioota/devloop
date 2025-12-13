@@ -78,9 +78,11 @@ class DaemonHealthCheck:
             heartbeat_data = {
                 "timestamp": datetime.now().isoformat(),
                 "pid": os.getpid(),
-                "uptime_seconds": time.time() - self._start_time
-                if hasattr(self, "_start_time")
-                else 0,
+                "uptime_seconds": (
+                    time.time() - self._start_time
+                    if hasattr(self, "_start_time")
+                    else 0
+                ),
             }
 
             # Initialize start time on first heartbeat

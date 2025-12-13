@@ -177,9 +177,7 @@ class ClaudeCodeAdapter:
                 emoji = (
                     "🔴"
                     if severity == "error"
-                    else "🟡"
-                    if severity == "warning"
-                    else "🔵"
+                    else "🟡" if severity == "warning" else "🔵"
                 )
                 message = finding.get("message", "No message")
                 line = finding.get("line")
@@ -328,9 +326,7 @@ class ClaudeCodeAdapter:
                 emoji = (
                     "🔴"
                     if severity == "error"
-                    else "🟡"
-                    if severity == "warning"
-                    else "🔵"
+                    else "🟡" if severity == "warning" else "🔵"
                 )
                 insights.append(f"  {emoji} {count} {severity}(s)")
 
@@ -400,9 +396,11 @@ class ClaudeCodeAdapter:
                 "blocking_issues": blocking_issues,
                 "warnings": warnings,
                 "output": output,
-                "message": "✅ All checks passed"
-                if passed
-                else "❌ Verification failed - see issues above",
+                "message": (
+                    "✅ All checks passed"
+                    if passed
+                    else "❌ Verification failed - see issues above"
+                ),
             }
 
         except subprocess.TimeoutExpired:
