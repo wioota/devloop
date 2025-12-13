@@ -1283,6 +1283,215 @@ See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider setup 
 
 ---
 
+## DevLoop CLI Commands Reference
+
+**IMPORTANT FOR AGENTS**: Always use these commands instead of manual operations. The CLI commands handle all validation, cleanup, and state management automatically.
+
+### Core Workflow Commands
+
+#### Project Initialization & Management
+```bash
+# Initialize devloop in a project (interactive setup)
+devloop init /path/to/project
+
+# Start watching for file changes and running agents
+devloop watch .
+
+# Show configuration and agent status
+devloop status
+
+# Show operational health status
+devloop health
+
+# Stop the background daemon
+devloop stop
+```
+
+#### Task Verification (Claude Code & Amp Integration)
+```bash
+# Run code quality verification (Claude Code post-task hook equivalent)
+devloop verify-work
+
+# Extract findings and create Beads issues
+devloop extract-findings-cmd
+```
+
+#### Daemon Management
+```bash
+# Check daemon health and status
+devloop daemon-status
+
+# Update git hooks from latest templates
+devloop update-hooks
+```
+
+### Release Management Commands
+
+**REQUIRED**: Use these for all releases. Do NOT do manual version bumping or tagging.
+
+```bash
+# Check if ready to release (validates all preconditions)
+devloop release check <version>
+
+# Publish a release (full automated workflow)
+devloop release publish <version>
+
+# Dry-run to see what would happen
+devloop release publish <version> --dry-run
+
+# Specify explicit providers (if auto-detect fails)
+devloop release publish <version> --ci github --registry pypi
+
+# Skip specific steps
+devloop release publish <version> --skip-tag --skip-publish
+```
+
+**Example release workflow:**
+```bash
+# 1. Verify readiness
+devloop release check 0.5.1
+
+# 2. If check passes, publish
+devloop release publish 0.5.1
+
+# 3. If check fails, fix issues and retry
+devloop release check 0.5.1
+```
+
+### Agent Management Commands
+
+#### Custom Agents
+```bash
+# Create a custom pattern matcher agent
+devloop custom create my_agent pattern_matcher \
+  --description "Find patterns" \
+  --triggers file:created,file:modified
+
+# List custom agents
+devloop custom list
+
+# Show details of a custom agent
+devloop custom show <agent-id>
+
+# Delete a custom agent
+devloop custom delete <agent-id>
+```
+
+#### Feedback & Performance
+```bash
+# View summaries of findings
+devloop summary
+
+# View summaries for specific scope
+devloop summary recent   # Last 24 hours
+devloop summary today    # Today only
+devloop summary session  # Last 4 hours
+
+# Filter by agent and severity
+devloop summary --agent linter --severity error
+
+# Submit feedback on agent performance
+devloop feedback submit <agent-name> rating <1-5>
+devloop feedback submit <agent-name> helpful
+devloop feedback submit <agent-name> not-helpful
+
+# View agent feedback
+devloop feedback list <agent-name>
+
+# View performance metrics
+devloop metrics summary
+
+# View ROI and value tracking
+devloop metrics roi
+```
+
+#### Marketplace & Publishing
+```bash
+# Check agent readiness for publishing
+devloop agent check ./my-agent
+
+# Publish agent to marketplace
+devloop agent publish ./my-agent
+
+# Bump agent version
+devloop agent version ./my-agent patch|minor|major
+
+# Sign agent cryptographically
+devloop agent sign ./my-agent
+
+# Verify agent signature
+devloop agent verify ./my-agent
+
+# Show agent metadata and signature
+devloop agent info ./my-agent --signature
+
+# Mark agent version as deprecated
+devloop agent deprecate my-agent -m "Use new-agent instead"
+
+# Check tool dependencies
+devloop agent dependencies check ./my-agent
+devloop agent dependencies resolve ./my-agent
+devloop agent dependencies list ./my-agent
+
+# Search marketplace
+devloop agent search "formatter"
+
+# Install agent from marketplace
+devloop agent install my-agent 1.0.0
+
+# Marketplace server management
+devloop marketplace server start --port 8000
+devloop marketplace server stop
+devloop marketplace status
+```
+
+#### System Information
+```bash
+# Show version information
+devloop version
+
+# Verify external tool dependencies
+devloop tools
+
+# View telemetry and value tracking
+devloop telemetry
+```
+
+### Amp Integration Commands
+
+```bash
+# Show current agent status for Amp
+devloop amp-status
+
+# Show agent findings for Amp display
+devloop amp-findings
+
+# Show context store index for Amp
+devloop amp-context
+```
+
+### Command Pattern for Agents
+
+**For AI agents working on this codebase:**
+
+1. **Always use `devloop` commands**, never manual shell operations
+2. **For releases**: Always run `devloop release check` before `devloop release publish`
+3. **For verification**: Use `devloop verify-work` instead of manually running tests/checks
+4. **For feedback**: Use `devloop feedback` commands to record observations
+5. **For task integration**: Use `devloop extract-findings-cmd` to create Beads issues
+
+**Why use commands instead of manual operations:**
+- ✅ Automatic validation and error checking
+- ✅ Atomic operations (all-or-nothing)
+- ✅ State management consistency
+- ✅ Integration with CI/CD and registries
+- ✅ Consistent naming and tagging
+- ✅ Automatic Beads issue creation from findings
+- ✅ Telemetry and metrics tracking
+- ✅ Help text available: `devloop <command> --help`
+
+---
+
 ## Future Considerations
 
 - **Multi-Project Support**: Agents working across multiple repositories
