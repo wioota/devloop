@@ -164,10 +164,13 @@ DevLoop runs background agents that automatically:
 
 ### Agent Marketplace (NEW!)
 - **🏪 Agent Marketplace** — Discover and share agents with the community
-- **📦 Agent Publishing** — Publish your agents with semantic versioning
-- **✍️ Agent Signing** — Cryptographically sign agents for verification
-- **🔍 Agent Discovery** — Search and install agents from the registry
-- **🔄 Version Management** — Manage agent updates and deprecation
+- **📦 Agent Publishing** — Publish your agents with semantic versioning & signing
+- **✍️ Cryptographic Signing** — SHA256 checksums + directory hashing for tamper detection
+- **⭐ Ratings & Reviews** — Community ratings, user reviews, and agent statistics
+- **🔍 Agent Discovery** — Full-text search, category filtering, install tracking
+- **🔄 Version Management** — Manage agent versions, deprecation notices, and updates
+- **🛠️ Tool Dependencies** — Automatic dependency resolution for agent tools
+- **🌐 REST API Server** — Run a local/remote marketplace with HTTP API
 
 ### Advanced Features
 - **📊 Learning System** — Automatically learn patterns and optimize behavior
@@ -330,14 +333,26 @@ devloop watch .
 devloop status
 
 # Agent publishing and management
-devloop agent publish ./my-agent      # Publish agent
-devloop agent check ./my-agent        # Check readiness
-devloop agent version ./my-agent patch # Bump version
-devloop agent deprecate my-agent -m "Use new-agent" # Deprecate
+devloop agent publish ./my-agent                   # Publish agent to marketplace
+devloop agent check ./my-agent                     # Check readiness to publish
+devloop agent version ./my-agent patch             # Bump version (major/minor/patch)
+devloop agent verify ./my-agent                    # Verify agent signature
+devloop agent info ./my-agent --signature          # Show agent metadata & signature
+devloop agent deprecate my-agent -m "Use new-agent" # Mark version as deprecated
+devloop agent sign ./my-agent                      # Cryptographically sign agent
 
-# Marketplace operations
-devloop marketplace server start --port 8000  # Start HTTP server
-devloop marketplace status                    # Show registry stats
+# Marketplace server management
+devloop marketplace server start --port 8000      # Start HTTP registry server
+devloop marketplace server stop                   # Stop running server
+devloop marketplace status                        # Show registry statistics
+devloop marketplace install my-agent-name 1.0.0  # Install agent from registry
+devloop marketplace search "formatter"            # Search agents in registry
+devloop marketplace list-categories               # List available categories
+
+# Tool dependency management
+devloop agent dependencies check ./my-agent       # Verify all dependencies available
+devloop agent dependencies resolve ./my-agent    # Install missing dependencies
+devloop agent dependencies list ./my-agent       # Show agent's dependencies
 
 # View current findings in Amp
 /agent-summary          # Recent findings
@@ -492,6 +507,30 @@ devloop agent verify ./my-agent
 devloop agent info ./my-agent --signature
 ```
 
+### Agent Ratings & Reviews
+
+Community-driven quality metrics help you find reliable agents:
+
+```bash
+# View agent ratings and reviews
+devloop agent reviews my-agent
+
+# Rate an agent (1-5 stars)
+devloop agent rate my-agent 5 --message "Works great, very fast!"
+
+# List highest-rated agents in a category
+devloop marketplace search --category code-quality --sort rating
+
+# View detailed agent statistics
+devloop agent info my-agent --reviews --stats
+```
+
+**Ratings help you:**
+- Find trusted, well-maintained agents
+- Avoid buggy or abandoned agents
+- Give feedback to agent developers
+- Build community trust and transparency
+
 ### Marketplace Registry API
 
 Programmatically discover and manage agents:
@@ -522,20 +561,87 @@ api.rate_agent("my-formatter", 5.0)
 Run a local marketplace registry with REST API endpoints:
 
 ```bash
-# Start the marketplace server
+# Start the marketplace server (persistent background service)
 devloop marketplace server start --port 8000
 
+# With additional options
+devloop marketplace server start --port 8000 --host 0.0.0.0 --workers 4
+
+# View server logs
+devloop marketplace server logs
+
+# Stop the running server
+devloop marketplace server stop
+
 # Access API documentation at http://localhost:8000/docs
+# Interactive API testing at http://localhost:8000/redoc
 ```
 
-**Available endpoints:**
-- `GET /api/v1/agents/search` — Search agents
-- `GET /api/v1/agents/{name}` — Get agent details
-- `POST /api/v1/agents` — Register new agent
-- `POST /api/v1/agents/{name}/rate` — Rate an agent
-- `GET /api/v1/stats` — Registry statistics
+**Available REST API endpoints:**
+- `GET /api/v1/agents/search?q=formatter&category=code-quality` — Search agents with filters
+- `GET /api/v1/agents/{name}` — Get agent details including ratings
+- `GET /api/v1/agents/{name}/versions` — List all versions of an agent
+- `POST /api/v1/agents` — Register new agent with metadata
+- `POST /api/v1/agents/{name}/rate` — Rate an agent (1-5 stars)
+- `POST /api/v1/agents/{name}/review` — Leave a text review
+- `GET /api/v1/agents/{name}/reviews` — Get agent reviews and ratings
+- `GET /api/v1/categories` — List available categories
+- `GET /api/v1/stats` — Registry statistics (agent count, total installations, etc.)
+- `POST /api/v1/install/{name}/{version}` — Record agent installation
 
 [Full marketplace API documentation →](./docs/MARKETPLACE_API.md)
+
+### Tool Dependency Management
+
+Agents can declare and manage their tool dependencies (binaries, packages, services):
+
+```bash
+# Check if all dependencies are available
+devloop agent dependencies check ./my-agent
+
+# Automatically resolve and install missing dependencies
+devloop agent dependencies resolve ./my-agent
+
+# List declared dependencies
+devloop agent dependencies list ./my-agent
+```
+
+**Declaring dependencies in agent metadata:**
+
+```json
+{
+  "name": "security-scanner",
+  "version": "2.0.0",
+  "toolDependencies": {
+    "bandit": {
+      "type": "python",
+      "minVersion": "1.7.0",
+      "package": "bandit"
+    },
+    "shellcheck": {
+      "type": "binary",
+      "minVersion": "0.8.0",
+      "install": "apt-get install shellcheck"
+    },
+    "npm": {
+      "type": "npm-global",
+      "minVersion": "8.0.0",
+      "package": "npm"
+    }
+  },
+  "pythonVersion": ">=3.11",
+  "devloopVersion": ">=0.5.0"
+}
+```
+
+**Supported dependency types:**
+- `python` — Python packages (installed via pip)
+- `npm-global` — npm packages installed globally
+- `binary` — System binaries/executables
+- `venv` — Virtual environment executables
+- `docker` — Docker images
+
+When installing an agent, DevLoop automatically detects missing dependencies and prompts you to install them.
 
 ### Agent Metadata Schema
 
@@ -550,10 +656,42 @@ devloop marketplace server start --port 8000
   "repository": "https://github.com/you/my-agent",
   "categories": ["code-quality"],
   "keywords": ["quality", "analysis"],
-  "python_version": ">=3.11",
-  "devloop_version": ">=0.5.0"
+  "pythonVersion": ">=3.11",
+  "devloopVersion": ">=0.5.0",
+  "toolDependencies": {
+    "tool-name": {
+      "type": "python|binary|npm-global|docker",
+      "minVersion": "1.0.0",
+      "package": "package-name",
+      "install": "apt-get install tool-name"
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {"type": "boolean"},
+      "severity": {"type": "string", "enum": ["low", "medium", "high"]}
+    }
+  },
+  "publishedAt": "2025-12-13T10:30:00Z",
+  "deprecated": false,
+  "deprecationMessage": null,
+  "maintainer": "username",
+  "rating": {
+    "average": 4.5,
+    "count": 120
+  }
 }
 ```
+
+**Schema explanation:**
+- `toolDependencies` — External tools/packages this agent requires
+- `configSchema` — JSON schema defining agent configuration options
+- `publishedAt` — When agent was first published
+- `deprecated` — Whether agent is deprecated and shouldn't be used
+- `deprecationMessage` — Suggested alternative if deprecated
+- `maintainer` — DevLoop username of agent maintainer
+- `rating` — Community ratings and review count (auto-updated)
 
 ---
 
