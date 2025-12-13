@@ -1,6 +1,8 @@
 """Agent marketplace - discover, install, and manage community agents."""
 
+from .api import RegistryAPI, RegistryAPIResponse
 from .cache import RegistryCache
+from .http_server import RegistryHTTPServer, create_http_server
 from .installer import AgentInstaller, InstallationRecord
 from .metadata import AgentMetadata, Dependency, Rating
 from .registry import AgentRegistry, RegistryConfig
@@ -25,4 +27,8 @@ __all__ = [
     "Review",
     "AgentRating",
     "ReviewStore",
+    "RegistryAPI",
+    "RegistryAPIResponse",
+    "RegistryHTTPServer",
+    "create_http_server",
 ]

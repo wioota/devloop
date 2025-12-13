@@ -64,7 +64,8 @@ types-aiofiles = "^23.2"
 snyk = []
 code-rabbit = []
 ci-monitor = []
-all-optional = []
+marketplace-api = ["fastapi", "uvicorn"]
+all-optional = ["fastapi", "uvicorn"]
 
 [tool.poetry.scripts]
 devloop = "devloop.cli.main:app"

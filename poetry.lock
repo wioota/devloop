@@ -915,9 +915,10 @@ watchmedo = ["PyYAML (>=3.10)"]
 all-optional = []
 ci-monitor = []
 code-rabbit = []
+marketplace-api = []
 snyk = []
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "4c57e10994b27b485666d0a74c5b0b61f4e75487f306116527a698290201caf2"
+content-hash = "1dd41435325277acea74e64cb1b65d6a97a2517ee7d8100d1ad5d028b23f6a9e"
