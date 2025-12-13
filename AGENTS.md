@@ -631,6 +631,54 @@ Beads provides:
 - Full history and traceability
 - Works across branches and machines
 
+### Pre-Flight Development Checklist
+
+**CRITICAL:** Run this checklist at the start of each development session to prevent cascading failures from formatting debt.
+
+#### Why Formatting Debt Matters
+
+Formatting and code quality issues compound quickly:
+
+1. **Formatting debt accumulates** → Multiple unformatted files build up
+2. **Pre-commit hook gets noisy** → Flags unrelated files that were modified
+3. **Developer ignores hooks** → Pre-commit warnings become noise, not signals
+4. **Bad commits slip through** → When developers disable hooks, real issues bypass pre-commit
+
+Example: You fix 2 lines in `parser.py`, but Black wants to reformat 100 lines. The hook now flags both your changes AND the formatting debt, making it hard to see the actual change.
+
+**Prevention: Format entire codebase at session start.**
+
+#### Pre-Flight Checklist
+
+Run these commands **before** starting any work session:
+
+```bash
+# 1. Format entire codebase
+poetry run black src/ tests/
+
+# 2. Lint and check for issues
+poetry run ruff check src/ tests/ --fix
+poetry run mypy src/
+
+# 3. Run full test suite (if time permits)
+poetry run pytest
+
+# 4. Verify hooks work
+.agents/verify-task-complete
+```
+
+This takes ~2-5 minutes but saves 30+ minutes of dealing with formatting cascades later.
+
+#### Why This Matters for DevLoop
+
+DevLoop's pre-commit hook needs a clean baseline to be effective:
+- ✅ Catches *your* changes clearly
+- ✅ Doesn't flag pre-existing formatting issues
+- ✅ Stays non-intrusive and helpful
+- ❌ Avoids alert fatigue that leads to hook disabling
+
+**Best practice**: Make pre-flight checklist a habit at session start, right after `bd ready`.
+
 ### Commit & Push After Every Task
 
 **MANDATORY:** Every completed task must end with `git add`, `git commit`, and `git push origin main`.
