@@ -495,7 +495,7 @@ config = (
 )
 ```
 
-[View agent documentation →](./docs/agents.md)
+[View agent architecture and categories →](./ARCHITECTURE.md)
 
 ---
 
@@ -1290,7 +1290,7 @@ poetry run mypy src
 ### Marketplace
 - **[Marketplace Guide](./docs/MARKETPLACE_GUIDE.md)** — Discovering, installing, and publishing agents
 - **[Marketplace API Guide](./docs/MARKETPLACE_API.md)** — Agent registry API reference
-- **[Agent Reference](./docs/agents.md)** — Built-in agents documentation
+- **[Agent Reference](./ARCHITECTURE.md)** — Agent categories and architecture
 
 ### Advanced
 - **[Development Guide](./docs/development.md)** — Contributing guide
@@ -1303,14 +1303,14 @@ poetry run mypy src
 
 DevLoop follows these core principles:
 
-✅ **Non-Intrusive** — Runs in background without blocking workflow  
-✅ **Event-Driven** — All actions triggered by observable events  
-✅ **Configurable** — Fine-grained control over agent behavior  
-✅ **Context-Aware** — Understands your project structure  
-✅ **Parallel** — Multiple agents run concurrently  
-✅ **Lightweight** — Respects system resources  
+✅ **Non-Intrusive** — Runs in background without blocking workflow
+✅ **Event-Driven** — All actions triggered by observable events
+✅ **Configurable** — Fine-grained control over agent behavior
+✅ **Context-Aware** — Understands your project structure
+✅ **Parallel** — Multiple agents run concurrently
+✅ **Lightweight** — Respects system resources
 
-[Read the full design spec →](./AGENTS.md)
+[Read the AI agent workflow guide →](./AGENTS.md) | [System architecture →](./ARCHITECTURE.md)
 
 ---
 

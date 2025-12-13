@@ -1,0 +1,138 @@
+# AI Agent Development Workflow
+
+**CRITICAL INSTRUCTIONS FOR AI CODING AGENTS**
+
+This project uses [bd (beads)](https://github.com/wioota/devloop) for issue tracking.
+
+---
+
+## ⛔️ RULE #1: NO MARKDOWN FILES
+
+**ABSOLUTE RULE - NO EXCEPTIONS**
+
+### **FORBIDDEN:**
+❌ **NEVER** create `*_PLAN.md`, `*_ANALYSIS.md`, `*_SUMMARY.md`, `*_DESIGN.md`, or ANY ad-hoc markdown files
+
+### **ALLOWED (ONLY 6):**
+✅ `README.md` | `CHANGELOG.md` | `AGENTS.md` | `CODING_RULES.md` | `LICENSE` | `.github/copilot-instructions.md`
+
+### **WHAT TO USE INSTEAD:**
+```bash
+# Use Beads for ALL planning, analysis, tracking
+bd create "Task title" -t task|feature|epic -p 0-4 -d "Details..."
+```
+
+---
+
+## ⛔️ RULE #2: BEADS TASK MANAGEMENT
+
+**Beads (`bd`) is the ONLY task management system.**
+
+```bash
+# Start session
+bd ready --json                           # See ready work
+bd update <id> --status in_progress       # Claim task
+
+# During work
+bd create "Bug found" -p 1 --deps discovered-from:<parent-id>
+
+# End session (MANDATORY)
+bd close <id> --reason "Done"
+git add .beads/issues.jsonl && git commit -m "..." && git push origin main
+```
+
+**Issue types:** `bug` | `feature` | `task` | `epic` | `chore`
+**Priorities:** `0`=critical, `1`=high, `2`=medium, `3`=low, `4`=backlog
+
+---
+
+## ⛔️ RULE #3: COMMIT & PUSH AFTER EVERY TASK
+
+**MANDATORY:** Every completed task ends with:
+```bash
+git add . && git commit -m "..." && git push origin main
+```
+
+Verify: `.agents/verify-task-complete`
+
+---
+
+## ⛔️ RULE #4: PRE-FLIGHT CHECKLIST
+
+**Run at session start to prevent formatting debt:**
+
+```bash
+poetry run black src/ tests/              # Format
+poetry run ruff check src/ tests/ --fix   # Lint
+poetry run mypy src/                      # Type check
+poetry run pytest                         # Test (if time permits)
+.agents/verify-task-complete              # Verify
+```
+
+---
+
+## ⛔️ RULE #5: CI VERIFICATION (AUTOMATIC)
+
+Pre-push hook automatically checks CI status. If blocked:
+```bash
+gh run view <run-id> --log-failed  # Check failure
+# Fix issues, commit, push again
+```
+
+---
+
+## 🔧 ESSENTIAL COMMANDS
+
+**Core workflow:**
+```bash
+devloop init /path/to/project    # Initialize
+devloop watch .                  # Start watching
+devloop verify-work              # Verify quality
+```
+
+**Release management:**
+```bash
+devloop release check <version>   # Check readiness
+devloop release publish <version> # Publish release
+```
+
+**Beads:**
+```bash
+bd ready --json                   # Show ready work
+bd create "Task" -t task -p 1     # Create issue
+bd update <id> --status in_progress  # Claim
+bd close <id> --reason "Done"     # Complete
+```
+
+---
+
+## ✅ AGENT CHECKLIST
+
+**Before task:** Pre-flight → `bd ready` → Claim issue
+**During task:** Use `bd create` for discovered work | **NEVER** create markdown files
+**After task:** Close issue → Commit `.beads/` → Push → Verify
+
+---
+
+## 🚨 ZERO TOLERANCE
+
+❌ Creating `*_PLAN.md`, `*_ANALYSIS.md`, or any ad-hoc markdown files
+❌ Leaving issues without status updates
+❌ Forgetting to push `.beads/issues.jsonl`
+❌ Manually tagging releases without `devloop release`
+❌ Committing API keys or tokens
+
+---
+
+## 📚 FULL DOCUMENTATION
+
+This is a minimal reference. For complete details:
+
+- **AGENTS.md** (full) - Complete agent workflow and rules
+- **CLI_REFERENCE.md** - All devloop and bd commands
+- **RELEASE_PROCESS.md** - Release workflow and troubleshooting
+- **ARCHITECTURE.md** - System design and agent categories
+- **CODING_RULES.md** - Development standards
+- **docs/TOKEN_SECURITY.md** - Token security guide
+
+**When in doubt: Ask before creating files | Use Beads for tracking | Run verification commands**
