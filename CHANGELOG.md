@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2025-12-14
+
+### Major Features
+
+#### Package Registry Support
+- **Artifactory Registry Provider** - Full support for Artifactory package repositories with AQL-based version queries
+- **Multi-registry releases** - Publish to multiple registries in single release workflow
+
+#### Advanced Claude Code Integration Hooks
+- **UserPromptSubmit Hook** - Smart context injection for code quality-related prompts with keyword detection
+- **SubagentStop Hook** - Automatic Beads issue creation from DevLoop findings when Claude finishes responding
+- **Non-blocking design** - Hooks fail gracefully without interrupting workflow
+
+#### Agent Configuration System
+- **Agent Rules Files** - Decentralized YAML-based configuration near agent code (`.agents/agents/{name}/rules.yaml`)
+- **Smart Template Merging** - Intelligent merge engine that prevents duplication and preserves custom content
+- **Auto-generated AGENTS.md** - Generates preflight tasks, dependencies, and hints from agent rules
+
+#### OpenTelemetry Observability
+- **Local-first telemetry** - JSONL-based trace and metric storage in `.devloop/`
+- **Optional cloud backends** - Jaeger, Prometheus, and OTLP support for distributed tracing
+- **Standards-compliant** - Uses OpenTelemetry APIs for vendor-neutral observability
+
+### Improvements
+
+- Added 55 comprehensive tests (all passing)
+- Full documentation for Artifactory setup and advanced features
+- Updated hook documentation with new hook examples
+- Enhanced hooks README with installation and testing instructions
+
+### Infrastructure
+
+- New modules: `telemetry/`, agent rules engine
+- New hooks: `user-prompt-submit`, `subagent-stop`
+- Example agent rules for formatter and test-runner
+- Comprehensive test coverage for all new features
+
+---
+
 ## [0.5.1] - 2025-12-13
 
 ### Documentation
