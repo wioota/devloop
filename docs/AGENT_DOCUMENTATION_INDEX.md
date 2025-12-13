@@ -87,6 +87,12 @@ Quick index for all agent-related documentation. Start here to find what you nee
 **...fix a problem**
 → See [Agent Troubleshooting](./AGENT_TROUBLESHOOTING.md)
 
+**...read about Amp integration**
+→ See [guides/AMP_ONBOARDING.md](./guides/AMP_ONBOARDING.md) and [guides/SUBAGENT_REFERENCE.md](./guides/SUBAGENT_REFERENCE.md)
+
+**...understand telemetry**
+→ Check [reference/TELEMETRY.md](./reference/TELEMETRY.md)
+
 ## Document Summaries
 
 ### AGENT_DEVELOPMENT.md
@@ -179,6 +185,25 @@ Common problems and solutions:
 4. [Marketplace Guide - Marketplace Policies](./MARKETPLACE_GUIDE.md#marketplace-policies)
 
 **Time:** ~1-2 hours
+
+## Documentation Organization
+
+Docs are organized into categories:
+
+- **Root level** - Agent development (AGENT_*.md, MARKETPLACE_GUIDE.md)
+- **guides/** - Usage guides and integration docs
+  - AMP_ONBOARDING.md - Amp integration guide
+  - DEVELOPER_WORKFLOW.md - Development workflow
+  - SUBAGENT_REFERENCE.md - Subagent reference
+  - THREAD_HANDOFF.md - Thread handoff procedures
+- **analysis/** - Design decisions and analysis documents
+  - CLAUDE_CODE_HOOKS_*.md - Code hooks analysis
+  - HOOK_OPTIMIZATION_ANALYSIS.md - Hook optimization study
+  - SELF_IMPROVEMENT_AGENT_ANALYSIS.md - Agent improvement analysis
+- **reference/** - Technical references
+  - TELEMETRY.md - Telemetry documentation
+- **architecture/** - Architecture and planning
+  - ROADMAP.md - Project roadmap
 
 ## Related Documentation
 
