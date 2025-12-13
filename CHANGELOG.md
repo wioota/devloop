@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.1] - 2025-12-14
+
+### Testing & Validation
+
+#### Claude Code Hooks Testing
+- **Phase 2 Complete**: Comprehensive testing of file protection mechanism
+- **45 new unit tests**: Full coverage of file protection behavior
+- **Test results**: All 45 tests passing, 873 total with no regressions
+- **Whitelist validation**: File protection whitelist mechanism tested and working
+- **Edge case coverage**: Symlinks, relative paths, special characters all handled correctly
+
+#### Documentation
+- **Troubleshooting Guide**: 300+ line comprehensive guide for debugging hooks
+- **Example Files**: Whitelist template with documented examples
+- **Test Plan**: Complete Phase 2 test plan with detailed results
+- **Completion Summary**: Executive summary of testing and validation
+
+### Improvements
+
+- Enhanced file protection hook with comprehensive test coverage
+- Added detailed troubleshooting documentation for hook issues
+- Validated whitelist mechanism functionality
+- Confirmed no regressions in existing functionality (873 tests passing)
+
+### Infrastructure
+
+- New test module: `tests/test_file_protection.py` (45 tests)
+- New documentation: `.agents/HOOK_TROUBLESHOOTING.md` (350+ lines)
+- Test plan documentation in `.amp/` directory
+
+---
+
 ## [0.6.0] - 2025-12-14
 
 ### Major Features
