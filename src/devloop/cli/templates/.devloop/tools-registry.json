@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "description": "DevLoop Tool Registry - Define available development tools",
+  "tools": [
+    {
+      "name": "black",
+      "tool_type": "formatter",
+      "description": "Python code formatter",
+      "languages": ["python"],
+      "runners": {
+        "poetry": "poetry run black",
+        "pip": "black",
+        "direct": "black"
+      },
+      "config_files": ["pyproject.toml", ".black.toml"],
+      "priority": 100,
+      "auto_fixable": true,
+      "fix_command_template": "{runner} {paths}"
+    },
+    {
+      "name": "ruff",
+      "tool_type": "linter",
+      "description": "Fast Python linter",
+      "languages": ["python"],
+      "runners": {
+        "poetry": "poetry run ruff check",
+        "pip": "ruff check",
+        "direct": "ruff check"
+      },
+      "config_files": ["pyproject.toml", "ruff.toml", ".ruff.toml"],
+      "priority": 95,
+      "auto_fixable": true,
+      "fix_command_template": "{runner} {paths} --fix"
+    },
+    {
+      "name": "mypy",
+      "tool_type": "typecheck",
+      "description": "Python static type checker",
+      "languages": ["python"],
+      "runners": {
+        "poetry": "poetry run mypy",
+        "pip": "mypy",
+        "direct": "mypy"
+      },
+      "config_files": ["pyproject.toml", "mypy.ini", ".mypy.ini"],
+      "priority": 90
+    },
+    {
+      "name": "pytest",
+      "tool_type": "test",
+      "description": "Python testing framework",
+      "languages": ["python"],
+      "runners": {
+        "poetry": "poetry run pytest",
+        "pip": "pytest",
+        "direct": "pytest"
+      },
+      "config_files": ["pyproject.toml", "pytest.ini", "setup.cfg"],
+      "priority": 95
+    },
+    {
+      "name": "eslint",
+      "tool_type": "linter",
+      "description": "JavaScript linter",
+      "languages": ["javascript", "typescript"],
+      "runners": {
+        "npm": "npm run eslint",
+        "yarn": "yarn eslint",
+        "direct": "eslint"
+      },
+      "config_files": [".eslintrc.json", ".eslintrc.js", "package.json"],
+      "priority": 90,
+      "auto_fixable": true,
+      "fix_command_template": "{runner} {paths} --fix"
+    },
+    {
+      "name": "prettier",
+      "tool_type": "formatter",
+      "description": "JavaScript/TypeScript formatter",
+      "languages": ["javascript", "typescript"],
+      "runners": {
+        "npm": "npm run prettier",
+        "yarn": "yarn prettier",
+        "direct": "prettier"
+      },
+      "config_files": [".prettierrc", ".prettierrc.json", "package.json"],
+      "priority": 90,
+      "auto_fixable": true,
+      "fix_command_template": "{runner} {paths} --write"
+    },
+    {
+      "name": "bandit",
+      "tool_type": "security",
+      "description": "Python security linter",
+      "languages": ["python"],
+      "runners": {
+        "poetry": "poetry run bandit",
+        "pip": "bandit",
+        "direct": "bandit"
+      },
+      "config_files": ["pyproject.toml", ".bandit"],
+      "priority": 80
+    }
+  ]
+}

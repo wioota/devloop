@@ -35,6 +35,8 @@ from .pattern_detector import (
     PatternDetector,
     get_pattern_detector,
 )
+from .tool_registry import ToolDefinition, ToolRegistry, ToolRunnerConfig
+from .tool_runner import ToolRunResult, ToolRunner
 from .transactional_io import (
     ChecksumMismatchError,
     SelfHealing,
@@ -82,6 +84,11 @@ __all__ = [
     "initialize_transaction_system",
     "SelfHealing",
     "ThreadInsight",
+    "ToolDefinition",
+    "ToolRegistry",
+    "ToolRunnerConfig",
+    "ToolRunner",
+    "ToolRunResult",
     "TransactionalFile",
     "TransactionError",
     "TransactionRecovery",
