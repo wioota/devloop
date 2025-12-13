@@ -3,7 +3,7 @@
 > **Intelligent background agents for development workflow automation** — automate code quality checks, testing, documentation, and more while you code.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests Passing](https://img.shields.io/badge/tests-239%2B%20passing-green.svg)](#testing)
+[![Tests Passing](https://img.shields.io/badge/tests-737%2B%20passing-green.svg)](#testing)
 [![Alpha Release](https://img.shields.io/badge/status-alpha-orange.svg)](#status)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -74,7 +74,7 @@ Try it on a side project first. See results in minutes, not days.
 
 ### What's Working ✅
 
-DevLoop has **production-grade** foundation with 239+ passing tests:
+DevLoop has **production-grade** foundation with 737+ passing tests:
 
 - **Core stability**: Event system, agent coordination, context management - all battle-tested
 - **Code quality**: Black, Ruff, mypy, pytest - works reliably across 1000s of file changes
@@ -148,14 +148,28 @@ Like any alpha software, some features need hardening:
 
 DevLoop runs background agents that automatically:
 
+### Code Quality & Testing
 - **🔍 Linting & Type Checking** — Detect issues as you code (mypy, custom linters)
 - **📝 Code Formatting** — Auto-format files with Black, isort, and more
 - **✅ Testing** — Run relevant tests on file changes
+
+### Security & Performance
 - **🔐 Security Scanning** — Find vulnerabilities with Bandit
-- **📚 Documentation** — Keep docs in sync with code changes
 - **⚡ Performance** — Track performance metrics and detect regressions
+
+### Workflow & Documentation
+- **📚 Documentation** — Keep docs in sync with code changes
 - **🎯 Git Integration** — Generate smart commit messages
 - **🤖 Custom Agents** — Create no-code agents via builder pattern
+
+### Agent Marketplace (NEW!)
+- **🏪 Agent Marketplace** — Discover and share agents with the community
+- **📦 Agent Publishing** — Publish your agents with semantic versioning
+- **✍️ Agent Signing** — Cryptographically sign agents for verification
+- **🔍 Agent Discovery** — Search and install agents from the registry
+- **🔄 Version Management** — Manage agent updates and deprecation
+
+### Advanced Features
 - **📊 Learning System** — Automatically learn patterns and optimize behavior
 - **🔄 Auto-fix** — Safely apply fixes (configurable safety levels)
 
@@ -186,17 +200,21 @@ All agents run **non-intrusively in the background**, respecting your workflow.
 # Basic installation (all default agents)
 pip install devloop
 
+# With marketplace API server
+pip install devloop[marketplace-api]
+
 # With optional agents (Snyk security scanning)
 pip install devloop[snyk]
 
 # With multiple optional agents
-pip install devloop[snyk,code-rabbit]
+pip install devloop[snyk,code-rabbit,marketplace-api]
 
 # With all optional agents
 pip install devloop[all-optional]
 ```
 
 **Available extras:**
+- `marketplace-api` — Marketplace registry HTTP server and publishing tools (FastAPI + uvicorn)
 - `snyk` — Dependency vulnerability scanning via Snyk CLI
 - `code-rabbit` — AI-powered code analysis
 - `ci-monitor` — CI/CD pipeline monitoring
@@ -310,6 +328,16 @@ devloop watch .
 
 # Show agent status and health
 devloop status
+
+# Agent publishing and management
+devloop agent publish ./my-agent      # Publish agent
+devloop agent check ./my-agent        # Check readiness
+devloop agent version ./my-agent patch # Bump version
+devloop agent deprecate my-agent -m "Use new-agent" # Deprecate
+
+# Marketplace operations
+devloop marketplace server start --port 8000  # Start HTTP server
+devloop marketplace status                    # Show registry stats
 
 # View current findings in Amp
 /agent-summary          # Recent findings
@@ -426,6 +454,108 @@ config = (
 ```
 
 [View agent documentation →](./docs/agents.md)
+
+---
+
+## Agent Marketplace
+
+DevLoop includes a complete **agent marketplace** for discovering, publishing, and managing community agents.
+
+### Publishing Your Agent
+
+Share your custom agents with the community:
+
+```bash
+# Publish an agent to the marketplace
+devloop agent publish ./my-agent
+
+# Check if agent is ready to publish
+devloop agent check ./my-agent
+
+# Bump version (semantic versioning)
+devloop agent version ./my-agent minor
+
+# Deprecate an old version
+devloop agent deprecate my-agent --message "Use my-agent-v2 instead"
+```
+
+### Agent Signing & Verification
+
+DevLoop automatically signs agents for integrity and tamper detection:
+
+```bash
+# Agent signing is automatic (SHA256 checksums + directory hashing)
+# Verify agent authenticity
+devloop agent verify ./my-agent
+
+# View signature information
+devloop agent info ./my-agent --signature
+```
+
+### Marketplace Registry API
+
+Programmatically discover and manage agents:
+
+```python
+from devloop.marketplace import RegistryAPI, create_registry_client
+from pathlib import Path
+
+# Initialize
+client = create_registry_client(Path("~/.devloop/registry"))
+api = RegistryAPI(client)
+
+# Search agents
+response = api.search_agents(query="formatter", categories=["formatting"])
+print(f"Found {response.data['total_results']} agents")
+
+# Get agent details
+response = api.get_agent("my-formatter")
+if response.success:
+    print(f"Rating: {response.data['rating']['average']}")
+
+# Rate an agent
+api.rate_agent("my-formatter", 5.0)
+```
+
+### Marketplace HTTP Server
+
+Run a local marketplace registry with REST API endpoints:
+
+```bash
+# Start the marketplace server
+devloop marketplace server start --port 8000
+
+# Access API documentation at http://localhost:8000/docs
+```
+
+**Available endpoints:**
+- `GET /api/v1/agents/search` — Search agents
+- `GET /api/v1/agents/{name}` — Get agent details
+- `POST /api/v1/agents` — Register new agent
+- `POST /api/v1/agents/{name}/rate` — Rate an agent
+- `GET /api/v1/stats` — Registry statistics
+
+[Full marketplace API documentation →](./docs/MARKETPLACE_API.md)
+
+### Agent Metadata Schema
+
+```json
+{
+  "name": "my-agent",
+  "version": "1.0.0",
+  "description": "What this agent does",
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://example.com",
+  "repository": "https://github.com/you/my-agent",
+  "categories": ["code-quality"],
+  "keywords": ["quality", "analysis"],
+  "python_version": ">=3.11",
+  "devloop_version": ">=0.5.0"
+}
+```
+
+---
 
 ### Code Rabbit Integration
 
@@ -684,7 +814,7 @@ poetry run pytest tests/unit/agents/test_linter.py -v
 poetry run pytest -v
 ```
 
-**Current status:** ✅ 112+ tests passing
+**Current status:** ✅ 737+ tests passing
 
 [View test strategy →](./docs/testing.md)
 
@@ -753,6 +883,7 @@ poetry run mypy src
 - **[Getting Started Guide](./docs/getting-started.md)** — Installation and basic usage
 - **[Architecture Guide](./docs/architecture.md)** — System design and components
 - **[Agent Reference](./docs/agents.md)** — All available agents
+- **[Marketplace API Guide](./docs/MARKETPLACE_API.md)** — Agent publishing, discovery, and registry API
 - **[Configuration Guide](./docs/configuration.md)** — Full config reference
 - **[CLI Commands](./docs/cli-commands.md)** — Command reference
 - **[Development Guide](./docs/development.md)** — Contributing guide
@@ -845,16 +976,18 @@ ls -la .devloop/custom_agents/
 - Workflow automation: git integration, CI monitoring, documentation
 - Custom agents: create your own without writing code
 - Learning system: pattern recognition and optimization
+- **Agent Marketplace** — Registry API, publishing, signing, discovery (737+ tests)
 
 ### In Development 🚀
-- Cloud pattern repository (opt-in)
+- Remote agent registry and cloud sync
 - Agent composition and pipelines
-- Community agent sharing
+- Community agent sharing and rating improvements
 
 ### Future 🔮
 - Multi-project support
 - Team coordination features
 - LLM-powered agents
+- Agent marketplace web interface
 
 ---
 
