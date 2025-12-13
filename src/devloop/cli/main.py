@@ -685,6 +685,24 @@ def init(
             missing_sections.append("Token security")
         if "Development Discipline" not in content:
             missing_sections.append("Development discipline")
+        if "Pre-Flight Development Checklist" not in content:
+            missing_sections.append("Pre-flight checklist")
+        if "CI Verification" not in content and "Pre-Push Hook" not in content:
+            missing_sections.append("CI verification (pre-push hook)")
+        if "Documentation Practices" not in content:
+            missing_sections.append("Documentation practices")
+        if "Publishing & Security Considerations" not in content:
+            missing_sections.append("Publishing & security considerations")
+        if "Release Process" not in content:
+            missing_sections.append("Release process")
+        if "Configuration" not in content:
+            missing_sections.append("Configuration (logging, agents)")
+        if "Security & Privacy" not in content:
+            missing_sections.append("Security & privacy")
+        if "Success Metrics" not in content:
+            missing_sections.append("Success metrics")
+        if "Future Considerations" not in content:
+            missing_sections.append("Future considerations")
 
         needs_devloop_content = len(missing_sections) > 0
 

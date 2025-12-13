@@ -457,3 +457,452 @@ devloop amp-context
 - ✅ Automatic Beads issue creation from findings
 - ✅ Telemetry and metrics tracking
 - ✅ Help text available: `devloop <command> --help`
+
+---
+
+## Pre-Flight Development Checklist
+
+**CRITICAL:** Run this checklist at the start of each development session to prevent cascading failures from formatting debt.
+
+### Why Formatting Debt Matters
+
+Formatting and code quality issues compound quickly:
+
+1. **Formatting debt accumulates** → Multiple unformatted files build up
+2. **Pre-commit hook gets noisy** → Flags unrelated files that were modified
+3. **Developer ignores hooks** → Pre-commit warnings become noise, not signals
+4. **Bad commits slip through** → When developers disable hooks, real issues bypass pre-commit
+
+Example: You fix 2 lines in `parser.py`, but Black wants to reformat 100 lines. The hook now flags both your changes AND the formatting debt, making it hard to see the actual change.
+
+**Prevention: Format entire codebase at session start.**
+
+### Pre-Flight Checklist
+
+Run these commands **before** starting any work session:
+
+```bash
+# 1. Format entire codebase
+poetry run black src/ tests/
+
+# 2. Lint and check for issues
+poetry run ruff check src/ tests/ --fix
+poetry run mypy src/
+
+# 3. Run full test suite (if time permits)
+poetry run pytest
+
+# 4. Verify hooks work
+.agents/verify-task-complete
+```
+
+This takes ~2-5 minutes but saves 30+ minutes of dealing with formatting cascades later.
+
+### Why This Matters for DevLoop
+
+DevLoop's pre-commit hook needs a clean baseline to be effective:
+- ✅ Catches *your* changes clearly
+- ✅ Doesn't flag pre-existing formatting issues
+- ✅ Stays non-intrusive and helpful
+- ❌ Avoids alert fatigue that leads to hook disabling
+
+**Best practice**: Make pre-flight checklist a habit at session start, right after `bd ready`.
+
+---
+
+## CI Verification (Pre-Push Hook)
+
+**Automatic:** The `.git/hooks/pre-push` hook automatically checks CI status before allowing pushes.
+
+### Workflow
+
+1. Make changes and commit: `git add . && git commit -m "..."`
+2. Push: `git push origin main`
+3. **Pre-push hook runs automatically:**
+   - Checks if `gh` CLI is installed
+   - Gets the latest CI run status for your branch
+   - If CI failed: blocks push and shows error
+   - If CI passed: allows push to proceed
+   - If no runs yet: allows push
+
+### Manual CI Check
+
+```bash
+# View recent CI runs
+gh run list --limit 10
+
+# View a specific run
+gh run view <run-id>
+
+# View failed run details
+gh run view <run-id> --log-failed
+```
+
+### If Push is Blocked
+
+1. Check what failed: `gh run view <run-id> --log-failed`
+2. Fix the issues locally
+3. Commit and push again
+4. Pre-push hook will verify the new CI run before allowing push
+
+**Why this matters:** CI failures catch issues before they merge (formatting, type errors, broken tests, security issues). The pre-push hook ensures developers are aware of CI status before code reaches the repository.
+
+---
+
+## Documentation Practices (CRITICAL)
+
+**Files are tracked in git and must never be accidentally deleted.**
+
+### Prevention Rules
+
+1. **Commit Message Discipline**
+   - Always use descriptive commit messages
+   - When deleting docs, include explicit annotation:
+     ```bash
+     git commit -m "docs: Remove outdated X documentation"
+     git commit -m "chore: Clean up deprecated docs for Y"
+     ```
+   - Commit message must explain WHY files are deleted
+
+2. **Pre-Commit Awareness**
+   - Check for deleted files before committing:
+     ```bash
+     git status                          # See deleted files
+     git log --diff-filter=D --summary   # View deletion history
+     ```
+   - If deletion is accidental: `git restore <filename>`
+
+3. **CI Validation** (Automatic)
+   - GitHub Actions automatically validates:
+     - All links in README.md resolve to files
+     - Documentation files weren't deleted without explanation
+     - Any deletion without "docs:" prefix in message fails CI
+
+4. **Update README.md**
+   - After deleting docs, update all README.md references
+   - CI will fail if README references non-existent files
+   - Verify all links:
+     ```bash
+     grep -o '\]\(\.\/.*\.md\)\|\]\(docs/.*\.md\)' README.md | sort -u
+     ```
+
+### Example: Intentional Deletion
+
+```bash
+# 1. Before deleting, check what's in the file
+git show HEAD:docs/old-feature.md | head -20
+
+# 2. Remove the file
+rm docs/old-feature.md
+
+# 3. Update README.md to remove links to this file
+# (CI will fail if you don't)
+
+# 4. Stage changes
+git add docs/ README.md
+
+# 5. Commit with explicit documentation
+git commit -m "docs: Remove old-feature documentation (archived in git history)"
+
+# 6. CI validates that all README links still resolve
+# ✅ Push succeeds if all links are valid
+```
+
+### Why This Matters
+
+**Scenario (happened in commit 1e06145):**
+- Developer adds metrics code
+- 10 documentation files accidentally deleted
+- No commit message mentions deletion
+- README references non-existent files (broken links)
+- Users can't find documentation
+
+**Prevention:**
+- CI now validates links before merge
+- Pre-commit hook warns about deletions
+- Commit message requirement enforces intentionality
+- Documentation recovery always possible from git history
+
+---
+
+## Publishing & Security Considerations
+
+**For public/published software**, add extra care to your DevLoop workflow:
+
+### Secrets Management
+
+DevLoop provides comprehensive token security features to prevent credential exposure.
+
+**Never Do:**
+- ❌ Commit API keys, tokens, or credentials to version control
+- ❌ Pass tokens as command-line arguments (visible in process lists)
+- ❌ Hardcode tokens in code or configuration files
+- ❌ Log full tokens or include them in error messages
+- ❌ Store tokens in shell history
+
+**Always Do:**
+- ✅ Use environment variables for all tokens (`GITHUB_TOKEN`, `PYPI_TOKEN`, etc.)
+- ✅ Enable token expiry and rotation (30-90 days recommended)
+- ✅ Use read-only or project-scoped tokens when possible
+- ✅ Scan commits for accidentally leaked secrets before pushing
+- ✅ Use CI/CD secrets managers (GitHub Secrets, GitLab CI/CD Variables)
+
+### Version Consistency
+- ✅ Version is the single source of truth
+- ✅ Use semantic versioning (MAJOR.MINOR.PATCH)
+- ✅ Tag releases with matching version numbers (`git tag v1.2.3`)
+
+### Breaking Changes
+- ✅ Document all breaking changes clearly in `CHANGELOG.md`
+- ✅ Include migration guides in release notes
+- ✅ Consider deprecation warnings before breaking changes
+
+### Dependency Security
+- ✅ Run security audits regularly
+- ✅ Monitor for CVE updates in dependencies
+- ✅ Update vulnerable dependencies promptly
+- ✅ Review new dependency versions before merging
+
+### Documentation Accuracy
+- ✅ Test all installation instructions on a clean environment
+- ✅ Verify all code examples actually work
+- ✅ Keep README, API docs, and examples current with code changes
+
+### Pre-Release Checklist
+
+Before publishing to registries:
+1. ✅ All CI tests pass
+2. ✅ All code quality checks pass (linting, type checking, formatting)
+3. ✅ Security scan shows no vulnerabilities
+4. ✅ Documentation is current and tested
+5. ✅ CHANGELOG updated with release notes
+6. ✅ Version numbers consistent across files
+7. ✅ No accidental secrets in commit history
+8. ✅ Manual smoke test on clean environment
+9. ✅ Release notes written with migration guides (if breaking changes)
+
+---
+
+## Release Process
+
+DevLoop uses a **provider-agnostic release workflow** that works with any CI system and any package registry. No vendor lock-in—use GitHub Actions, GitLab CI, Jenkins, CircleCI, or any other platform. Publish to PyPI, npm, Artifactory, Docker registries, or custom artifact stores.
+
+### Supported CI Platforms
+
+DevLoop automatically detects and works with:
+- **GitHub Actions** - Via `gh` CLI
+- **GitLab CI/CD** - Via `glab` CLI
+- **Jenkins** - Via Jenkins REST API
+- **CircleCI** - Via CircleCI API v2
+- **Custom CI Systems** - Via manual configuration
+
+### Supported Package Registries
+
+DevLoop automatically detects and publishes to:
+- **PyPI** - Via `poetry` or `twine`
+- **npm** - Via npm CLI
+- **Docker Registry** - Via Docker CLI
+- **Artifactory** - Via Artifactory REST API
+- **Custom Registries** - Via manual configuration
+
+### Quick Release Commands
+
+Check if you're ready to release:
+```bash
+devloop release check 1.2.3
+```
+
+Publish a release (full workflow):
+```bash
+devloop release publish 1.2.3
+```
+
+Additional options:
+```bash
+# Dry-run to see what would happen
+devloop release publish 1.2.3 --dry-run
+
+# Specify explicit providers (if auto-detect fails)
+devloop release publish 1.2.3 --ci github --registry pypi
+
+# Skip specific steps
+devloop release publish 1.2.3 --skip-tag --skip-publish
+```
+
+### Automated Release Workflow
+
+The `devloop release` commands run the following steps automatically:
+
+1. **Pre-Release Checks** - Verifies all preconditions:
+   - Git working directory is clean (no uncommitted changes)
+   - You're on the correct release branch (default: `main`)
+   - CI passes on current branch (uses your CI provider)
+   - Package registry credentials are valid
+   - Version format is valid (semantic versioning: X.Y.Z)
+
+2. **Create Git Tag** - Creates annotated tag:
+   - Tag name: `v{version}` (configurable with `--tag-prefix`)
+   - Fails if tag already exists
+
+3. **Publish to Registry** - Publishes package:
+   - Uses detected or specified package registry
+   - Supports multiple registries per release (run multiple times)
+   - Returns package URL
+
+4. **Push Tag** - Pushes tag to remote repository:
+   - Only if all previous steps succeed
+
+### Manual Release Workflow
+
+If you need more control or if `devloop release` is unavailable, follow these steps for your project type:
+
+**For Python projects (pyproject.toml)**:
+1. **Update CHANGELOG.md**
+   ```markdown
+   ## [X.Y.Z] - YYYY-MM-DD
+   
+   ### Major Features
+   - Feature 1
+   - Feature 2
+   
+   ### Improvements
+   - Improvement 1
+   ```
+
+2. **Bump version** (keep version numbers in sync)
+
+3. **Update dependency lock file**
+   ```bash
+   poetry lock   # For poetry projects
+   pip freeze > requirements.txt  # For pip projects
+   ```
+
+4. **Commit changes**
+   ```bash
+   git add pyproject.toml CHANGELOG.md poetry.lock
+   git commit -m "Release vX.Y.Z: Description of major changes"
+   ```
+
+5. **Create and push tag**
+   ```bash
+   git tag -a vX.Y.Z -m "DevLoop vX.Y.Z - Release notes here"
+   git push origin main vX.Y.Z
+   ```
+
+**For other project types (Node.js, Docker, etc.)**:
+Replace the version file (`package.json` for npm, etc.) in step 2, and update the lock file appropriately in step 3.
+
+### Release Checklist
+
+Before pushing your release tag:
+
+1. ✅ All CI tests pass (`devloop release check <version>` or manual CI check)
+2. ✅ CHANGELOG.md updated with release notes
+3. ✅ Version bumped in all relevant files
+4. ✅ Lock files updated (`poetry.lock`, `package-lock.json`, etc.)
+5. ✅ No uncommitted changes: `git status` should be clean
+6. ✅ Release notes include migration guides (if breaking changes)
+7. ✅ Manual testing on clean environment (for critical releases)
+
+### Notes
+
+- The pre-commit hook will validate formatting, types, and tests
+- If you need to bypass pre-commit for lock file changes: `git commit --no-verify`
+- Always commit version and CHANGELOG updates before creating the release tag
+- Follow [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
+- Release tags are permanent - create a new tag if mistakes are made
+
+---
+
+## Configuration
+
+### Log Rotation
+
+By default, DevLoop logs can grow unbounded. **Configure log rotation** to prevent disk space issues:
+
+```json
+{
+  "global": {
+    "logging": {
+      "level": "info",
+      "rotation": {
+        "enabled": true,
+        "maxSize": "100MB",
+        "maxBackups": 3,
+        "maxAgeDays": 7,
+        "compress": true
+      }
+    }
+  }
+}
+```
+
+This keeps logs under control while preserving recent history.
+
+### Agents Configuration
+
+Agents are configured via `.devloop/agents.json`:
+
+```json
+{
+  "enabled": true,
+  "agents": {
+    "linter": {
+      "enabled": true,
+      "triggers": ["file:save", "git:pre-commit"],
+      "config": {
+        "debounce": 500,
+        "filePatterns": ["**/*.{js,ts,jsx,tsx}"]
+      }
+    },
+    "testRunner": {
+      "enabled": true,
+      "triggers": ["file:save"],
+      "config": {
+        "watchMode": true,
+        "relatedTestsOnly": true
+      }
+    }
+  },
+  "global": {
+    "maxConcurrentAgents": 5,
+    "notificationLevel": "summary",
+    "resourceLimits": {
+      "maxCpu": 25,
+      "maxMemory": "500MB"
+    }
+  }
+}
+```
+
+---
+
+## Security & Privacy
+
+- Agents run in isolated environments
+- No external data transmission without explicit consent
+- Local execution only (no cloud dependencies by default)
+- Sensitive file patterns excluded from monitoring
+- Audit log of all agent actions
+
+---
+
+## Success Metrics
+
+- Developer interruptions (should decrease)
+- Time to fix issues (should decrease)
+- Code quality metrics (should improve)
+- Test coverage (should increase)
+- Resource usage (should remain acceptable)
+- Developer satisfaction (should increase)
+
+---
+
+## Future Considerations
+
+- **Multi-Project Support**: Agents working across multiple repositories
+- **Team Coordination**: Shared agent insights across team members
+- **Cloud Integration**: Optional cloud-based analysis for deeper insights
+- **Custom Agent Marketplace**: Community-contributed agents
+- **AI-Powered Agents**: Integration with LLMs for intelligent suggestions
+- **Cross-Tool Integration**: Integration with popular dev tools (Docker, K8s, etc.)
