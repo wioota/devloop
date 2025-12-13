@@ -172,9 +172,29 @@ DevLoop runs background agents that automatically:
 - **🛠️ Tool Dependencies** — Automatic dependency resolution for agent tools
 - **🌐 REST API Server** — Run a local/remote marketplace with HTTP API
 
+### IDE & Editor Integration
+- **VSCode Extension** — Real-time agent feedback with inline quick fixes and status bar integration
+- **LSP Server** — Language Server Protocol for multi-editor support
+- **Agent Status Display** — View findings and metrics directly in your editor
+
+### Developer Experience & Reliability
+- **Daemon Supervision** — Automatic process monitoring and restart handling
+- **Transactional I/O** — Atomic writes, checksums, corruption recovery
+- **Config Schema Versioning** — Automatic migration between configuration versions
+- **Self-healing Filesystem** — Detects and repairs corrupted data files
+- **Event Logging** — Structured SQLite audit trail with 30-day retention
+
+### Workflow Integration
+- **Beads Task Integration** — Auto-create issues from detected patterns
+- **Amp Thread Context** — Cross-thread pattern detection and analytics
+- **Multi-CI Support** — GitHub Actions, GitLab CI, Jenkins, CircleCI
+- **Multi-Registry Support** — PyPI, npm, Docker, and custom registries
+
 ### Advanced Features
 - **📊 Learning System** — Automatically learn patterns and optimize behavior
 - **🔄 Auto-fix** — Safely apply fixes (configurable safety levels)
+- **🔐 Token Security** — Secure credential management with OAuth2 and validation
+- **🧹 Cache Management** — Smart cleanup of stale caches and temporary files
 
 All agents run **non-intrusively in the background**, respecting your workflow.
 
@@ -695,6 +715,54 @@ When installing an agent, DevLoop automatically detects missing dependencies and
 
 ---
 
+## VSCode Extension
+
+DevLoop provides a VSCode extension for real-time agent feedback directly in your editor.
+
+### Installation
+
+**Option 1: From VSCode Marketplace**
+```
+Open VSCode → Extensions → Search "devloop" → Click Install
+```
+
+**Option 2: Manual Installation**
+```bash
+# Install from the devloop repository
+git clone https://github.com/wioota/devloop
+cd devloop/vscode-extension
+npm install
+npm run compile
+# Extension is now installed in ~/.vscode/extensions/devloop-*
+```
+
+### Features
+
+- **Real-time Findings** — View linting, type checking, and security issues inline
+- **Quick Fixes** — Apply auto-fixes directly from the editor
+- **Status Bar** — Shows agent status, finding count, and health metrics
+- **Diagnostics Panel** — Detailed findings organized by agent and severity
+- **Multi-language Support** — Python, JavaScript, TypeScript, and more
+
+### Usage
+
+Once installed, DevLoop automatically:
+1. Monitors your editor for file changes
+2. Runs background agents via the LSP server
+3. Displays findings as inline diagnostics
+4. Provides quick fix actions for auto-fixable issues
+
+**View findings:**
+- Hover over squiggly lines to see details
+- Click quick fix actions to apply changes
+- Open Problems panel (Ctrl+Shift+M) to see all findings
+- Check status bar for agent health
+
+**Configuration:**
+Extension settings are automatically synced with `.devloop/agents.json`. No separate configuration needed.
+
+---
+
 ### Code Rabbit Integration
 
 Code Rabbit Agent provides AI-powered code analysis with insights on code quality, style, and best practices.
@@ -800,6 +868,56 @@ export SNYK_TOKEN="your-snyk-token"
 
 ---
 
+## Multi-CI/Registry Provider System
+
+DevLoop uses a provider abstraction layer for CI/CD and package registry support. This means you can use DevLoop with any CI system and publish to any package registry.
+
+### Supported CI Platforms
+
+DevLoop auto-detects and works with:
+- **GitHub Actions** — Default, with pre-push CI verification
+- **GitLab CI/CD** — Full support with pipeline status monitoring
+- **Jenkins** — Classic and declarative pipelines
+- **CircleCI** — OAuth2 and API token authentication
+- **Custom CI** — Via manual configuration
+
+### Supported Package Registries
+
+Publish agents and packages to:
+- **PyPI** — Python Package Index (via Poetry or Twine)
+- **npm** — Node Package Manager
+- **Docker Registry** — Docker Hub or custom registries
+- **GitHub Releases** — Attach artifacts to releases
+- **Custom Registries** — Via manual configuration (Artifactory, etc.)
+
+### Release Workflow
+
+DevLoop provides a unified release process across all providers:
+
+```bash
+# Check if ready to release
+devloop release check 1.2.3
+
+# Publish to detected CI/registry
+devloop release publish 1.2.3
+
+# Specify explicit providers
+devloop release publish 1.2.3 --ci github --registry pypi
+
+# Dry-run to see what would happen
+devloop release publish 1.2.3 --dry-run
+```
+
+The release workflow automatically:
+1. Validates preconditions (clean git, passing CI, valid version)
+2. Creates annotated git tag
+3. Publishes to registry
+4. Pushes tag to remote repository
+
+[Full provider documentation →](./docs/PROVIDER_SYSTEM.md)
+
+---
+
 ## Configuration
 
 Configure agent behavior in `.devloop/agents.json`:
@@ -837,7 +955,139 @@ Configure agent behavior in `.devloop/agents.json`:
 
 ⚠️ **Auto-fix Warning:** Currently auto-fixes run without backups or review. **DO NOT enable auto-fix in production** or on critical code. Track [secure auto-fix with backups issue](https://github.com/wioota/devloop/issues/emc).
 
+### Token Security
+
+DevLoop securely manages API keys and tokens for agent integrations:
+
+```bash
+# Use environment variables for all credentials
+export SNYK_TOKEN="your-token"
+export CODE_RABBIT_API_KEY="your-key"
+export GITHUB_TOKEN="your-token"
+
+# DevLoop automatically:
+# - Hides tokens in logs and process lists
+# - Validates token format and expiry
+# - Warns about placeholder values ("changeme", "token", etc.)
+# - Never logs full token values
+```
+
+**Best practices:**
+- ✅ Use environment variables (never command-line arguments)
+- ✅ Enable token expiry and rotation (30-90 days recommended)
+- ✅ Use read-only or project-scoped tokens when possible
+- ✅ Store tokens in `.env` file (add to `.gitignore`)
+- ❌ Never commit tokens to git
+- ❌ Never pass tokens as command arguments
+- ❌ Never hardcode tokens in code
+
+**Token validation:**
+```bash
+# DevLoop validates token format during initialization
+devloop init /path/to/project
+
+# View token status
+devloop status --show-token-info
+```
+
+[Full token security guide →](./docs/TOKEN_SECURITY.md)
+
 [Full configuration reference →](./docs/configuration.md)
+
+---
+
+## Integration with Beads
+
+DevLoop integrates with [Beads](https://github.com/wioota/devloop) task tracking to create actionable work items from detected patterns.
+
+### Auto-Issue Creation
+
+DevLoop automatically creates Beads issues for significant findings:
+
+```bash
+# View auto-created issues from DevLoop findings
+bd ready           # Shows unblocked work
+bd show bd-abc123  # View specific issue created by DevLoop
+```
+
+**What gets tracked:**
+- Security vulnerabilities (high/critical only)
+- Performance regressions
+- Pattern discoveries (e.g., "same issue found 3 times")
+- Failing tests in CI
+- Deprecated dependencies
+
+**Issue linking:**
+DevLoop uses `discovered-from` dependencies to link:
+- Findings → Beads issues → Original agent
+- Patterns across multiple findings
+- Root cause analysis chains
+
+### Thread Context Capture
+
+When using DevLoop in [Amp](https://ampcode.com) threads:
+
+```bash
+# Automatically captures thread context (if AMP_THREAD_ID is set)
+devloop watch .
+```
+
+DevLoop logs:
+- Thread ID and URL
+- Commands executed
+- Agent findings and results
+- Patterns detected across sessions
+
+This enables cross-thread pattern detection:
+> "This type of error appeared in 5 different threads — likely a documentation gap"
+
+---
+
+## Event Logging & Observability
+
+DevLoop maintains a complete audit trail of agent activity for debugging and analysis.
+
+### Event Store
+
+All agent actions are logged to an SQLite event store in `.devloop/events.db`:
+
+```bash
+# View recent agent activity
+devloop audit query --limit 20
+
+# Filter by agent
+devloop audit query --agent linter
+
+# View agent health metrics
+devloop health
+```
+
+**Event data includes:**
+- Agent name and execution time
+- Success/failure status
+- Finding count and types
+- Resource usage (CPU, memory)
+- Timestamps and correlations
+
+### Log Files
+
+Application logs are stored in `.devloop/devloop.log` with rotation:
+
+```bash
+# View logs in real-time
+tail -f .devloop/devloop.log
+
+# View verbose logs during watch
+devloop watch . --verbose --foreground
+
+# Check log disk usage
+du -sh .devloop/devloop.log*
+```
+
+**Log rotation:**
+- Max file size: 100MB
+- Keep 3 backups (300MB max)
+- Auto-cleanup logs older than 7 days
 
 ---
 
