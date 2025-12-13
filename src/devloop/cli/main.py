@@ -45,6 +45,7 @@ from .commands import audit as audit_cmd
 from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
 from .commands import marketplace as marketplace_cmd
+from .commands import metrics as metrics_cmd
 from .commands import release as release_cmd
 from .commands import summary as summary_cmd
 from .commands import telemetry as telemetry_cmd
@@ -59,6 +60,7 @@ app.add_typer(summary_cmd.app, name="summary")
 app.add_typer(custom_agents_cmd.app, name="custom")
 app.add_typer(feedback_cmd.app, name="feedback")
 app.add_typer(marketplace_cmd.app, name="agent")
+app.add_typer(metrics_cmd.app, name="metrics")
 app.add_typer(release_cmd.app, name="release")
 app.add_typer(telemetry_cmd.app, name="telemetry")
 app.add_typer(tools_cmd.app, name="tools")
