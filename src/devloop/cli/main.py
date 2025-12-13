@@ -36,6 +36,7 @@ from devloop.core import (
 )
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
 from devloop.core.daemon_health import DaemonHealthCheck, check_daemon_health
+from devloop.core.event_replayer import EventReplayer
 from devloop.core.transactional_io import initialize_transaction_system
 
 from .commands import audit as audit_cmd
@@ -493,6 +494,24 @@ async def watch_async(path: Path, config_path: Path | None):
     console.print("[green]✓[/green] Started agents:")
     for agent_name in agent_manager.list_agents():
         console.print(f"  • [cyan]{agent_name}[/cyan]")
+
+    # Replay missed events (event persistence and recovery)
+    replayer = EventReplayer(event_bus, agent_manager)
+    replay_stats = await replayer.replay_all_agents()
+
+    if replay_stats["total_replayed"] > 0:
+        console.print(
+            f"\n[cyan]Event Replay[/cyan]: Replayed {replay_stats['total_replayed']} missed events"
+        )
+        for agent_name, count in replay_stats["agents"].items():
+            if count > 0:
+                console.print(f"  • {agent_name}: {count} events")
+
+    if replay_stats["gaps"]:
+        console.print(
+            f"\n[yellow]⚠ Event Gaps Detected[/yellow]: {len(replay_stats['gaps'])} gaps in sequence"
+        )
+        console.print("[dim]Run 'devloop debug' for details[/dim]")
 
     console.print("\n[dim]Waiting for file changes... (Ctrl+C to stop)[/dim]\n")
 

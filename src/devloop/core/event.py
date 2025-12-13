@@ -29,6 +29,7 @@ class Event:
     timestamp: float = field(default_factory=time.time)
     source: str = "unknown"
     priority: Priority = Priority.NORMAL
+    sequence: int = 0  # Sequence number for replay/gap detection
 
     def __lt__(self, other: Event) -> bool:
         """Compare events by priority for priority queue."""
@@ -41,6 +42,8 @@ class EventBus:
     def __init__(self):
         self._subscribers: Dict[str, Set[asyncio.Queue]] = {}
         self._event_log: list[Event] = []  # For debugging
+        self._sequence_counter: int = 0  # Global sequence counter
+        self._lock = asyncio.Lock()  # Protect sequence counter
 
     async def subscribe(self, event_type: str, queue: asyncio.Queue) -> None:
         """Subscribe to events of a specific type."""
@@ -55,6 +58,11 @@ class EventBus:
 
     async def emit(self, event: Event) -> None:
         """Emit an event to all subscribers."""
+        # Assign sequence number atomically
+        async with self._lock:
+            self._sequence_counter += 1
+            event.sequence = self._sequence_counter
+
         # Log event for debugging
         self._event_log.append(event)
         if len(self._event_log) > 100:  # Keep last 100 events

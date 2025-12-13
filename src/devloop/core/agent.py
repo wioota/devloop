@@ -92,6 +92,7 @@ class Agent(ABC):
         self.logger = logging.getLogger(f"agent.{name}")
         self._running = False
         self._event_queue: asyncio.Queue[Event] = asyncio.Queue()
+        self._last_processed_sequence = 0  # For event replay tracking
 
     @abstractmethod
     async def handle(self, event: Event) -> AgentResult:
@@ -199,6 +200,10 @@ class Agent(ABC):
                 # Publish result
                 await self._publish_result(result)
 
+                # Track last processed event for replay (non-blocking)
+                self._last_processed_sequence = event.sequence
+                asyncio.create_task(self._save_replay_state(event))
+
                 # Log result
                 status = "✓" if result.success else "✗"
                 self.logger.info(
@@ -222,6 +227,17 @@ class Agent(ABC):
                     )
 
                 await self._publish_result(error_result)
+
+    async def _save_replay_state(self, event: Event) -> None:
+        """Save the last processed event sequence for recovery."""
+        try:
+            from .event_store import event_store
+
+            await event_store.update_replay_state(
+                self.name, event.sequence, event.timestamp
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to save replay state: {e}")
 
     async def _publish_result(self, result: AgentResult) -> None:
         """Publish agent result as an event."""
