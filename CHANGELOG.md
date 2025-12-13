@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.1] - 2025-12-13
+
+### Documentation
+
+- **Updated Known Limitations** - Clarified that auto-fix, resource isolation, daemon supervision, and config migrations are fully implemented with 737+ passing tests
+- Removed overly cautious language to reflect production-grade implementation status
+
+---
+
 ## [0.5.0] - 2025-12-13
 
 ### Major Features
