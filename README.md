@@ -1268,12 +1268,24 @@ poetry run mypy src
 
 ## Documentation
 
+### User Guides
 - **[Getting Started Guide](./docs/getting-started.md)** — Installation and basic usage
 - **[Architecture Guide](./docs/architecture.md)** — System design and components
-- **[Agent Reference](./docs/agents.md)** — All available agents
-- **[Marketplace API Guide](./docs/MARKETPLACE_API.md)** — Agent publishing, discovery, and registry API
 - **[Configuration Guide](./docs/configuration.md)** — Full config reference
 - **[CLI Commands](./docs/cli-commands.md)** — Command reference
+
+### Agent Development
+- **[Agent Development Guide](./docs/AGENT_DEVELOPMENT.md)** — Tutorial on creating agents with patterns and best practices
+- **[Agent API Reference](./docs/AGENT_API_REFERENCE.md)** — Complete API documentation for all agent classes and interfaces
+- **[Agent Examples](./docs/AGENT_EXAMPLES.md)** — Real-world examples from simple to advanced implementations
+- **[Agent Troubleshooting](./docs/AGENT_TROUBLESHOOTING.md)** — Common issues and solutions
+
+### Marketplace
+- **[Marketplace Guide](./docs/MARKETPLACE_GUIDE.md)** — Discovering, installing, and publishing agents
+- **[Marketplace API Guide](./docs/MARKETPLACE_API.md)** — Agent registry API reference
+- **[Agent Reference](./docs/agents.md)** — Built-in agents documentation
+
+### Advanced
 - **[Development Guide](./docs/development.md)** — Contributing guide
 - **[Implementation Status](./IMPLEMENTATION_STATUS.md)** — What's implemented
 - **[Learning & Optimization](./PHASE3_COMPLETE.md)** — Advanced features
