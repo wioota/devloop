@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# UserPromptSubmit hook: Inject DevLoop findings into Claude's context
+#
+# This hook runs when the user submits a prompt, automatically detecting
+# if the prompt mentions code quality, testing, or other DevLoop-relevant
+# topics, and injects recent findings into Claude's context.
+#
+# Smart context enrichment:
+# - Analyzes user prompt to detect quality-related questions
+# - Loads relevant DevLoop findings from recent runs
+# - Makes findings visible without explicit /verify-work command
+# - Non-blocking: failures don't prevent prompt submission
+
+set -e
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+# Check if devloop is available
+if ! command -v devloop &>/dev/null; then
+    exit 0
+fi
+
+# Read the user prompt from stdin
+user_prompt=$(cat 2>/dev/null || echo "")
+
+# Detect if prompt mentions code quality, testing, or related topics
+quality_keywords="(lint|format|test|quality|type|error|fix|bug|security|performance|slow|broken|fail)"
+testing_keywords="(test|coverage|pytest|mock|fixture|assert)"
+refactor_keywords="(refactor|refactoring|clean|improve|simplify|optimize)"
+
+prompt_lower=$(echo "$user_prompt" | tr '[:upper:]' '[:lower:]')
+
+# Check if any quality-related keyword appears in the prompt
+should_load_context=false
+if echo "$prompt_lower" | grep -iE "$quality_keywords" >/dev/null 2>&1; then
+    should_load_context=true
+fi
+if echo "$prompt_lower" | grep -iE "$testing_keywords" >/dev/null 2>&1; then
+    should_load_context=true
+fi
+if echo "$prompt_lower" | grep -iE "$refactor_keywords" >/dev/null 2>&1; then
+    should_load_context=true
+fi
+
+# If quality-related prompt detected, load findings (non-blocking)
+if [ "$should_load_context" = "true" ]; then
+    echo ""
+    echo "📊 Injecting DevLoop findings based on your prompt..."
+    echo ""
+    
+    # Get recent findings summary
+    devloop summary session 2>/dev/null | head -50 || {
+        # If summary fails, try direct context
+        devloop amp_context 2>/dev/null || true
+    }
+    
+    echo ""
+fi
+
+exit 0

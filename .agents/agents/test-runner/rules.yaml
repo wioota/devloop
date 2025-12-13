@@ -1,0 +1,38 @@
+# Agent Configuration Rules: Test Runner
+# Lives near test runner agent code for easy maintenance
+# Auto-loaded by devloop init and merged into AGENTS.md
+
+agent: test-runner
+description: "Automated test runner agent (pytest)"
+
+# Pre-flight tasks to run at session start
+preflight:
+  - poetry run pytest tests/ -v
+  - poetry run pytest tests/ --cov=src/devloop
+
+# Required dependencies
+dependencies:
+  - requires: pytest
+    version: ">=7.4"
+  - requires: pytest-cov
+    version: ">=4.0"
+  - requires: python
+    version: ">=3.11"
+
+# Development hints for users
+devloop_hints:
+  - title: Test selection optimization
+    description: |
+      The test runner automatically selects and runs only tests related to
+      changed files. This speeds up development by avoiding full test suite runs.
+    workaround: |
+      poetry run pytest tests/ -v
+      
+      To run all tests explicitly when auto-selection isn't detecting your changes.
+  - title: Coverage tracking
+    description: |
+      Keep test coverage above 80% to catch missing test cases early.
+    workaround: |
+      poetry run pytest tests/ --cov=src/devloop --cov-report=term-missing
+      
+      Shows which lines are not covered by tests.

@@ -1,303 +1,228 @@
-"""Tests for telemetry module."""
+"""Tests for OpenTelemetry-based telemetry management."""
 
 import json
 import tempfile
 from pathlib import Path
 
+import pytest
 
-from devloop.core.telemetry import (
-    EventSeverity,
-    TelemetryEvent,
-    TelemetryEventType,
-    TelemetryLogger,
-)
+from devloop.telemetry.telemetry_manager import TelemetryManager, get_telemetry_manager
 
 
-def test_telemetry_event_creation():
-    """Test creating a telemetry event."""
-    event = TelemetryEvent(
-        event_type=TelemetryEventType.AGENT_EXECUTED,
-        agent="linter",
-        duration_ms=123,
-        findings=3,
-        severity_levels=["error", "warning"],
-        success=True,
-    )
+class TestTelemetryManager:
+    """Tests for TelemetryManager."""
 
-    assert event.event_type == TelemetryEventType.AGENT_EXECUTED
-    assert event.agent == "linter"
-    assert event.duration_ms == 123
-    assert event.findings == 3
-    assert event.success is True
+    @pytest.fixture
+    def temp_config_dir(self):
+        """Create a temporary config directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield tmpdir
 
+    def test_telemetry_manager_initialization(self, temp_config_dir):
+        """Test TelemetryManager can be initialized."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
+        assert manager is not None
+        assert manager.backend == "local"
 
-def test_telemetry_event_to_dict():
-    """Test converting event to dictionary."""
-    event = TelemetryEvent(
-        event_type=TelemetryEventType.AGENT_EXECUTED,
-        agent="linter",
-        duration_ms=100,
-    )
+    def test_telemetry_manager_local_backend(self, temp_config_dir):
+        """Test local backend setup."""
+        manager = TelemetryManager(backend="local", config_dir=temp_config_dir)
+        assert manager.backend == "local"
+        assert hasattr(manager, "traces_file")
+        assert hasattr(manager, "metrics_file")
 
-    data = event.to_dict()
-    assert data["event_type"] == "agent_executed"
-    assert data["agent"] == "linter"
-    assert data["duration_ms"] == 100
-
-
-def test_telemetry_event_to_json():
-    """Test converting event to JSON string."""
-    event = TelemetryEvent(
-        event_type=TelemetryEventType.AGENT_EXECUTED,
-        agent="linter",
-        duration_ms=100,
-    )
-
-    json_str = event.to_json()
-    data = json.loads(json_str)
-
-    assert data["event_type"] == "agent_executed"
-    assert data["agent"] == "linter"
-
-
-def test_telemetry_logger_log_event():
-    """Test logging an event to file."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
-
-        event = TelemetryEvent(
-            event_type=TelemetryEventType.AGENT_EXECUTED,
-            agent="linter",
+    def test_record_trace(self, temp_config_dir):
+        """Test recording a trace."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
+        manager.record_trace(
+            "test_span",
+            attributes={"key": "value"},
             duration_ms=100,
+            status="OK",
         )
 
-        logger.log_event(event)
+        traces = manager.get_traces()
+        assert len(traces) == 1
+        assert traces[0]["span_name"] == "test_span"
+        assert traces[0]["status"] == "OK"
+        assert traces[0]["duration_ms"] == 100
+        assert traces[0]["attributes"]["key"] == "value"
 
-        assert log_file.exists()
-        with open(log_file) as f:
-            line = f.readline()
-            data = json.loads(line)
-            assert data["event_type"] == "agent_executed"
+    def test_record_metric(self, temp_config_dir):
+        """Test recording a metric."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
+        manager.record_metric("test_metric", 42.5, attributes={"unit": "ms"})
 
+        metrics = manager.get_metrics()
+        assert len(metrics) == 1
+        assert metrics[0]["metric_name"] == "test_metric"
+        assert metrics[0]["value"] == 42.5
+        assert metrics[0]["attributes"]["unit"] == "ms"
 
-def test_telemetry_logger_log_agent_execution():
-    """Test logging agent execution."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+    def test_multiple_traces(self, temp_config_dir):
+        """Test recording multiple traces."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
-        logger.log_agent_execution(
-            agent="linter",
-            duration_ms=150,
-            findings=2,
-            severity_levels=["error"],
-            success=True,
-        )
-
-        assert log_file.exists()
-        with open(log_file) as f:
-            data = json.loads(f.readline())
-            assert data["event_type"] == "agent_executed"
-            assert data["agent"] == "linter"
-            assert data["duration_ms"] == 150
-            assert data["findings"] == 2
-
-
-def test_telemetry_logger_get_events():
-    """Test retrieving recent events."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
-
-        # Log multiple events
         for i in range(5):
-            logger.log_agent_execution(
-                agent=f"agent_{i}",
-                duration_ms=100 + i,
-                findings=i,
-                success=True,
-            )
+            manager.record_trace(f"span_{i}", duration_ms=i * 10)
 
-        events = logger.get_events(limit=3)
-        assert len(events) == 3
-        assert events[-1]["agent"] == "agent_4"
+        traces = manager.get_traces()
+        assert len(traces) == 5
+        assert traces[0]["span_name"] == "span_0"
+        assert traces[-1]["span_name"] == "span_4"
 
+    def test_multiple_metrics(self, temp_config_dir):
+        """Test recording multiple metrics."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
-def test_telemetry_logger_get_stats():
-    """Test getting statistics from logs."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+        for i in range(5):
+            manager.record_metric(f"metric_{i}", float(i))
 
-        # Log different types of events
-        logger.log_agent_execution(
-            agent="linter",
-            duration_ms=100,
-            findings=2,
-            success=True,
+        metrics = manager.get_metrics()
+        assert len(metrics) == 5
+        assert metrics[0]["metric_name"] == "metric_0"
+        assert metrics[-1]["metric_name"] == "metric_4"
+
+    def test_traces_disabled(self, temp_config_dir):
+        """Test that tracing can be disabled."""
+        manager = TelemetryManager(
+            config_dir=temp_config_dir, enable_traces=False
         )
-        logger.log_agent_execution(
-            agent="linter",
-            duration_ms=150,
-            findings=1,
-            success=True,
+        manager.record_trace("test_span")
+
+        traces = manager.get_traces()
+        assert len(traces) == 0
+
+    def test_metrics_disabled(self, temp_config_dir):
+        """Test that metrics can be disabled."""
+        manager = TelemetryManager(
+            config_dir=temp_config_dir, enable_metrics=False
         )
-        logger.log_pre_push_check(
-            checks_run=1,
-            passed=True,
-            duration_ms=200,
-        )
-        logger.log_ci_roundtrip_prevented(
-            reason="lint-error",
-            check_that_would_fail="linter",
-        )
-        logger.log_value_event(
-            event_name="time_saved",
-            time_saved_ms=500,
-        )
+        manager.record_metric("test_metric", 42.0)
 
-        stats = logger.get_stats()
+        metrics = manager.get_metrics()
+        assert len(metrics) == 0
 
-        assert stats["total_events"] == 5
-        assert stats["total_findings"] == 3
-        assert stats["ci_roundtrips_prevented"] == 1
-        assert stats["total_time_saved_ms"] == 500
-        assert "agent_executed" in stats["events_by_type"]
-        assert "linter" in stats["agents_executed"]
+    def test_clear_local_data(self, temp_config_dir):
+        """Test clearing local telemetry data."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
+        # Add some data
+        manager.record_trace("test_span")
+        manager.record_metric("test_metric", 42.0)
 
-def test_telemetry_logger_log_agent_finding():
-    """Test logging individual agent findings."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+        # Verify data exists
+        assert len(manager.get_traces()) > 0
+        assert len(manager.get_metrics()) > 0
 
-        logger.log_agent_finding(
-            agent="linter",
-            finding_type="line-too-long",
-            severity=EventSeverity.WARNING,
-            description="Line exceeds 88 characters",
-            file="src/main.py",
-            line=42,
-        )
+        # Clear data
+        manager.clear_local_data()
 
-        events = logger.get_events(limit=1)
-        assert len(events) == 1
-        assert events[0]["event_type"] == "agent_finding"
-        assert events[0]["agent"] == "linter"
-        assert events[0]["details"]["finding_type"] == "line-too-long"
-        assert events[0]["details"]["file"] == "src/main.py"
+        # Verify data is cleared
+        assert len(manager.get_traces()) == 0
+        assert len(manager.get_metrics()) == 0
 
+    def test_export_summary(self, temp_config_dir):
+        """Test exporting telemetry summary."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
-def test_telemetry_logger_log_pre_commit_check():
-    """Test logging pre-commit checks."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+        # Add some data
+        manager.record_trace("test_span")
+        manager.record_metric("test_metric", 42.0)
 
-        logger.log_pre_commit_check(
-            checks_run=3,
-            passed=True,
-            duration_ms=500,
-            details={"checks": ["lint", "type-check", "format"]},
-        )
+        summary = manager.export_summary()
+        assert summary["backend"] == "local"
+        assert summary["traces_count"] >= 1
+        assert summary["metrics_count"] >= 1
+        assert summary["traces_enabled"] is True
+        assert summary["metrics_enabled"] is True
 
-        events = logger.get_events(limit=1)
-        assert events[0]["event_type"] == "pre_commit_check"
-        assert events[0]["success"] is True
-        assert events[0]["details"]["checks_run"] == 3
+    def test_trace_limit(self, temp_config_dir):
+        """Test trace retrieval limit."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
+        # Add 20 traces
+        for i in range(20):
+            manager.record_trace(f"span_{i}")
 
-def test_telemetry_logger_log_pre_push_check():
-    """Test logging pre-push checks."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+        # Get only 5
+        traces = manager.get_traces(limit=5)
+        assert len(traces) == 5
+        # Should be the last 5
+        assert traces[0]["span_name"] == "span_15"
+        assert traces[-1]["span_name"] == "span_19"
 
-        logger.log_pre_push_check(
-            checks_run=1,
-            passed=False,
-            duration_ms=100,
-            prevented_bad_push=True,
-            details={"reason": "CI failure"},
-        )
+    def test_metric_limit(self, temp_config_dir):
+        """Test metric retrieval limit."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
 
-        events = logger.get_events(limit=1)
-        assert events[0]["event_type"] == "pre_push_check"
-        assert events[0]["success"] is False
-        assert events[0]["details"]["prevented_bad_push"] is True
+        # Add 20 metrics
+        for i in range(20):
+            manager.record_metric(f"metric_{i}", float(i))
 
+        # Get only 5
+        metrics = manager.get_metrics(limit=5)
+        assert len(metrics) == 5
+        # Should be the last 5
+        assert metrics[0]["metric_name"] == "metric_15"
+        assert metrics[-1]["metric_name"] == "metric_19"
 
-def test_telemetry_logger_log_ci_roundtrip_prevented():
-    """Test logging prevented CI roundtrips."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+    def test_global_telemetry_manager(self, temp_config_dir):
+        """Test global telemetry manager singleton."""
+        manager1 = get_telemetry_manager(config_dir=temp_config_dir)
+        manager2 = get_telemetry_manager(config_dir=temp_config_dir)
 
-        logger.log_ci_roundtrip_prevented(
-            reason="test-failure",
-            check_that_would_fail="pytest",
-            details={"test_name": "test_auth"},
-        )
+        # Should be the same instance
+        assert manager1 is manager2
 
-        events = logger.get_events(limit=1)
-        assert events[0]["event_type"] == "ci_roundtrip_prevented"
-        assert events[0]["details"]["reason"] == "test-failure"
+    def test_jaeger_backend_initialization(self):
+        """Test Jaeger backend initialization."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = TelemetryManager(backend="jaeger", config_dir=tmpdir)
+            assert manager.backend == "jaeger"
+            assert hasattr(manager, "jaeger_endpoint")
 
+    def test_prometheus_backend_initialization(self):
+        """Test Prometheus backend initialization."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = TelemetryManager(backend="prometheus", config_dir=tmpdir)
+            assert manager.backend == "prometheus"
+            assert hasattr(manager, "prometheus_port")
 
-def test_telemetry_logger_log_value_event():
-    """Test logging value events."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "events.jsonl"
-        logger = TelemetryLogger(log_file)
+    def test_otlp_backend_initialization(self):
+        """Test OTLP backend initialization."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = TelemetryManager(backend="otlp", config_dir=tmpdir)
+            assert manager.backend == "otlp"
+            assert hasattr(manager, "otlp_endpoint")
 
-        logger.log_value_event(
-            event_name="interruption_prevented",
-            time_saved_ms=1000,
-            description="Prevented context switch to CI debugger",
-        )
+    def test_unknown_backend_fallback(self):
+        """Test fallback to local backend for unknown backends."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = TelemetryManager(backend="unknown", config_dir=tmpdir)
+            # Should fall back to local
+            assert manager.backend == "unknown"  # Still reports requested backend
+            assert hasattr(manager, "traces_file")  # But has local files
 
-        events = logger.get_events(limit=1)
-        assert events[0]["event_type"] == "value_event"
-        assert events[0]["duration_ms"] == 1000
-        assert events[0]["details"]["event_name"] == "interruption_prevented"
+    def test_trace_with_no_attributes(self, temp_config_dir):
+        """Test recording trace without attributes."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
+        manager.record_trace("test_span", duration_ms=50)
 
+        traces = manager.get_traces()
+        assert len(traces) == 1
+        assert traces[0]["attributes"] == {}
 
-def test_telemetry_logger_export_json(tmp_path):
-    """Test exporting events as JSON."""
-    log_file = tmp_path / "events.jsonl"
-    output_file = tmp_path / "export.json"
+    def test_metric_with_custom_unit(self, temp_config_dir):
+        """Test recording metric with custom unit."""
+        manager = TelemetryManager(config_dir=temp_config_dir)
+        manager.record_metric("response_time", 125.5, unit="ms")
 
-    logger = TelemetryLogger(log_file)
-
-    # Log some events
-    logger.log_agent_execution(
-        agent="linter",
-        duration_ms=100,
-        findings=1,
-        success=True,
-    )
-
-    # Export to JSON
-    import json
-
-    events = logger.get_events(limit=100)
-    with open(output_file, "w") as f:
-        json.dump(events, f)
-
-    assert output_file.exists()
-    with open(output_file) as f:
-        data = json.load(f)
-        assert len(data) == 1
-        assert data[0]["event_type"] == "agent_executed"
+        metrics = manager.get_metrics()
+        assert len(metrics) == 1
+        assert metrics[0]["unit"] == "ms"
+        assert metrics[0]["value"] == 125.5
 
 
-def test_telemetry_logger_creates_directory():
-    """Test that logger creates directory if it doesn't exist."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        log_file = Path(tmpdir) / "subdir" / "events.jsonl"
-        TelemetryLogger(log_file)
-
-        # Directory should be created
-        assert log_file.parent.exists()
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -1,6 +1,7 @@
 """Tests for provider abstraction layer."""
 
 import pytest
+from devloop.providers.artifactory_registry import ArtifactoryRegistry
 from devloop.providers.ci_provider import (
     CIProvider,
     RunConclusion,
@@ -61,6 +62,7 @@ class TestCIProvider:
         providers = manager.list_registry_providers()
         assert "pypi" in providers
         assert "python" in providers
+        assert "artifactory" in providers
 
     def test_workflow_run_creation(self):
         """Test WorkflowRun dataclass creation."""
@@ -173,6 +175,50 @@ class TestRegistryProvider:
         manager = ProviderManager()
         provider = manager.get_registry_provider("unknown-registry")
         assert provider is None
+
+    def test_artifactory_registry_initialization(self):
+        """Test Artifactory registry can be initialized."""
+        registry = ArtifactoryRegistry(
+            base_url="https://artifactory.example.com/artifactory",
+            api_token="test-token",
+            repo="generic-repo",
+        )
+        assert registry is not None
+        assert registry.get_provider_name() == "Artifactory"
+
+    def test_artifactory_registry_get_package_url(self):
+        """Test Artifactory registry generates correct URLs."""
+        registry = ArtifactoryRegistry(
+            base_url="https://artifactory.example.com/artifactory",
+            api_token="test-token",
+            repo="generic-repo",
+        )
+        url = registry.get_package_url("my-package", "1.0.0")
+        assert "artifactory" in url
+        assert "my-package" in url
+        assert "1.0.0" in url
+
+    def test_artifactory_provider_via_manager(self):
+        """Test Artifactory provider can be retrieved via manager."""
+        manager = ProviderManager()
+        provider = manager.get_registry_provider("artifactory")
+        assert provider is not None
+        assert isinstance(provider, ArtifactoryRegistry)
+
+    def test_artifactory_version_extraction(self):
+        """Test Artifactory version extraction from filenames."""
+        assert (
+            ArtifactoryRegistry._extract_version_from_name("package-1.0.0.jar")
+            == "1.0.0"
+        )
+        assert (
+            ArtifactoryRegistry._extract_version_from_name("lib-2.5.1.whl")
+            == "2.5.1"
+        )
+        assert (
+            ArtifactoryRegistry._extract_version_from_name("app-0.1.0-beta")
+            == "0.1.0-beta"
+        )
 
 
 if __name__ == "__main__":

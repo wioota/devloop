@@ -41,7 +41,64 @@ devloop amp_findings
 
 ---
 
-### 3. `claude-file-protection`
+### 3. `user-prompt-submit`
+
+**When**: Runs when user submits a prompt to Claude Code
+
+**What it does**:
+- Analyzes user prompt for quality-related keywords
+- Automatically injects recent DevLoop findings into context
+- Smart detection: only loads context when relevant
+- Non-blocking: failures don't prevent prompt submission
+
+**Detected keywords**:
+- Quality: lint, format, test, quality, type, error, fix, bug, security, performance
+- Testing: test, coverage, pytest, mock, fixture, assert
+- Refactoring: refactor, clean, improve, simplify, optimize
+
+**Command**:
+```bash
+devloop summary session
+```
+
+**Output**: Findings summary injected into Claude's context
+
+**Example**:
+- User: "How can I improve the code quality?"
+- Hook: Detects "quality" keyword → loads recent linting/formatting findings
+- Claude: Sees findings and provides targeted improvement suggestions
+
+---
+
+### 4. `subagent-stop`
+
+**When**: Runs when Claude Code finishes responding
+
+**What it does**:
+- Extracts DevLoop findings from the session
+- Automatically creates Beads issues for actionable findings
+- Links issues to parent task if available
+- Auto-categorizes findings by severity
+- Non-blocking: doesn't interfere with user review
+
+**Command**:
+```bash
+.agents/hooks/extract-findings-to-beads
+```
+
+**Output**: Beads issues created automatically (check `.beads/issues.jsonl`)
+
+**Example workflow**:
+1. User: "Fix the failing tests"
+2. Claude: Makes changes, tests still fail
+3. Claude finishes responding
+4. SubagentStop hook runs
+5. Creates Beads issue: "claude-agents-xxx - Fix failing test: test_foo"
+6. User can pick it up as next task
+
+---
+
+### 5. `claude-file-protection`
 
 **When**: Runs before Claude Code writes/edits files (PreToolUse hook)
 
@@ -128,6 +185,8 @@ Hooks are automatically created and registered.
 1. **Copy hooks to project**:
    ```bash
    cp .agents/hooks/claude-* ~/.claude/project-hooks/
+   cp .agents/hooks/user-* ~/.claude/project-hooks/
+   cp .agents/hooks/subagent-* ~/.claude/project-hooks/
    ```
 
 2. **Register in Claude Code**:
@@ -135,7 +194,9 @@ Hooks are automatically created and registered.
    - Type `/hooks` to open hooks menu
    - Select `+ Add Event` for each hook:
      - **SessionStart** → command → `.agents/hooks/claude-session-start`
+     - **UserPromptSubmit** → command → `.agents/hooks/user-prompt-submit`
      - **Stop** → command → `.agents/hooks/claude-stop`
+     - **Stop** → command → `.agents/hooks/subagent-stop` (run after claude-stop)
      - **PreToolUse** → matcher: `Write|Edit` → `.agents/hooks/claude-file-protection`
 
 ---

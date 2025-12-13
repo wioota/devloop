@@ -1,0 +1,31 @@
+# Agent Configuration Rules: Formatter
+# Lives near formatter agent code for easy maintenance
+# Auto-loaded by devloop init and merged into AGENTS.md
+
+agent: formatter
+description: "Code formatter agent (Black for Python)"
+
+# Pre-flight tasks to run at session start
+preflight:
+  - poetry run black src/ tests/
+  - poetry run black --check src/
+
+# Required dependencies
+dependencies:
+  - requires: black
+    version: ">=24.0"
+  - requires: python
+    version: ">=3.11"
+
+# Development hints for users
+devloop_hints:
+  - title: Cascading formatting failures
+    description: |
+      Formatting debt accumulates when you fix a small change in a file with
+      lots of unformatted code. The formatter then wants to reformat the entire
+      file, making it hard to see your actual changes.
+    workaround: |
+      poetry run black src/ tests/
+      
+      Run this at the start of every session to establish a clean baseline,
+      then your small changes won't trigger large reformatting.

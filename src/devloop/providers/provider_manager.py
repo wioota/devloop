@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, Optional
 
+from devloop.providers.artifactory_registry import ArtifactoryRegistry
 from devloop.providers.ci_provider import CIProvider
 from devloop.providers.circleci_provider import CircleCIProvider
 from devloop.providers.github_actions_provider import GitHubActionsProvider
@@ -28,6 +29,7 @@ class ProviderManager:
     _REGISTRY_PROVIDERS = {
         "pypi": PyPIRegistry,
         "python": PyPIRegistry,
+        "artifactory": ArtifactoryRegistry,
     }
 
     def __init__(self):

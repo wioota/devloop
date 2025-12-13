@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+# SubagentStop hook: Automatically create Beads issues from DevLoop findings
+#
+# This hook runs when Claude finishes responding to a task, automatically
+# extracting DevLoop findings and creating corresponding Beads issues.
+#
+# Features:
+# - Detects all DevLoop findings from the session
+# - Creates Beads issues for actionable findings
+# - Links issues to parent task (if available)
+# - Auto-categorizes findings by severity
+# - Non-blocking: doesn't interfere with user interaction
+
+set -e
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+# Check if devloop is available
+if ! command -v devloop &>/dev/null; then
+    exit 0
+fi
+
+# Check if bd (beads) is available
+if ! command -v bd &>/dev/null; then
+    exit 0
+fi
+
+# Prevent re-entry (check if already processing findings)
+FINDINGS_LOCK="${PROJECT_DIR}/.devloop/subagent-stop.lock"
+if [ -f "$FINDINGS_LOCK" ]; then
+    # Another process is already extracting findings
+    exit 0
+fi
+
+# Create lock file to prevent concurrent runs
+mkdir -p "$(dirname "$FINDINGS_LOCK")"
+touch "$FINDINGS_LOCK"
+
+# Cleanup on exit
+trap "rm -f '$FINDINGS_LOCK'" EXIT
+
+echo ""
+echo "🔍 Analyzing DevLoop findings for Beads issues..."
+echo ""
+
+# Extract findings using the designated script
+EXTRACT_SCRIPT=".agents/hooks/extract-findings-to-beads"
+if [ -x "$EXTRACT_SCRIPT" ]; then
+    # Run the extraction script
+    # This script handles all the logic for creating Beads issues from findings
+    if "$EXTRACT_SCRIPT" 2>/dev/null; then
+        echo "✅ Findings extracted and Beads issues created"
+    else
+        # If extraction fails, continue silently (non-blocking)
+        echo "ℹ️  Findings extraction incomplete (will try again next session)"
+    fi
+else
+    # Fallback: direct extraction using devloop commands
+    # Get recent findings from last session
+    findings_file="${PROJECT_DIR}/.devloop/recent-findings.jsonl"
+    
+    if [ -f "$findings_file" ]; then
+        # Parse findings and create issues
+        # This is a simplified version - full logic is in extract-findings-to-beads
+        echo "ℹ️  Found existing findings file (use extract-findings-to-beads for full processing)"
+    fi
+fi
+
+echo ""
+
+exit 0
