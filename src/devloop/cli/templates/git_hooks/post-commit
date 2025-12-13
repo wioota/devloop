@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+# Post-commit hook: Auto-close Beads issues on commit
+#
+# This hook automatically closes Beads issues referenced in commit messages.
+#
+# Supported commit message patterns:
+#   - "fixes claude-agents-abc123"
+#   - "closes claude-agents-abc123"
+#   - "resolves claude-agents-abc123"
+#   - Multiple issues: "fixes claude-agents-abc123, claude-agents-def456"
+#
+# The hook will:
+#   1. Parse the commit message for issue references
+#   2. Close each referenced issue with commit SHA and message as reason
+#   3. Exit silently if bd is not available
+#   4. Exit silently if no issues are referenced
+
+set -e
+
+# Check if bd is available
+if ! command -v bd >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Check if we're in a bd workspace
+if [ ! -d .beads ]; then
+    exit 0
+fi
+
+# Get the commit SHA and message
+COMMIT_SHA=$(git rev-parse HEAD)
+COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)
+COMMIT_MSG=$(git log -1 --pretty=%B)
+
+# Extract issue IDs from commit message
+# Pattern: (fixes|closes|resolves) (claude-agents-[a-z0-9]+|#\d+)
+# Examples: "fixes claude-agents-abc123" or "closes #42"
+
+# Helper function to parse and close issues
+parse_and_close_issues() {
+    local msg="$1"
+    local sha="$2"
+    local sha_short="$3"
+    
+    # Convert message to lowercase for case-insensitive matching
+    local lower_msg=$(echo "$msg" | tr '[:upper:]' '[:lower:]')
+    
+    # Extract all issue references after fixes/closes/resolves keywords
+    # This regex looks for the keywords followed by issue IDs
+    local matches=$(echo "$lower_msg" | grep -oE '(fixes|closes|resolves)[[:space:]]+(claude-agents-[a-z0-9]+|#[0-9]+)' || true)
+    
+    if [ -z "$matches" ]; then
+        return
+    fi
+    
+    # Process each match and extract the issue ID
+    echo "$matches" | while read -r line; do
+        # Extract just the issue ID part (everything after the keyword and space)
+        local issue_id=$(echo "$line" | sed 's/^[^ ]* //')
+        
+        if [ -n "$issue_id" ]; then
+            close_issue "$issue_id" "$sha" "$sha_short" "$msg"
+        fi
+    done
+}
+
+# Helper function to close a single issue
+close_issue() {
+    local issue_id="$1"
+    local sha="$2"
+    local sha_short="$3"
+    local msg="$4"
+    
+    # Clean up the issue ID (remove leading # if present)
+    issue_id=$(echo "$issue_id" | sed 's/^#//')
+    
+    # Construct the reason string
+    local reason="Completed in commit $sha_short: $msg"
+    
+    # Limit reason length to avoid overly long strings
+    if [ ${#reason} -gt 200 ]; then
+        reason="Completed in commit $sha_short"
+    fi
+    
+    # Attempt to close the issue
+    if bd close "$issue_id" --reason "$reason" >/dev/null 2>&1; then
+        echo "✓ Closed $issue_id"
+    else
+        # Issue may not exist or may already be closed - don't fail the commit
+        # Silently continue
+        :
+    fi
+}
+
+# Parse and close issues from the commit message
+parse_and_close_issues "$COMMIT_MSG" "$COMMIT_SHA" "$COMMIT_SHA_SHORT"
+
+exit 0
