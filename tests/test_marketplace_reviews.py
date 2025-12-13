@@ -221,7 +221,12 @@ class TestReviewStore:
 
         # Update with new rating
         review_store.add_review(
-            "agent-1", "user1", 4.0, "Updated", "Changed my mind", verified_purchase=True
+            "agent-1",
+            "user1",
+            4.0,
+            "Updated",
+            "Changed my mind",
+            verified_purchase=True,
         )
 
         rating = review_store.get_rating("agent-1")
@@ -261,7 +266,9 @@ class TestReviewStore:
     def test_get_recent_reviews(self, review_store):
         """Test getting recent reviews."""
         for i in range(3):
-            review_store.add_review("agent-1", f"user{i}", float(i + 1), f"T{i}", f"C{i}")
+            review_store.add_review(
+                "agent-1", f"user{i}", float(i + 1), f"T{i}", f"C{i}"
+            )
 
         recent = review_store.get_recent_reviews("agent-1", limit=2)
 
@@ -283,8 +290,12 @@ class TestReviewStore:
 
     def test_get_agent_stats(self, review_store):
         """Test getting agent statistics."""
-        review_store.add_review("agent-1", "user1", 5.0, "T1", "C1", verified_purchase=True)
-        review_store.add_review("agent-1", "user2", 4.0, "T2", "C2", verified_purchase=False)
+        review_store.add_review(
+            "agent-1", "user1", 5.0, "T1", "C1", verified_purchase=True
+        )
+        review_store.add_review(
+            "agent-1", "user2", 4.0, "T2", "C2", verified_purchase=False
+        )
 
         stats = review_store.get_agent_stats("agent-1")
 
@@ -308,7 +319,9 @@ class TestReviewStore:
         """Test that reviews persist to disk."""
         # Create and populate store
         store1 = ReviewStore(temp_store_dir)
-        store1.add_review("agent-1", "user1", 5.0, "Great", "Works", verified_purchase=True)
+        store1.add_review(
+            "agent-1", "user1", 5.0, "Great", "Works", verified_purchase=True
+        )
 
         # Create new store from same directory
         store2 = ReviewStore(temp_store_dir)

@@ -147,9 +147,12 @@ class ToolDependencyManager:
         """Get version of an installed tool."""
         try:
             cmd = command or tool_name
+            # Handle commands with spaces (e.g., "python -m ruff")
+            import shlex
+
+            cmd_parts = shlex.split(cmd) + ["--version"]
             result = subprocess.run(
-                f"{cmd} --version",
-                shell=True,
+                cmd_parts,
                 capture_output=True,
                 text=True,
                 timeout=5,
