@@ -306,6 +306,15 @@ def _get_installer() -> AgentInstaller:
     return AgentInstaller(marketplace_dir, client)
 
 
+def _get_review_store():
+    """Get or create a review store."""
+    from devloop.marketplace.reviews import ReviewStore
+
+    marketplace_dir = get_marketplace_dir()
+    reviews_dir = marketplace_dir / "reviews"
+    return ReviewStore(reviews_dir)
+
+
 @app.command()
 def install(
     name: str = typer.Argument(..., help="Agent name to install"),
@@ -368,6 +377,155 @@ def list_installed() -> None:
         )
 
     console.print(table)
+
+
+@app.command()
+def review(
+    name: str = typer.Argument(..., help="Agent name to review"),
+    rating: float = typer.Argument(..., help="Rating (1-5 stars)"),
+    title: str = typer.Option(..., help="Review title"),
+    comment: str = typer.Option(..., help="Review text"),
+    verified: bool = typer.Option(False, help="Mark as verified purchase"),
+) -> None:
+    """Add or update a review for an agent."""
+    if not 1 <= rating <= 5:
+        console.print("[red]Rating must be between 1 and 5.[/red]")
+        return
+
+    store = _get_review_store()
+    username = "anonymous"  # TODO: Get from config/env
+
+    success = store.add_review(
+        name, username, rating, title, comment, verified_purchase=verified
+    )
+
+    if success:
+        stats = store.get_agent_stats(name)
+        console.print(
+            f"[green]✓ Review added for {name}[/green]\n"
+            f"New average: ★ {stats['average_rating']:.1f} "
+            f"({stats['total_reviews']} reviews)"
+        )
+    else:
+        console.print(f"[red]Failed to add review for {name}[/red]")
+
+
+@app.command()
+def reviews(
+    name: str = typer.Argument(..., help="Agent name"),
+    limit: int = typer.Option(10, help="Maximum reviews to show"),
+    sort: str = typer.Option("recent", help="Sort by: recent, helpful"),
+) -> None:
+    """View reviews for an agent."""
+    store = _get_review_store()
+    stats = store.get_agent_stats(name)
+
+    if stats["total_reviews"] == 0:
+        console.print(f"[yellow]No reviews yet for {name}[/yellow]")
+        return
+
+    # Header with stats
+    header = (
+        f"[bold]{name}[/bold] - "
+        f"★ {stats['average_rating']:.1f} "
+        f"({stats['total_reviews']} reviews)"
+    )
+    console.print(Panel(header))
+
+    # Get reviews
+    if sort == "helpful":
+        reviews_list = store.get_helpful_reviews(name, limit)
+    else:
+        reviews_list = store.get_recent_reviews(name, limit)
+
+    # Display reviews
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Rating", style="yellow")
+    table.add_column("Title", style="cyan")
+    table.add_column("Reviewer", style="green")
+    table.add_column("Helpful")
+
+    for review_item in reviews_list:
+        rating_str = "★" * int(review_item.rating)
+        verified = " ✓" if review_item.verified_purchase else ""
+        reviewer = f"{review_item.reviewer}{verified}"
+        table.add_row(
+            rating_str, review_item.title, reviewer, str(review_item.helpful_count)
+        )
+
+    console.print(table)
+
+    # Show full review on request
+    if len(reviews_list) > 0:
+        console.print(
+            "\n[dim]Tip: Use 'devloop agent review-details' to see full reviews[/dim]"
+        )
+
+
+@app.command()
+def review_details(
+    name: str = typer.Argument(..., help="Agent name"),
+    reviewer: Optional[str] = typer.Option(None, help="Filter by reviewer"),
+) -> None:
+    """View detailed reviews for an agent."""
+    store = _get_review_store()
+    all_reviews = store.get_reviews(name)
+
+    if not all_reviews:
+        console.print(f"[yellow]No reviews for {name}[/yellow]")
+        return
+
+    # Filter by reviewer if specified
+    if reviewer:
+        all_reviews = [r for r in all_reviews if r.reviewer == reviewer]
+
+    for review_item in all_reviews:
+        rating_str = "★" * int(review_item.rating)
+        verified = (
+            "[green]✓ Verified Purchase[/green]"
+            if review_item.verified_purchase
+            else "[dim]Unverified[/dim]"
+        )
+
+        review_text = Text()
+        review_text.append(f"{rating_str} {review_item.title}\n", style="bold")
+        review_text.append(f"by {review_item.reviewer} • {verified}\n")
+        review_text.append(f"Helpful: {review_item.helpful_count} • ")
+        review_text.append(f"{review_item.created_at[:10]}\n\n")
+        review_text.append(review_item.comment)
+
+        console.print(Panel(review_text, border_style="cyan"))
+        console.print()
+
+
+@app.command()
+def review_stats(
+    name: Optional[str] = typer.Argument(None, help="Agent name (optional)")
+) -> None:
+    """View review statistics."""
+    store = _get_review_store()
+
+    if name:
+        stats = store.get_agent_stats(name)
+        console.print(f"[bold]{name}[/bold]")
+        console.print(f"Average Rating: ★ {stats['average_rating']:.1f}")
+        console.print(f"Total Reviews: {stats['total_reviews']}")
+        console.print(f"Verified Purchases: {stats['verified_purchases']}")
+
+        if stats["rating_distribution"]:
+            console.print("\nRating Distribution:")
+            for rating in sorted(stats["rating_distribution"].keys(), reverse=True):
+                count = stats["rating_distribution"][rating]
+                bar = "█" * count
+                console.print(f"  {rating}★ {bar} ({count})")
+    else:
+        overall_stats = store.get_stats()
+        console.print("[bold]Overall Review Statistics[/bold]")
+        console.print(f"Total Reviews: {overall_stats['total_reviews']}")
+        console.print(f"Agents Reviewed: {overall_stats['agents_reviewed']}")
+        console.print(
+            f"Overall Average: ★ {overall_stats['overall_average_rating']:.1f}"
+        )
 
 
 if __name__ == "__main__":

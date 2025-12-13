@@ -5,6 +5,7 @@ from .installer import AgentInstaller, InstallationRecord
 from .metadata import AgentMetadata, Dependency, Rating
 from .registry import AgentRegistry, RegistryConfig
 from .registry_client import RegistryClient, create_registry_client
+from .reviews import AgentRating, Review, ReviewStore
 from .search import SearchEngine, SearchFilter, create_search_filter
 
 __all__ = [
@@ -21,4 +22,7 @@ __all__ = [
     "create_search_filter",
     "AgentInstaller",
     "InstallationRecord",
+    "Review",
+    "AgentRating",
+    "ReviewStore",
 ]
