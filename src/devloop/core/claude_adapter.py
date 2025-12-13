@@ -177,7 +177,9 @@ class ClaudeCodeAdapter:
                 emoji = (
                     "🔴"
                     if severity == "error"
-                    else "🟡" if severity == "warning" else "🔵"
+                    else "🟡"
+                    if severity == "warning"
+                    else "🔵"
                 )
                 message = finding.get("message", "No message")
                 line = finding.get("line")
@@ -326,7 +328,9 @@ class ClaudeCodeAdapter:
                 emoji = (
                     "🔴"
                     if severity == "error"
-                    else "🟡" if severity == "warning" else "🔵"
+                    else "🟡"
+                    if severity == "warning"
+                    else "🔵"
                 )
                 insights.append(f"  {emoji} {count} {severity}(s)")
 

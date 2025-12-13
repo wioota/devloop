@@ -17,9 +17,9 @@ class SearchFilter:
     exclude_deprecated: bool = True
     min_python_version: Optional[str] = None
     min_devloop_version: Optional[str] = None
-    experimental: Optional[bool] = (
-        None  # None = include both, True = only experimental, False = only stable
-    )
+    experimental: Optional[
+        bool
+    ] = None  # None = include both, True = only experimental, False = only stable
 
 
 class SearchEngine:
