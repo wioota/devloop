@@ -212,8 +212,7 @@ class TestRegistryProvider:
             == "1.0.0"
         )
         assert (
-            ArtifactoryRegistry._extract_version_from_name("lib-2.5.1.whl")
-            == "2.5.1"
+            ArtifactoryRegistry._extract_version_from_name("lib-2.5.1.whl") == "2.5.1"
         )
         assert (
             ArtifactoryRegistry._extract_version_from_name("app-0.1.0-beta")

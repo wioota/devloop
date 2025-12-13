@@ -85,9 +85,7 @@ class TestTelemetryManager:
 
     def test_traces_disabled(self, temp_config_dir):
         """Test that tracing can be disabled."""
-        manager = TelemetryManager(
-            config_dir=temp_config_dir, enable_traces=False
-        )
+        manager = TelemetryManager(config_dir=temp_config_dir, enable_traces=False)
         manager.record_trace("test_span")
 
         traces = manager.get_traces()
@@ -95,9 +93,7 @@ class TestTelemetryManager:
 
     def test_metrics_disabled(self, temp_config_dir):
         """Test that metrics can be disabled."""
-        manager = TelemetryManager(
-            config_dir=temp_config_dir, enable_metrics=False
-        )
+        manager = TelemetryManager(config_dir=temp_config_dir, enable_metrics=False)
         manager.record_metric("test_metric", 42.0)
 
         metrics = manager.get_metrics()

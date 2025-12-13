@@ -155,13 +155,13 @@ class TestValueMetricsCalculator:
     def test_filter_events_by_date(self, sample_telemetry_events):
         """Test filtering events by date range."""
         calculator = ValueMetricsCalculator(sample_telemetry_events)
-        
+
         now = datetime.now(UTC)
         start = now - timedelta(days=2)
         end = now
-        
+
         filtered = calculator._filter_events_by_date(start, end)
-        
+
         # Should include events from the last 2 days
         assert len(filtered) > 0
         # All filtered events should be in range
@@ -172,17 +172,17 @@ class TestValueMetricsCalculator:
     def test_compare_periods(self, sample_telemetry_events):
         """Test comparing metrics between two periods."""
         calculator = ValueMetricsCalculator(sample_telemetry_events)
-        
+
         now = datetime.now(UTC)
         before_start = now - timedelta(days=60)
         before_end = now - timedelta(days=30)
         after_start = now - timedelta(days=30)
         after_end = now
-        
+
         comparison = calculator.compare_periods(
             before_start, before_end, after_start, after_end
         )
-        
+
         assert comparison.before_period.period_days == 30
         assert comparison.after_period.period_days == 30
 
@@ -194,7 +194,7 @@ class TestValueMetrics:
         """Test creating ValueMetrics instance."""
         now = datetime.now(UTC)
         start = now - timedelta(days=30)
-        
+
         metrics = ValueMetrics(
             period_days=30,
             date_range=(start, now),
@@ -202,7 +202,7 @@ class TestValueMetrics:
             total_time_saved_min=75.0,
             estimated_cost_saved_usd=1.25,
         )
-        
+
         assert metrics.period_days == 30
         assert metrics.ci_roundtrips_prevented == 5
         assert metrics.total_time_saved_min == 75.0
@@ -211,13 +211,13 @@ class TestValueMetrics:
         """Test converting ValueMetrics to dictionary."""
         now = datetime.now(UTC)
         start = now - timedelta(days=30)
-        
+
         metrics = ValueMetrics(
             period_days=30,
             date_range=(start, now),
             ci_roundtrips_prevented=5,
         )
-        
+
         data = metrics.to_dict()
         assert isinstance(data, dict)
         assert data["period_days"] == 30
@@ -233,7 +233,7 @@ class TestBeforeAfterComparison:
     def test_calculate_improvements(self):
         """Test calculating improvements between periods."""
         now = datetime.now(UTC)
-        
+
         before = ValueMetrics(
             period_days=30,
             date_range=(now - timedelta(days=60), now - timedelta(days=30)),
@@ -242,7 +242,7 @@ class TestBeforeAfterComparison:
             estimated_cost_saved_usd=0.50,
             days_active=25,
         )
-        
+
         after = ValueMetrics(
             period_days=30,
             date_range=(now - timedelta(days=30), now),
@@ -251,18 +251,21 @@ class TestBeforeAfterComparison:
             estimated_cost_saved_usd=1.25,
             days_active=25,
         )
-        
+
         comparison = BeforeAfterComparison(
             before_period=before,
             after_period=after,
         )
         comparison.calculate_improvements()
-        
+
         # Should show improvements
         assert comparison.time_saved_improvement_percent == 150.0
         assert comparison.cost_reduction_percent == 150.0
         # Cost savings are $1.25 with improvements, should give Positive ROI
-        assert ("High ROI" in comparison.roi_estimate or "Positive ROI" in comparison.roi_estimate)
+        assert (
+            "High ROI" in comparison.roi_estimate
+            or "Positive ROI" in comparison.roi_estimate
+        )
 
 
 class TestValueMetricsReporter:
@@ -271,7 +274,7 @@ class TestValueMetricsReporter:
     def test_format_metrics_report(self):
         """Test formatting metrics as report."""
         now = datetime.now(UTC)
-        
+
         metrics = ValueMetrics(
             period_days=30,
             date_range=(now - timedelta(days=30), now),
@@ -284,9 +287,9 @@ class TestValueMetricsReporter:
             estimated_cost_saved_usd=1.25,
             days_active=25,
         )
-        
+
         report = ValueMetricsReporter.format_metrics_report(metrics)
-        
+
         assert isinstance(report, str)
         assert "Value Metrics Report" in report
         assert "5" in report  # CI roundtrips
@@ -297,29 +300,29 @@ class TestValueMetricsReporter:
     def test_format_comparison_report(self):
         """Test formatting comparison as report."""
         now = datetime.now(UTC)
-        
+
         before = ValueMetrics(
             period_days=30,
             date_range=(now - timedelta(days=60), now - timedelta(days=30)),
             ci_roundtrips_prevented=2,
             total_time_saved_min=30.0,
         )
-        
+
         after = ValueMetrics(
             period_days=30,
             date_range=(now - timedelta(days=30), now),
             ci_roundtrips_prevented=5,
             total_time_saved_min=75.0,
         )
-        
+
         comparison = BeforeAfterComparison(
             before_period=before,
             after_period=after,
         )
         comparison.calculate_improvements()
-        
+
         report = ValueMetricsReporter.format_comparison_report(comparison)
-        
+
         assert isinstance(report, str)
         assert "ROI Analysis" in report
         assert "Before DevLoop" in report

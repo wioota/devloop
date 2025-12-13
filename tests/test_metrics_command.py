@@ -128,7 +128,8 @@ def test_metrics_dashboard_command():
         logger.log_pre_commit_check(1, True, 100)
 
         result = runner.invoke(
-            app, ["metrics", "dashboard", "--log-file", str(log_file), "--period", "all"]
+            app,
+            ["metrics", "dashboard", "--log-file", str(log_file), "--period", "all"],
         )
 
         assert result.exit_code == 0
@@ -200,7 +201,8 @@ def test_period_parsing():
 
         for period in ["24h", "7d", "1w", "all", "today"]:
             result = runner.invoke(
-                app, ["metrics", "value", "--log-file", str(log_file), "--period", period]
+                app,
+                ["metrics", "value", "--log-file", str(log_file), "--period", period],
             )
 
             # Should succeed for all valid periods
