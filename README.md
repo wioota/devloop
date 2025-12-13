@@ -94,7 +94,7 @@ Like any alpha software, some features need hardening:
 | Auto-fix safety | May modify code incorrectly | **Disabled by default**. Enable only with `safe_only` mode + git backups |
 | Sandbox isolation | Subprocesses not fully sandboxed | Don't run on untrusted code |
 | Error recovery | Daemon may need manual restart | Check logs: `.devloop/devloop.log` |
-| Config migrations | Not automated yet | Manual config updates between versions |
+| Config migrations | Mostly automated, some versions need steps | See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#configuration-migrations) for version-specific migration guides |
 
 [View complete risk assessment →](./history/RISK_ASSESSMENT.md)
 
@@ -421,6 +421,13 @@ devloop init --merge-templates /path/to/your/project
 devloop stop
 devloop watch .
 ```
+
+**📖 See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md) for:**
+- Detailed upgrade procedures
+- Version compatibility matrix
+- Breaking changes and migrations
+- Rollback instructions
+- Troubleshooting
 
 ---
 

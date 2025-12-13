@@ -92,6 +92,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed jq dependency** - Pre-push hook now uses `gh` CLI's built-in `--jq` flag
 - **Only `gh` CLI required** for CI verification (no external jq needed)
 
+### Breaking Changes
+- **Version no longer stored in `src/devloop/__init__.py`** — See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#041-dynamic-version-management) for migration details
+- Custom code reading `__version__` must update to use `importlib.metadata`
+
 ---
 
 ## [0.4.0] - 2025-12-09
@@ -104,6 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance benchmarking framework** for agent efficiency analysis
 - **Audit logging** with 30-day retention policy
 - **File-level locking and versioning** for race condition prevention
+
+### Breaking Changes
+- **Event storage changed from JSONL to SQLite** — See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#040-event-logging--sqlite-backend) for migration details
+- **Context store memory limits changed** (500 → 250 findings per tier)
+- **Audit log auto-cleanup enforced** (30-day retention)
 
 #### Observability & Analysis
 - **Agent audit CLI commands** - query recent findings and agent activity
@@ -178,6 +187,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Network allowlist and policy engine design
 
 - **Security testing**: Malicious config detection, path traversal prevention
+
+### Breaking Changes
+- **Sandbox execution now mandatory by default** — See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#030-sandbox-security-system) for migration details
+- **agents.json schema updated** for sandbox configuration
+- **File permissions on .devloop/ stricter** for security
 
 #### DevLoop Visibility Enhancement
 - **Extract findings to Beads** via pre-push hook
@@ -329,6 +343,9 @@ This is research-quality software. Not recommended for production use. See [Risk
 - Update all imports: `from dev_agents` → `from devloop`
 - Update CLI commands: `dev-agents` → `devloop`
 - Rename config directory: `mv .dev-agents .devloop`
+
+#### Migration Guide
+See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#020-project-rename-dev-agents--devloop) for detailed migration instructions.
 
 #### Files Modified
 - 616 occurrences across 75 files
