@@ -40,11 +40,11 @@ edit code → save → ✅ agents run automatically → ✅ all checks pass → 
 ```
 
 **Key benefits:**
-- 🎯 **Catch 90%+ of CI failures locally** before they reach your repository
+- 🎯 **Catch 90%+ of CI failures locally**[^1] before they reach your repository
 - ⚡ **Sub-second feedback** on linting, formatting, type errors
 - 🔒 **Pre-commit enforcement** prevents bad commits from ever being created
 - 🧠 **Smart test selection** runs only affected tests, not the entire suite
-- 💰 **Reduce CI costs** by 60%+ through fewer pipeline runs
+- 💰 **Reduce CI costs** by 60%+[^2] through fewer pipeline runs
 
 ---
 
@@ -128,7 +128,7 @@ Like any alpha software, some features need hardening:
 | **Feedback Speed** | 10-30 min | On commit only | **<1 second** (as you type) |
 | **Coverage** | Full suite | Basic checks | **Comprehensive** (11 agents) |
 | **Context Switching** | High (wait for CI) | Medium (at commit) | **Minimal** (background) |
-| **CI Cost** | High (every push) | Medium (fewer failures) | **Low** (60%+ reduction) |
+| **CI Cost** | High (every push) | Medium (fewer failures) | **Low** (60%+[^2] reduction) |
 | **Smart Test Selection** | ❌ Runs all tests | ❌ Manual selection | **✅ Automatic** |
 | **Learning System** | ❌ Static rules | ❌ Static rules | **✅ Adapts** to your patterns |
 | **Security Scanning** | ✅ On push | ❌ Rarely | **✅ On save** |
@@ -138,9 +138,9 @@ Like any alpha software, some features need hardening:
 **The DevLoop advantage**: Combines the comprehensiveness of CI with the speed of local checks, plus intelligence that neither provides.
 
 **Real impact**:
-- **Before DevLoop**: 6-8 CI failures per day × 15 min = 90-120 min wasted
+- **Before DevLoop**: 6-8 CI failures per day[^3] × 15 min = 90-120 min wasted
 - **After DevLoop**: 1-2 CI failures per day × 15 min = 15-30 min wasted
-- **Time saved**: ~75-90 minutes per developer per day
+- **Time saved**: ~75-90 minutes per developer per day[^3]
 
 ---
 
@@ -1472,4 +1472,12 @@ Built with:
 ---
 
 **Made with ❤️ by the DevLoop team**
+
+## Footnotes
+
+[^1]: **90%+ CI failures caught locally** — Based on typical Python/TypeScript development workflows with comprehensive linting, formatting, and type checking. Actual results depend on your agent configuration and test suite. DevLoop's effectiveness increases with more agents enabled and better test coverage. See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#version-compatibility) for feature availability by version.
+
+[^2]: **60%+ CI cost reduction** — Estimated reduction assumes: (1) 6-8 CI failures per day baseline, (2) ~15 minutes per failure roundtrip, (3) CI costs proportional to pipeline runs. This is a theoretical projection based on typical development patterns. Actual cost savings depend on your CI pricing model, agent configuration, and codebase size. For verified metrics, see [docs/METRICS_AND_MONITORING.md](./docs/METRICS_AND_MONITORING.md).
+
+[^3]: **6-8 CI failures per day and 75-90 minutes saved** — These estimates are based on typical multi-developer teams working on moderately complex codebases. They assume agents catch common issues (formatting, linting, type errors, security warnings) before push. Your actual results will vary significantly based on: code complexity, team size, quality of tests, agent configuration, and development practices. For personalized ROI calculation, enable metrics tracking in `.devloop/agents.json` and see `devloop telemetry stats`. DevLoop will collect real usage data as you use it, which can replace these estimates with empirically validated numbers.
 
