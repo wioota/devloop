@@ -7,6 +7,12 @@ from devloop.metrics.dora import (
     GitCommit,
     GitTag,
 )
+from devloop.metrics.value_metrics import (
+    BeforeAfterComparison,
+    ValueMetrics,
+    ValueMetricsCalculator,
+    ValueMetricsReporter,
+)
 
 __all__ = [
     "DORAMetrics",
@@ -14,4 +20,8 @@ __all__ = [
     "GitAnalyzer",
     "GitCommit",
     "GitTag",
+    "ValueMetrics",
+    "ValueMetricsCalculator",
+    "ValueMetricsReporter",
+    "BeforeAfterComparison",
 ]
