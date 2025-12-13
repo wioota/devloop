@@ -1,0 +1,44 @@
+#!/bin/bash
+# Pre-commit hook: Warn if documentation files are being deleted
+# Ensures documentation deletions are intentional and documented
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo -e "${YELLOW}[Docs Check] Scanning for unintended documentation deletions...${NC}"
+
+# Check if any docs files are being deleted
+DELETED_DOCS=$(git diff --cached --diff-filter=D --name-only -- 'docs/*.md' 'docs/*.markdown' 2>/dev/null || true)
+
+if [ -z "$DELETED_DOCS" ]; then
+    echo -e "${GREEN}[Docs Check] ✓ No documentation deletions${NC}"
+    exit 0
+fi
+
+# Documentation files are being deleted - require explicit approval
+echo -e "${YELLOW}[Docs Check] ⚠️  The following documentation files are being deleted:${NC}"
+echo "$DELETED_DOCS" | sed 's/^/  - /'
+
+echo ""
+echo -e "${YELLOW}Documentation deletions should be intentional. To proceed:${NC}"
+echo ""
+echo -e "  1. Verify these files are no longer needed:"
+echo "     git show HEAD:docs/FILENAME.md | head -20"
+echo ""
+echo -e "  2. Update README.md to remove broken links"
+echo ""
+echo -e "  3. In your commit message, include one of:"
+echo "     - 'docs: Remove outdated documentation for X'"
+echo "     - 'chore: Clean up deprecated docs for Y'"
+echo "     - 'refactor: Consolidate documentation (removing Z)'"
+echo ""
+echo -e "  4. Commit with the documentation prefix"
+echo ""
+
+# Don't block the commit - just warn
+# This allows intentional deletions but catches accidental ones
+exit 0

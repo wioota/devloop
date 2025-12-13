@@ -7,8 +7,64 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  docs-check:
+    name: Documentation Link Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for broken documentation links in README
+      run: |
+        echo "Checking for broken documentation links in README.md..."
+        
+        # Extract all local documentation links (both docs/ and root level)
+        LINKS=$(grep -oP '\]\(\./[^)]*\.md\)|\]\(docs/[^)]*\.md\)' README.md | sed 's/^\]\(\.//; s/)$//' || true)
+        
+        BROKEN=0
+        for link in $LINKS; do
+          if [ ! -f "$link" ]; then
+            echo "❌ Missing: $link"
+            BROKEN=$((BROKEN + 1))
+          else
+            echo "✓ Found: $link"
+          fi
+        done
+        
+        if [ $BROKEN -gt 0 ]; then
+          echo "❌ ERROR: Found $BROKEN broken documentation links"
+          exit 1
+        fi
+        
+        echo "✅ All documentation links are valid"
+    
+    - name: Check for unintended documentation deletions
+      run: |
+        echo "Checking for deleted documentation files..."
+        
+        # Find if any docs/* files were deleted in this commit
+        DELETED=$(git diff --diff-filter=D --name-only HEAD~1..HEAD -- 'docs/*.md' 'docs/*.markdown' 2>/dev/null || true)
+        
+        if [ -n "$DELETED" ]; then
+          echo "⚠️  Documentation files were deleted:"
+          echo "$DELETED"
+          
+          # Check if deletion is mentioned in commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          if echo "$COMMIT_MSG" | grep -qi "docs.*delet\|remov.*doc\|purge\|cleanup"; then
+            echo "✓ Deletion is documented in commit message"
+          else
+            echo "❌ ERROR: Documentation files deleted without commit message annotation"
+            echo "Please include 'docs: ' or 'chore: ' prefix and explain deletion"
+            exit 1
+          fi
+        else
+          echo "✓ No documentation deletions detected"
+        fi
+  
   format-check:
     name: Code Formatting (Black) - Fail Fast
+    needs: [docs-check]
     runs-on: ubuntu-latest
     
     steps:

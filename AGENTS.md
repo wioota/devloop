@@ -730,6 +730,80 @@ gh run view <run-id> --log-failed
 
 **Why this matters:** CI failures catch issues before they merge (formatting, type errors, broken tests, security issues). The pre-push hook ensures developers are aware of CI status before code reaches the repository.
 
+### Documentation Practices (CRITICAL)
+
+**Files are tracked in git and must never be accidentally deleted.**
+
+#### Prevention Rules
+
+1. **Commit Message Discipline**
+   - Always use descriptive commit messages
+   - When deleting docs, include explicit annotation:
+     ```bash
+     git commit -m "docs: Remove outdated X documentation"
+     git commit -m "chore: Clean up deprecated docs for Y"
+     ```
+   - Commit message must explain WHY files are deleted
+
+2. **Pre-Commit Awareness**
+   - Check for deleted files before committing:
+     ```bash
+     git status                          # See deleted files
+     git log --diff-filter=D --summary   # View deletion history
+     ```
+   - If deletion is accidental: `git restore <filename>`
+
+3. **CI Validation** (Automatic)
+   - GitHub Actions automatically validates:
+     - All links in README.md resolve to files
+     - Documentation files weren't deleted without explanation
+     - Any deletion without "docs:" prefix in message fails CI
+
+4. **Update README.md**
+   - After deleting docs, update all README.md references
+   - CI will fail if README references non-existent files
+   - Verify all links:
+     ```bash
+     grep -o '\]\(\.\/.*\.md\)\|\]\(docs/.*\.md\)' README.md | sort -u
+     ```
+
+#### Example: Intentional Deletion
+
+```bash
+# 1. Before deleting, check what's in the file
+git show HEAD:docs/old-feature.md | head -20
+
+# 2. Remove the file
+rm docs/old-feature.md
+
+# 3. Update README.md to remove links to this file
+# (CI will fail if you don't)
+
+# 4. Stage changes
+git add docs/ README.md
+
+# 5. Commit with explicit documentation
+git commit -m "docs: Remove old-feature documentation (archived in git history)"
+
+# 6. CI validates that all README links still resolve
+# ✅ Push succeeds if all links are valid
+```
+
+#### Why This Matters
+
+**Scenario (happened in commit 1e06145):**
+- Developer adds metrics code
+- 10 documentation files accidentally deleted
+- No commit message mentions deletion
+- README references non-existent files (broken links)
+- Users can't find documentation
+
+**Prevention:**
+- CI now validates links before merge
+- Pre-commit hook warns about deletions
+- Commit message requirement enforces intentionality
+- Documentation recovery always possible from git history
+
 ### Publishing & Security Considerations
 
 **For public/published software**, add extra care to your DevLoop workflow:
