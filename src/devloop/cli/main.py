@@ -36,6 +36,8 @@ from devloop.core import (
 )
 from devloop.core.amp_integration import check_agent_findings, show_agent_status
 from devloop.core.daemon_health import DaemonHealthCheck, check_daemon_health
+from devloop.core.error_handler import ErrorCode, ErrorSeverity, get_error_handler
+from devloop.core.error_notifier import ErrorNotifier
 from devloop.core.event_replayer import EventReplayer
 from devloop.core.transactional_io import initialize_transaction_system
 
@@ -327,6 +329,21 @@ def watch(
         asyncio.run(watch_async(path, config_path))
     except KeyboardInterrupt:
         console.print("\n[yellow]Shutting down...[/yellow]")
+    except Exception as e:
+        # Display critical startup errors with help
+        error_handler = get_error_handler()
+        error_notifier = ErrorNotifier(console)
+
+        if error_handler.has_critical_error():
+            critical_error = error_handler.get_critical_error()
+            if critical_error:
+                error_notifier.notify_startup_error(critical_error)
+                error_notifier.show_recovery_help(critical_error)
+        else:
+            # Unknown startup error
+            console.print(f"[red]✗ Startup failed: {e}[/red]")
+
+        sys.exit(1)
 
 
 async def _cleanup_old_data(context_store, event_store, interval_minutes: int = 15):
@@ -373,15 +390,43 @@ async def _cleanup_old_data(context_store, event_store, interval_minutes: int = 
 
 async def watch_async(path: Path, config_path: Path | None):
     """Async watch implementation."""
-    # Load configuration
-    if config_path:
-        # Ensure it's a Path object and convert to string
-        config_manager = Config(str(Path(config_path).resolve()))
-    else:
-        # Default to project .devloop/agents.json
-        config_manager = Config(str((path / ".devloop" / "agents.json").resolve()))
-    config_dict = config_manager.load()
-    config = ConfigWrapper(config_dict)
+    # Initialize error handler
+    error_handler = get_error_handler()
+
+    # Load configuration with fail-fast on errors
+    try:
+        if config_path:
+            # Ensure it's a Path object and convert to string
+            config_manager = Config(str(Path(config_path).resolve()))
+        else:
+            # Default to project .devloop/agents.json
+            config_path_str = str((path / ".devloop" / "agents.json").resolve())
+            if not Path(config_path_str).exists():
+                error_handler.handle_startup_error(
+                    ErrorCode.CONFIG_NOT_FOUND,
+                    f"Configuration file not found: {config_path_str}",
+                    severity=ErrorSeverity.CRITICAL,
+                    details="Run 'devloop init' to create a default configuration.",
+                    suggested_action="devloop init",
+                )
+            config_manager = Config(config_path_str)
+
+        config_dict = config_manager.load()
+        config = ConfigWrapper(config_dict)
+    except ValueError as e:
+        error_handler.handle_startup_error(
+            ErrorCode.CONFIG_INVALID,
+            "Configuration validation failed",
+            exception=e,
+            severity=ErrorSeverity.CRITICAL,
+        )
+    except Exception as e:
+        error_handler.handle_startup_error(
+            ErrorCode.CONFIG_INVALID,
+            f"Failed to load configuration: {e}",
+            exception=e,
+            severity=ErrorSeverity.CRITICAL,
+        )
 
     # Create event bus
     event_bus = EventBus()
