@@ -57,6 +57,11 @@
           "python": "pytest",
           "javascript": "jest",
           "typescript": "jest"
+        },
+        "projectContext": {
+          "autoDetect": true,
+          "devloopDevelopment": true,
+          "respectSitePackages": true
         }
       }
     },

@@ -1,0 +1,13 @@
+This is the devloop source repository.
+
+This marker file is used by the ProjectContext detection system to identify
+that this is the devloop development repository, not a user project where
+devloop is installed.
+
+This enables context-aware behavior:
+- Test discovery runs devloop's tests (tests/) without exclusions
+- All 842+ tests are discovered and run during development
+- When devloop is installed in user projects, their tests run without
+  interference from devloop's test suite
+
+Do not delete this file - it's required for proper test context separation.
