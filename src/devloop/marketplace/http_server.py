@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 try:
-    from fastapi import FastAPI, HTTPException, Query, Body
+    from fastapi import FastAPI, HTTPException, Query, Body, Request
+    from fastapi.responses import JSONResponse
     from fastapi.middleware.cors import CORSMiddleware
 
     FASTAPI_AVAILABLE = True
@@ -65,6 +66,17 @@ class RegistryHTTPServer:
                 allow_headers=["*"],
             )
 
+        # Add custom exception handler for HTTPException
+        @self.app.exception_handler(HTTPException)
+        async def http_exception_handler(
+            request: Request, exc: HTTPException
+        ) -> JSONResponse:
+            """Handle HTTPException with consistent response format."""
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"success": False, "error": exc.detail},
+            )
+
         # Setup routes
         self._setup_routes()
 
@@ -103,6 +115,24 @@ class RegistryHTTPServer:
                 raise HTTPException(status_code=400, detail=response.error)
             return response.to_dict()
 
+        @self.app.get("/api/v1/agents/popular")
+        async def get_popular_agents(
+            limit: int = Query(10, ge=1, le=100, description="Max results"),
+        ) -> Dict[str, Any]:
+            """Get popular agents."""
+            response = self.api.get_popular_agents(limit=limit)
+            if not response.success:
+                raise HTTPException(status_code=500, detail=response.error)
+            return response.to_dict()
+
+        @self.app.get("/api/v1/agents/trusted")
+        async def get_trusted_agents() -> Dict[str, Any]:
+            """Get trusted agents."""
+            response = self.api.get_trusted_agents()
+            if not response.success:
+                raise HTTPException(status_code=500, detail=response.error)
+            return response.to_dict()
+
         @self.app.get("/api/v1/agents/{agent_name}")
         async def get_agent(
             agent_name: str,
@@ -126,7 +156,7 @@ class RegistryHTTPServer:
                 False, description="Include deprecated agents"
             ),
             sort: str = Query(
-                "rating", regex="^(rating|downloads|name)$", description="Sort field"
+                "rating", pattern="^(rating|downloads|name)$", description="Sort field"
             ),
             limit: int = Query(100, ge=1, le=500, description="Max results"),
             offset: int = Query(0, ge=0, description="Result offset"),
@@ -165,24 +195,6 @@ class RegistryHTTPServer:
             )
             if not response.success:
                 raise HTTPException(status_code=400, detail=response.error)
-            return response.to_dict()
-
-        @self.app.get("/api/v1/agents/popular")
-        async def get_popular_agents(
-            limit: int = Query(10, ge=1, le=100, description="Max results"),
-        ) -> Dict[str, Any]:
-            """Get popular agents."""
-            response = self.api.get_popular_agents(limit=limit)
-            if not response.success:
-                raise HTTPException(status_code=500, detail=response.error)
-            return response.to_dict()
-
-        @self.app.get("/api/v1/agents/trusted")
-        async def get_trusted_agents() -> Dict[str, Any]:
-            """Get trusted agents."""
-            response = self.api.get_trusted_agents()
-            if not response.success:
-                raise HTTPException(status_code=500, detail=response.error)
             return response.to_dict()
 
         @self.app.post("/api/v1/agents")
