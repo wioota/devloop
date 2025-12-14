@@ -133,6 +133,59 @@ def categorize_findings(findings):
     return categorized
 
 
+def get_existing_issues():
+    """Get all open issues from Beads."""
+    cmd = ["bd", "ready", "--json"]
+    returncode, stdout, stderr = run_command(cmd, shell=False)
+
+    if returncode == 0:
+        try:
+            issues = json.loads(stdout)
+            return issues if isinstance(issues, list) else []
+        except json.JSONDecodeError:
+            pass
+
+    return []
+
+
+def check_duplicate(title, existing_issues):
+    """Check if an issue with similar title already exists.
+
+    Returns the issue ID if a duplicate is found, None otherwise.
+    """
+    # Normalize title for comparison
+    title_lower = title.lower()
+
+    for issue in existing_issues:
+        existing_title = issue.get("title", "").lower()
+
+        # Check for exact match
+        if title_lower == existing_title:
+            return issue.get("id")
+
+        # Check for similar performance issues
+        if "performance issue" in title_lower and "performance issue" in existing_title:
+            # Extract count from titles like "Investigate 6 performance issues"
+            import re
+            title_count = re.search(r"(\d+)\s+performance\s+issue", title_lower)
+            existing_count = re.search(r"(\d+)\s+performance\s+issue", existing_title)
+
+            if title_count and existing_count:
+                # Consider it a duplicate if counts are the same
+                if title_count.group(1) == existing_count.group(1):
+                    return issue.get("id")
+
+        # Check for similar formatter issues
+        if "formatting issue" in title_lower and "formatting issue" in existing_title:
+            return issue.get("id")
+
+        # Check for similar linter issues
+        if "linter issue" in title_lower and "linter issue" in existing_title:
+            return issue.get("id")
+
+    return None
+
+
 def create_beads_issue(title, description, priority, issue_type="task"):
     """Create a Beads issue."""
     # Escape quotes in description
@@ -184,6 +237,9 @@ def extract_findings_to_beads():
 
     print(f"[Findings] Found {len(recent)} recent findings")
 
+    # Get existing issues to check for duplicates
+    existing_issues = get_existing_issues()
+
     # Categorize
     categorized = categorize_findings(recent)
 
@@ -194,79 +250,94 @@ def extract_findings_to_beads():
         count = len(categorized["formatter"])
         title = f"Fix {count} Black formatting issue{'s' if count > 1 else ''}"
 
-        samples = categorized["formatter"][:3]
-        description = f"DevLoop formatter agent detected {count} Black formatting violation(s):\n\n"
-        for finding in samples:
-            msg = finding.get("message", "Unknown issue")
-            file_info = finding.get("file", "")
-            if file_info:
-                description += f"- {file_info}: {msg}\n"
-            else:
-                description += f"- {msg}\n"
+        # Check for duplicate
+        duplicate_id = check_duplicate(title, existing_issues)
+        if duplicate_id:
+            print(f"[Findings] ⊘ Skipped formatter issue (duplicate of {duplicate_id})")
+        else:
+            samples = categorized["formatter"][:3]
+            description = f"DevLoop formatter agent detected {count} Black formatting violation(s):\n\n"
+            for finding in samples:
+                msg = finding.get("message", "Unknown issue")
+                file_info = finding.get("file", "")
+                if file_info:
+                    description += f"- {file_info}: {msg}\n"
+                else:
+                    description += f"- {msg}\n"
 
-        if len(categorized["formatter"]) > 3:
-            description += f"\n...and {len(categorized['formatter']) - 3} more\n"
+            if len(categorized["formatter"]) > 3:
+                description += f"\n...and {len(categorized['formatter']) - 3} more\n"
 
-        description += (
-            "\nRun `black .` to auto-fix or check `.devloop/context/` for details."
-        )
+            description += (
+                "\nRun `black .` to auto-fix or check `.devloop/context/` for details."
+            )
 
-        issue_id = create_beads_issue(title, description, priority=1)
-        if issue_id:
-            created_issues.append(issue_id)
-            print(f"[Findings] ✓ Created formatter issue: {issue_id}")
+            issue_id = create_beads_issue(title, description, priority=1)
+            if issue_id:
+                created_issues.append(issue_id)
+                print(f"[Findings] ✓ Created formatter issue: {issue_id}")
 
     # Process linter violations (HIGH priority) - can block fixes
     if categorized["linter"]:
         count = len(categorized["linter"])
         title = f"Fix {count} linter issue{'s' if count > 1 else ''}"
 
-        samples = categorized["linter"][:3]
-        description = f"DevLoop linter agent detected {count} linting violation(s):\n\n"
-        for finding in samples:
-            msg = finding.get("message", "Unknown issue")
-            file_info = finding.get("file", "")
-            if file_info:
-                description += f"- {file_info}: {msg}\n"
-            else:
-                description += f"- {msg}\n"
+        # Check for duplicate
+        duplicate_id = check_duplicate(title, existing_issues)
+        if duplicate_id:
+            print(f"[Findings] ⊘ Skipped linter issue (duplicate of {duplicate_id})")
+        else:
+            samples = categorized["linter"][:3]
+            description = f"DevLoop linter agent detected {count} linting violation(s):\n\n"
+            for finding in samples:
+                msg = finding.get("message", "Unknown issue")
+                file_info = finding.get("file", "")
+                if file_info:
+                    description += f"- {file_info}: {msg}\n"
+                else:
+                    description += f"- {msg}\n"
 
-        if len(categorized["linter"]) > 3:
-            description += f"\n...and {len(categorized['linter']) - 3} more\n"
+            if len(categorized["linter"]) > 3:
+                description += f"\n...and {len(categorized['linter']) - 3} more\n"
 
-        description += "\nReview `.devloop/context/` for details."
+            description += "\nReview `.devloop/context/` for details."
 
-        issue_id = create_beads_issue(title, description, priority=1)
-        if issue_id:
-            created_issues.append(issue_id)
-            print(f"[Findings] ✓ Created linter issue: {issue_id}")
+            issue_id = create_beads_issue(title, description, priority=1)
+            if issue_id:
+                created_issues.append(issue_id)
+                print(f"[Findings] ✓ Created linter issue: {issue_id}")
 
     # Process performance insights (MEDIUM priority) - nice to have
     if categorized["performance"]:
         count = len(categorized["performance"])
         title = f"Investigate {count} performance issue{'s' if count > 1 else ''}"
 
-        samples = categorized["performance"][:3]
-        description = (
-            f"DevLoop identified {count} potential performance improvement(s):\n\n"
-        )
-        for finding in samples:
-            msg = finding.get("message", "Unknown issue")
-            file_info = finding.get("file", "")
-            if file_info:
-                description += f"- {file_info}: {msg}\n"
-            else:
-                description += f"- {msg}\n"
+        # Check for duplicate
+        duplicate_id = check_duplicate(title, existing_issues)
+        if duplicate_id:
+            print(f"[Findings] ⊘ Skipped performance issue (duplicate of {duplicate_id})")
+        else:
+            samples = categorized["performance"][:3]
+            description = (
+                f"DevLoop identified {count} potential performance improvement(s):\n\n"
+            )
+            for finding in samples:
+                msg = finding.get("message", "Unknown issue")
+                file_info = finding.get("file", "")
+                if file_info:
+                    description += f"- {file_info}: {msg}\n"
+                else:
+                    description += f"- {msg}\n"
 
-        if len(categorized["performance"]) > 3:
-            description += f"\n...and {len(categorized['performance']) - 3} more\n"
+            if len(categorized["performance"]) > 3:
+                description += f"\n...and {len(categorized['performance']) - 3} more\n"
 
-        description += "\nConsider these optimizations in your next refactoring."
+            description += "\nConsider these optimizations in your next refactoring."
 
-        issue_id = create_beads_issue(title, description, priority=2)
-        if issue_id:
-            created_issues.append(issue_id)
-            print(f"[Findings] ✓ Created performance issue: {issue_id}")
+            issue_id = create_beads_issue(title, description, priority=2)
+            if issue_id:
+                created_issues.append(issue_id)
+                print(f"[Findings] ✓ Created performance issue: {issue_id}")
 
     if created_issues:
         print(
