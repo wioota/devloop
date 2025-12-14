@@ -35,6 +35,25 @@ class TestRunnerConfig:
             },
         )
 
+        # NEW: Test path configuration
+        self.test_paths = config.get("testPaths", [])  # Empty = auto-detect
+        self.exclude_paths = config.get(
+            "excludePaths",
+            [
+                "**/site-packages/**",
+                "**/.venv/**",
+                "**/venv/**",
+                "**/.tox/**",
+                "**/env/**",
+            ],
+        )
+
+        # NEW: Project context configuration
+        context_config = config.get("projectContext", {})
+        self.auto_detect_context = context_config.get("autoDetect", True)
+        self.devloop_development = context_config.get("devloopDevelopment", False)
+        self.respect_site_packages = context_config.get("respectSitePackages", True)
+
         # Auto-detect available frameworks if enabled
         if self.auto_detect_frameworks:
             detected = self._auto_detect_frameworks()
