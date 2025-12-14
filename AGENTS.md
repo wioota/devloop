@@ -353,3 +353,40 @@ See [docs/TOKEN_SECURITY.md](./docs/TOKEN_SECURITY.md) for complete token securi
 ❌ Committing API keys, tokens, or credentials
 
 **When in doubt: Ask before creating files, use Beads for tracking, run verification commands.**
+
+---
+
+## 💡 QUICK START FOR NEW AGENTS
+
+**First time working on this project?**
+
+```bash
+# 1. Check what's ready
+bd ready
+
+# 2. Pick an issue and claim it
+bd update bd-42 --status in_progress
+
+# 3. Run pre-flight checklist
+poetry run black src/ tests/
+poetry run ruff check src/ tests/ --fix
+poetry run mypy src/
+
+# 4. Work on the issue
+# (make changes)
+
+# 5. When done, close issue and push
+bd close bd-42 --reason "Completed in commit abc123"
+git add .
+git commit -m "feat: Implement feature"
+git push origin main
+
+# 6. Verify everything passed
+.agents/verify-task-complete
+```
+
+**When in doubt:**
+- Ask before creating files
+- Use Beads for all tracking
+- Run verification commands
+- Check this file for rules
