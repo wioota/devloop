@@ -4,7 +4,7 @@ description: Show intelligent summary of recent dev-agent findings
 
 Generate a summary of recent devloop agent findings by running:
 ```bash
-devloop summary agent-summary recent
+devloop summary agent recent
 ```
 
 The summary should include:
