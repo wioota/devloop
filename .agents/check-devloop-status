@@ -13,25 +13,59 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Check if devloop watch is running
-if ps aux | grep -v grep | grep -q "devloop watch"; then
-    echo -e "${GREEN}✅ devloop watch is running${NC}"
-    echo ""
-    ps aux | grep "devloop watch" | grep -v grep | awk '{print "   PID:", $2, "RSS:", $6" KB"}'
-    exit 0
-else
-    echo -e "${RED}❌ devloop watch is NOT running${NC}"
-    echo ""
-    echo "To start devloop, run one of:"
-    echo ""
-    echo "  # Background process (recommended):"
-    echo "  nohup devloop watch . > .devloop/devloop.log 2>&1 &"
-    echo ""
-    echo "  # Or directly:"
-    echo "  devloop watch ."
-    echo ""
-    echo "After starting, verify with:"
-    echo "  ps aux | grep 'devloop watch' | grep -v grep"
-    echo ""
-    exit 1
+HEARTBEAT_FILE="$PROJECT_ROOT/.devloop/daemon.heartbeat"
+
+# Check daemon heartbeat file first (most reliable)
+if [ -f "$HEARTBEAT_FILE" ]; then
+    # Extract PID from heartbeat file
+    PID=$(grep -o '"pid": [0-9]*' "$HEARTBEAT_FILE" | grep -o '[0-9]*')
+
+    # Check if the process is actually running
+    if [ -n "$PID" ] && ps -p "$PID" > /dev/null 2>&1; then
+        # Get process details
+        PROC_INFO=$(ps -p "$PID" -o rss=,etime= 2>/dev/null)
+        RSS=$(echo "$PROC_INFO" | awk '{print $1}')
+        UPTIME=$(echo "$PROC_INFO" | awk '{print $2}')
+
+        echo -e "${GREEN}✅ devloop watch is running${NC}"
+        echo ""
+        echo "   PID: $PID"
+        echo "   Memory: ${RSS} KB"
+        echo "   Uptime: $UPTIME"
+        echo ""
+        echo "Log: $PROJECT_ROOT/.devloop/devloop.log"
+        exit 0
+    fi
 fi
+
+# Fallback: Check process list for devloop (handles poetry-wrapped commands)
+DEVLOOP_PID=$(ps aux | grep -E 'python.*devloop.*watch' | grep -v grep | head -1 | awk '{print $2}')
+
+if [ -n "$DEVLOOP_PID" ]; then
+    PROC_INFO=$(ps -p "$DEVLOOP_PID" -o rss=,etime= 2>/dev/null)
+    RSS=$(echo "$PROC_INFO" | awk '{print $1}')
+    UPTIME=$(echo "$PROC_INFO" | awk '{print $2}')
+
+    echo -e "${YELLOW}⚠️  devloop watch is running (no heartbeat file)${NC}"
+    echo ""
+    echo "   PID: $DEVLOOP_PID"
+    echo "   Memory: ${RSS} KB"
+    echo "   Uptime: $UPTIME"
+    exit 0
+fi
+
+# Not running
+echo -e "${RED}❌ devloop watch is NOT running${NC}"
+echo ""
+echo "To start devloop, run one of:"
+echo ""
+echo "  # Background process (recommended):"
+echo "  nohup poetry run devloop watch . > .devloop/devloop.log 2>&1 &"
+echo ""
+echo "  # Or directly:"
+echo "  poetry run devloop watch ."
+echo ""
+echo "After starting, verify with:"
+echo "  ./.agents/check-devloop-status"
+echo ""
+exit 1
