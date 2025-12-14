@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.2] - 2025-12-14
+
+### Documentation
+
+#### AGENTS.md Restructuring for Agent Clarity
+- **Split monolithic AGENTS.md** - Separated 1,500+ line file into focused documents optimized for AI agent comprehension
+- **New structure**:
+  - `AGENTS.md` (356 lines) - Streamlined AI agent workflow with heavy emphasis on critical rules
+  - `CLI_REFERENCE.md` - Complete command documentation
+  - `RELEASE_PROCESS.md` - Release workflow and troubleshooting
+  - `ARCHITECTURE.md` - System design and agent categories
+  - `templates/AGENTS.md.template` (200 lines) - Minimal template for `devloop init`
+- **Agent-optimized formatting** - Heavy use of ⛔️, ❌, ✅ symbols and repetition to prevent common violations
+- **Absolute rules prominently displayed** - NO MARKDOWN FILES rule, Beads task management, commit discipline
+- **Updated cross-references** - README.md now links both workflow (AGENTS.md) and architecture (ARCHITECTURE.md)
+
+### Testing & Infrastructure
+
+#### Post-Commit Hook Tests Fixed
+- **Fixed 11 failing tests** - Tests now use template location instead of `.git/hooks/post-commit`
+- **Added post-commit hook to templates** - Hook properly versioned in `src/devloop/cli/templates/git_hooks/`
+- **CI now passing** - All 842 tests passing, 49 skipped
+- **Template available for init** - Post-commit hook ready for `devloop init` to install in new projects
+
+### Improvements
+
+- Code formatting cleanup with Black
+- Enhanced agent workflow clarity through documentation restructuring
+- Better separation of concerns between agent instructions and system architecture
+
+---
+
 ## [0.6.1] - 2025-12-14
 
 ### Testing & Validation
