@@ -11,7 +11,6 @@ from devloop.marketplace.publisher import (
     VersionManager,
     DeprecationManager,
 )
-from devloop.marketplace.metadata import AgentMetadata
 from devloop.marketplace.registry_client import create_registry_client
 
 

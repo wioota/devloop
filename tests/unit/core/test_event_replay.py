@@ -2,7 +2,6 @@
 
 import asyncio
 import pytest
-from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 from devloop.core.event import Event, EventBus, Priority
@@ -39,7 +38,7 @@ async def test_event_sequence_numbering(event_bus):
     events = []
     for i in range(5):
         event = Event(
-            type=f"file:modified",
+            type="file:modified",
             payload={"path": f"/file{i}.py"},
             source="filesystem",
         )

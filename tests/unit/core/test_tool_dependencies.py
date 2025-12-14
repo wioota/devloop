@@ -1,6 +1,5 @@
 """Tests for tool dependency management."""
 
-import pytest
 
 from devloop.core.tool_dependencies import ToolDependencyManager
 
@@ -151,7 +150,7 @@ class TestStartupCheck:
         assert "eslint" in ToolDependencyManager.OPTIONAL_TOOLS
 
 
-class TestToolInfo:
+class TestToolInfoDataclass:
     """Test ToolInfo dataclass."""
 
     def test_tool_info_defaults(self):

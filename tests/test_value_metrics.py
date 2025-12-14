@@ -1,8 +1,6 @@
 """Tests for value metrics tracking and reporting."""
 
-import json
 from datetime import datetime, UTC, timedelta
-from pathlib import Path
 
 import pytest
 

@@ -1,7 +1,5 @@
 """Tests for metrics command."""
 
-import json
-from datetime import datetime, UTC, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -9,7 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from devloop.cli.main import app
-from devloop.core.telemetry import TelemetryLogger, TelemetryEventType
+from devloop.core.telemetry import TelemetryLogger
 import devloop.core.telemetry as telemetry_module
 
 runner = CliRunner()

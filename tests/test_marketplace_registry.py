@@ -1,12 +1,10 @@
 """Tests for agent marketplace registry."""
 
-import json
 import pytest
 import tempfile
 from pathlib import Path
-from datetime import datetime
 
-from devloop.marketplace.metadata import AgentMetadata, Dependency, Rating
+from devloop.marketplace.metadata import AgentMetadata
 from devloop.marketplace.registry import AgentRegistry, RegistryConfig
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from devloop.marketplace.installer import AgentInstaller, InstallationRecord
+from devloop.marketplace.installer import AgentInstaller
 from devloop.marketplace.metadata import AgentMetadata, Dependency
 from devloop.marketplace.registry import AgentRegistry, RegistryConfig
 from devloop.marketplace.registry_client import RegistryClient

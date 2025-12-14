@@ -1,10 +1,8 @@
 """Tests for post-commit hook that auto-closes Beads issues."""
 
 import subprocess
-import tempfile
 import os
 from pathlib import Path
-import json
 
 
 def run_shell(cmd: str, cwd: str = ".") -> tuple[str, str, int]:

@@ -1,13 +1,10 @@
 """Tests for error handling and notification system."""
 
 import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch
 
 from devloop.core.error_handler import (
     ErrorCode,
     ErrorContext,
-    ErrorHandler,
     ErrorSeverity,
     StartupError,
     get_error_handler,

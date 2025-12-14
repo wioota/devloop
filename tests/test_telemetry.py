@@ -1,8 +1,6 @@
 """Tests for OpenTelemetry-based telemetry management."""
 
-import json
 import tempfile
-from pathlib import Path
 
 import pytest
 

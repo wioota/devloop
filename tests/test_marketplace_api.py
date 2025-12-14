@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Dict, Any
 
 from devloop.marketplace.api import RegistryAPI, RegistryAPIResponse
-from devloop.marketplace.metadata import AgentMetadata
-from devloop.marketplace.registry import AgentRegistry, RegistryConfig
 from devloop.marketplace.registry_client import create_registry_client
 
 

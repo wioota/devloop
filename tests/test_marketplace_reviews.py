@@ -1,6 +1,5 @@
 """Tests for agent marketplace reviews system."""
 
-import json
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -336,7 +335,7 @@ class TestReviewStore:
         """Test rating distribution tracking."""
         ratings = [5, 5, 4, 4, 4, 3, 2]
         for i, r in enumerate(ratings):
-            review_store.add_review(f"agent-1", f"user{i}", float(r), "T", "C")
+            review_store.add_review("agent-1", f"user{i}", float(r), "T", "C")
 
         stats = review_store.get_agent_stats("agent-1")
 
