@@ -35,13 +35,36 @@ def get_context_store_findings():
         return []
 
     findings = []
-    # Look for finding files (pattern: finding_*.json)
-    for finding_file in sorted(context_dir.glob("finding_*.json"), reverse=True)[:100]:
+
+    # Read from consolidated context store files
+    # Priority order: immediate > relevant > background > auto_fixed
+    context_files = [
+        "immediate.json",
+        "relevant.json",
+        "background.json",
+        "auto_fixed.json"
+    ]
+
+    for filename in context_files:
+        filepath = context_dir / filename
+        if not filepath.exists():
+            continue
+
         try:
-            with open(finding_file) as f:
-                finding = json.load(f)
-                findings.append(finding)
-        except (json.JSONDecodeError, IOError):
+            with open(filepath) as f:
+                data = json.load(f)
+
+                # Extract findings array from the consolidated format
+                if isinstance(data, dict) and "findings" in data:
+                    file_findings = data["findings"]
+                    if isinstance(file_findings, list):
+                        findings.extend(file_findings)
+                elif isinstance(data, list):
+                    # Handle legacy format (array of findings)
+                    findings.extend(data)
+
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"[Findings] Warning: Could not read {filename}: {e}")
             continue
 
     return findings
@@ -59,16 +82,24 @@ def filter_recent_findings(findings, hours=24):
             continue
 
         try:
-            # Handle ISO format timestamps
-            if timestamp_str.endswith("Z"):
-                timestamp = datetime.fromisoformat(timestamp_str[:-1] + "+00:00")
-            else:
-                # Try parsing with timezone
-                timestamp = datetime.fromisoformat(timestamp_str)
+            # Handle Unix timestamp (float or string)
+            if isinstance(timestamp_str, (int, float)):
+                timestamp = datetime.fromtimestamp(timestamp_str, tz=timezone.utc)
+            elif isinstance(timestamp_str, str):
+                # Try Unix timestamp first
+                try:
+                    timestamp = datetime.fromtimestamp(float(timestamp_str), tz=timezone.utc)
+                except ValueError:
+                    # Handle ISO format timestamps
+                    if timestamp_str.endswith("Z"):
+                        timestamp = datetime.fromisoformat(timestamp_str[:-1] + "+00:00")
+                    else:
+                        # Try parsing with timezone
+                        timestamp = datetime.fromisoformat(timestamp_str)
 
             if timestamp >= cutoff:
                 recent.append(finding)
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, TypeError):
             continue
 
     return recent
