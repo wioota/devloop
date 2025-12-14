@@ -4,12 +4,14 @@ import asyncio
 import json
 import re
 from datetime import datetime
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from devloop.core.agent import Agent, AgentResult
 from devloop.core.context_store import Finding, Severity
 from devloop.core.event import Event
+from devloop.core.project_context import ProjectContext
 
 
 class TestRunnerConfig:
@@ -161,6 +163,9 @@ class TestRunnerAgent(Agent):
     ):
         super().__init__(name, triggers, event_bus)
         self.config = TestRunnerConfig(config or {})
+
+        # Initialize project context for test discovery
+        self.project_context = ProjectContext(Path.cwd())
 
     async def handle(self, event: Event) -> AgentResult:
         """Handle file change event by running tests."""
@@ -323,20 +328,32 @@ class TestRunnerAgent(Agent):
         return None
 
     def _find_related_tests(self, path: Path) -> List[Path]:
-        """Find test files related to a source file."""
+        """Find test files related to a source file.
+
+        Uses project context to determine test roots and applies exclusion patterns.
+        """
         test_files = []
+
+        # Get test roots from project context or config
+        if self.config.test_paths:
+            test_roots = [Path(p) for p in self.config.test_paths]
+        else:
+            # Auto-detect test root using project context
+            test_roots = [self.project_context.get_test_root()]
 
         # For Python: test_<name>.py or <name>_test.py
         if path.suffix == ".py":
             stem = path.stem
-            test_dir = path.parent / "tests"
-            possible_tests = [
-                path.parent / f"test_{stem}.py",
-                path.parent / f"{stem}_test.py",
-                test_dir / f"test_{stem}.py",
-                test_dir / f"{stem}_test.py",
-            ]
-            test_files.extend([t for t in possible_tests if t.exists()])
+
+            # Search in each test root
+            for test_root in test_roots:
+                possible_tests = [
+                    path.parent / f"test_{stem}.py",
+                    path.parent / f"{stem}_test.py",
+                    test_root / f"test_{stem}.py",
+                    test_root / f"{stem}_test.py",
+                ]
+                test_files.extend([t for t in possible_tests if t.exists()])
 
         # For JS/TS: <name>.test.js/ts or <name>.spec.js/ts
         elif path.suffix in [".js", ".jsx", ".ts", ".tsx"]:
@@ -349,7 +366,51 @@ class TestRunnerAgent(Agent):
             ]
             test_files.extend([t for t in possible_tests if t.exists()])
 
-        return test_files
+        # Filter out excluded paths
+        filtered_tests = []
+        for test_file in test_files:
+            if not self._is_excluded(test_file):
+                filtered_tests.append(test_file)
+
+        return filtered_tests
+
+    def _is_excluded(self, path: Path) -> bool:
+        """Check if path matches exclude patterns.
+
+        Checks both configured exclude patterns and project context exclusions.
+        """
+        path_str = str(path.resolve())
+
+        # Check configured exclude patterns
+        for pattern in self.config.exclude_paths:
+            if self._matches_pattern(path_str, pattern):
+                return True
+
+        # Check project context excludes (if respecting site-packages)
+        if self.config.respect_site_packages:
+            for pattern in self.project_context.get_exclude_patterns():
+                if self._matches_pattern(path_str, pattern):
+                    return True
+
+        return False
+
+    def _matches_pattern(self, path: str, pattern: str) -> bool:
+        """Check if path matches glob pattern.
+
+        Supports ** for recursive matching.
+        """
+        # Handle ** in patterns for recursive matching
+        if "**" in pattern:
+            # Convert glob pattern to more flexible matching
+            parts = pattern.split("**")
+            # Check if path contains all parts in order
+            for part in parts:
+                if part and part.strip("/") not in path:
+                    return False
+            return True
+        else:
+            # Use fnmatch for simpler patterns
+            return fnmatch(path, pattern)
 
     async def _run_tests(
         self, framework: str, test_files: List[Path], source_path: Path
