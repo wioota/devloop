@@ -16,11 +16,13 @@ from rich.table import Table
 
 from devloop.agents import (
     AgentHealthMonitorAgent,
+    CodeRabbitAgent,
     FormatterAgent,
     GitCommitAssistantAgent,
     LinterAgent,
     PerformanceProfilerAgent,
     SecurityScannerAgent,
+    SnykAgent,
     TestRunnerAgent,
     TypeCheckerAgent,
 )
@@ -533,6 +535,28 @@ async def watch_async(path: Path, config_path: Path | None):
             config=perf_config.get("config", {}), event_bus=event_bus
         )
         agent_manager.register(performance_profiler)
+
+    if config.is_agent_enabled("snyk"):
+        snyk_config = config.get_agent_config("snyk") or {}
+        snyk_agent = SnykAgent(
+            name="snyk",
+            triggers=snyk_config.get("triggers", ["file:modified", "file:created"]),
+            event_bus=event_bus,
+            config=snyk_config.get("config", {}),
+        )
+        agent_manager.register(snyk_agent)
+
+    if config.is_agent_enabled("code-rabbit"):
+        code_rabbit_config = config.get_agent_config("code-rabbit") or {}
+        code_rabbit_agent = CodeRabbitAgent(
+            name="code-rabbit",
+            triggers=code_rabbit_config.get(
+                "triggers", ["file:modified", "file:created"]
+            ),
+            event_bus=event_bus,
+            config=code_rabbit_config.get("config", {}),
+        )
+        agent_manager.register(code_rabbit_agent)
 
     # Start everything
     await fs_collector.start()
