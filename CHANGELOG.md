@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.3] - 2025-12-15
+
+### Bug Fixes
+
+#### Agent Summary Slash Command
+- **Fixed incorrect command syntax** - The `/agent-summary` slash command was using `devloop summary agent-summary recent` but the correct command is `devloop summary agent recent`
+- **Fixed in template** - Updated `src/devloop/cli/templates/claude_commands/agent-summary.md` so new installations get the correct command
+- **Fixed in active command** - Updated `.claude/commands/agent-summary.md` for current users
+
+---
+
 ## [0.6.2] - 2025-12-14
 
 ### Documentation
