@@ -53,6 +53,7 @@ lsprotocol = "^2023.0.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4"
 pytest-asyncio = "^0.21"
+pytest-cov = "^4.1"
 black = "^23.12"
 ruff = "^0.1"
 mypy = "^1.8"
@@ -91,6 +92,30 @@ markers = [
     "performance: marks tests as performance benchmarks",
     "security: marks tests as security tests",
     "benchmark: marks tests as benchmarks",
+]
+addopts = "--cov=src/devloop --cov-report=term-missing --cov-report=html --cov-report=xml"
+
+[tool.coverage.run]
+source = ["src/devloop"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
 ]
 
 [tool.mypy]
