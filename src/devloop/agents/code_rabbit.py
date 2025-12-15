@@ -144,9 +144,9 @@ class CodeRabbitAgent(Agent):
     async def _run_code_rabbit(self, path: Path) -> CodeRabbitResult:
         """Run Code Rabbit analysis on a file."""
         try:
-            # Check if code-rabbit CLI is installed
+            # Check if coderabbit CLI is installed
             check = await asyncio.create_subprocess_exec(
-                "code-rabbit",
+                "coderabbit",
                 "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -155,13 +155,13 @@ class CodeRabbitAgent(Agent):
 
             if check.returncode != 0:
                 return CodeRabbitResult(
-                    success=False, error="code-rabbit CLI not installed"
+                    success=False, error="coderabbit CLI not installed"
                 )
 
-            # Run Code Rabbit with JSON output
+            # Run CodeRabbit with JSON output (review command)
             proc = await asyncio.create_subprocess_exec(
-                "code-rabbit",
-                "analyze",
+                "coderabbit",
+                "review",
                 "--format",
                 "json",
                 str(path),
@@ -174,7 +174,7 @@ class CodeRabbitAgent(Agent):
             if proc.returncode != 0 and not stdout:
                 return CodeRabbitResult(
                     success=False,
-                    error=f"code-rabbit failed: {stderr.decode() if stderr else 'unknown error'}",
+                    error=f"coderabbit failed: {stderr.decode() if stderr else 'unknown error'}",
                 )
 
             if stdout:
@@ -190,9 +190,7 @@ class CodeRabbitAgent(Agent):
             return CodeRabbitResult(success=True, issues=[])
 
         except FileNotFoundError:
-            return CodeRabbitResult(
-                success=False, error="code-rabbit command not found"
-            )
+            return CodeRabbitResult(success=False, error="coderabbit command not found")
         except Exception as e:
             self.logger.error(f"Error running Code Rabbit: {e}")
             return CodeRabbitResult(success=False, error=str(e))
