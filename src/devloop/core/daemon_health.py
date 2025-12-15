@@ -74,6 +74,8 @@ class DaemonHealthCheck:
         """Write heartbeat timestamp to file."""
         try:
             self.devloop_dir.mkdir(parents=True, exist_ok=True)
+            # Ensure proper permissions (rwxr-xr-x)
+            self.devloop_dir.chmod(0o755)
 
             heartbeat_data = {
                 "timestamp": datetime.now().isoformat(),

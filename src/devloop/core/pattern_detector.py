@@ -56,6 +56,8 @@ class PatternDetector:
         self.devloop_dir = devloop_dir
         self.log_file = devloop_dir / "patterns.jsonl"
         self.devloop_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure proper permissions (rwxr-xr-x)
+        self.devloop_dir.chmod(0o755)
 
         # Initialize components
         from .action_logger import get_action_logger

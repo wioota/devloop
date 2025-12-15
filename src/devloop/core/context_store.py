@@ -196,6 +196,8 @@ class ContextStore:
         """Create context directory structure if it doesn't exist."""
         try:
             self.context_dir.mkdir(parents=True, exist_ok=True)
+            # Set proper permissions (rwxr-xr-x) so all agents can write
+            self.context_dir.chmod(0o755)
             logger.info(f"Context directory ready: {self.context_dir}")
         except Exception as e:
             logger.error(f"Failed to create context directory: {e}")

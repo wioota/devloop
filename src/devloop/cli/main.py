@@ -626,8 +626,12 @@ def init(
 
     if claude_dir.exists():
         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
+        # Ensure proper permissions even if directory exists
+        claude_dir.chmod(0o755)
     else:
         claude_dir.mkdir(parents=True, exist_ok=True)
+        # Set proper permissions (rwxr-xr-x) so agents can write
+        claude_dir.chmod(0o755)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
 
     # Create default configuration
