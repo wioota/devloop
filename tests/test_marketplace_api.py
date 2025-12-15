@@ -44,6 +44,14 @@ def sample_agent_metadata() -> Dict[str, Any]:
     }
 
 
+@pytest.fixture
+def registered_agent(registry_api, sample_agent_metadata):
+    """Create a pre-registered agent for tests."""
+    response = registry_api.register_agent(sample_agent_metadata)
+    assert response.success is True
+    return sample_agent_metadata
+
+
 class TestRegistryAPIResponse:
     """Test RegistryAPIResponse class."""
 
@@ -102,12 +110,8 @@ class TestRegistryAPI:
         assert response.success is False
         assert "Invalid agent metadata" in response.error
 
-    def test_get_agent(self, registry_api, sample_agent_metadata):
+    def test_get_agent(self, registry_api, registered_agent):
         """Test retrieving an agent."""
-        # Register first
-        registry_api.register_agent(sample_agent_metadata)
-
-        # Get agent
         response = registry_api.get_agent("test-linter")
 
         assert response.success is True
@@ -121,24 +125,16 @@ class TestRegistryAPI:
         assert response.success is False
         assert "not found" in response.error.lower()
 
-    def test_list_agents(self, registry_api, sample_agent_metadata):
+    def test_list_agents(self, registry_api, registered_agent):
         """Test listing agents."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
-        # List agents
         response = registry_api.list_agents()
 
         assert response.success is True
         assert len(response.data["agents"]) >= 1
         assert response.data["total"] >= 1
 
-    def test_list_agents_with_category(self, registry_api, sample_agent_metadata):
+    def test_list_agents_with_category(self, registry_api, registered_agent):
         """Test listing agents by category."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
-        # List by category
         response = registry_api.list_agents(category="linting")
 
         assert response.success is True
@@ -167,36 +163,26 @@ class TestRegistryAPI:
         assert len(response1.data["agents"]) == 2
         assert len(response2.data["agents"]) == 2
 
-    def test_get_categories(self, registry_api, sample_agent_metadata):
+    def test_get_categories(self, registry_api, registered_agent):
         """Test getting categories."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
-        # Get categories
         response = registry_api.get_categories()
 
         assert response.success is True
         assert "linting" in response.data["categories"]
 
-    def test_get_agents_by_category(self, registry_api, sample_agent_metadata):
+    def test_get_agents_by_category(self, registry_api, registered_agent):
         """Test getting agents by category."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
-        # Get agents in category
         response = registry_api.get_agents_by_category("linting")
 
         assert response.success is True
         assert len(response.data["agents"]) >= 1
 
-    def test_get_popular_agents(self, registry_api, sample_agent_metadata):
+    def test_get_popular_agents(self, registry_api, registered_agent):
         """Test getting popular agents."""
-        # Register and rate an agent
-        registry_api.register_agent(sample_agent_metadata)
+        # Rate and download the registered agent
         registry_api.rate_agent("test-linter", 5.0)
         registry_api.download_agent("test-linter")
 
-        # Get popular agents
         response = registry_api.get_popular_agents(limit=10)
 
         assert response.success is True
@@ -223,23 +209,16 @@ class TestRegistryAPI:
         assert len(response.data["agents"]) >= 1
         assert response.data["agents"][0]["name"] == "trusted-agent"
 
-    def test_rate_agent(self, registry_api, sample_agent_metadata):
+    def test_rate_agent(self, registry_api, registered_agent):
         """Test rating an agent."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
-        # Rate it
         response = registry_api.rate_agent("test-linter", 4.5)
 
         assert response.success is True
         assert response.data["rating"] == 4.5
         assert response.data["average_rating"] == 4.5
 
-    def test_rate_agent_multiple_times(self, registry_api, sample_agent_metadata):
+    def test_rate_agent_multiple_times(self, registry_api, registered_agent):
         """Test rating an agent multiple times."""
-        # Register an agent
-        registry_api.register_agent(sample_agent_metadata)
-
         # Rate it multiple times
         registry_api.rate_agent("test-linter", 5.0)
         registry_api.rate_agent("test-linter", 4.0)
