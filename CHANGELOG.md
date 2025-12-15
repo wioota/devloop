@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.4] - 2025-12-15
+
+### Documentation
+
+#### Comprehensive Documentation Structure
+- **Created docs/ directory** - Added 18 missing documentation files referenced in README.md
+- **Fixed all broken links** - README.md now has 100% working documentation references
+- **User guides** - getting-started.md, configuration.md, cli-commands.md, UPGRADE_GUIDE.md, troubleshooting.md, testing.md
+- **Technical docs** - architecture.md, development.md, METRICS_AND_MONITORING.md
+- **Security & operations** - TOKEN_SECURITY.md, PROVIDER_SYSTEM.md, PYODIDE_INSTALLATION.md
+- **Agent development** - AGENT_DEVELOPMENT.md, AGENT_API_REFERENCE.md, AGENT_EXAMPLES.md, AGENT_TROUBLESHOOTING.md
+- **Marketplace** - MARKETPLACE_GUIDE.md, MARKETPLACE_API.md
+- **Documentation quality** - Each file includes code examples, quick references, and cross-links to related docs
+
+---
+
 ## [0.6.3] - 2025-12-15
 
 ### Bug Fixes
