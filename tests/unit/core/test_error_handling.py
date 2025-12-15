@@ -24,8 +24,14 @@ def error_handler():
 @pytest.fixture
 def error_notifier(tmp_path):
     """Create error notifier with mock console."""
-    console = Console(file=open(tmp_path / "output.txt", "w"))
-    return ErrorNotifier(console)
+    output_file = open(tmp_path / "output.txt", "w")
+    console = Console(file=output_file)
+    notifier = ErrorNotifier(console)
+
+    yield notifier
+
+    # Clean up - close the file
+    output_file.close()
 
 
 class TestErrorContext:

@@ -17,6 +17,8 @@ from devloop.core.project_context import ProjectContext
 class TestRunnerConfig:
     """Configuration for TestRunnerAgent."""
 
+    __test__ = False  # Not a pytest test class
+
     def __init__(self, config: Dict[str, Any]):
         self.enabled = config.get("enabled", True)
         self.run_on_save = config.get("runOnSave", True)
@@ -153,6 +155,8 @@ class TestResult:
 
 class TestRunnerAgent(Agent):
     """Agent that runs tests when files change."""
+
+    __test__ = False  # Not a pytest test class
 
     def __init__(
         self,

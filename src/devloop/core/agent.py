@@ -93,6 +93,7 @@ class Agent(ABC):
         self._running = False
         self._event_queue: asyncio.Queue[Event] = asyncio.Queue()
         self._last_processed_sequence = 0  # For event replay tracking
+        self._process_task: Optional[asyncio.Task] = None  # Background task reference
 
     @abstractmethod
     async def handle(self, event: Event) -> AgentResult:
@@ -110,8 +111,8 @@ class Agent(ABC):
         for trigger in self.triggers:
             await self.event_bus.subscribe(trigger, self._event_queue)
 
-        # Start event processing loop
-        asyncio.create_task(self._process_events())
+        # Start event processing loop and keep task reference
+        self._process_task = asyncio.create_task(self._process_events())
         self.logger.info(f"Agent {self.name} started, listening to {self.triggers}")
 
     async def stop(self) -> None:
@@ -124,6 +125,14 @@ class Agent(ABC):
         # Unsubscribe from events
         for trigger in self.triggers:
             await self.event_bus.unsubscribe(trigger, self._event_queue)
+
+        # Cancel and await the background task
+        if self._process_task and not self._process_task.done():
+            self._process_task.cancel()
+            try:
+                await self._process_task
+            except asyncio.CancelledError:
+                pass  # Expected when task is cancelled
 
         self.logger.info(f"Agent {self.name} stopped")
 
