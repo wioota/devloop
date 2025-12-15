@@ -672,6 +672,12 @@ def init(
                     console.print(
                         "  [green]✓[/green] Code Rabbit agent enabled (requires CODE_RABBIT_API_KEY env var)"
                     )
+                    # Install and configure CodeRabbit CLI if needed
+                    from devloop.cli.coderabbit_installer import (
+                        prompt_coderabbit_installation,
+                    )
+
+                    prompt_coderabbit_installation(non_interactive=False)
 
                 # CI Monitor prompt
                 if typer.confirm(
