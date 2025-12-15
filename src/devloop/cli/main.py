@@ -658,6 +658,10 @@ def init(
                     console.print(
                         "  [green]✓[/green] Snyk agent enabled (requires SNYK_TOKEN env var)"
                     )
+                    # Install and configure Snyk CLI if needed
+                    from devloop.cli.snyk_installer import prompt_snyk_installation
+
+                    prompt_snyk_installation(non_interactive=False)
 
                 # Code Rabbit prompt
                 if typer.confirm(
