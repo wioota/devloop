@@ -1,6 +1,5 @@
 """End-to-end tests for SnykAgent."""
 
-import asyncio
 import json
 import tempfile
 from pathlib import Path
