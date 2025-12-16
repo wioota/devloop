@@ -329,5 +329,74 @@ async def test_agent_event_with_no_path(agent):
     assert "No file path" in result.message
 
 
+@pytest.mark.asyncio
+async def test_agent_writes_findings_to_context_store(agent):
+    """Test agent correctly writes findings to context store."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pkg_file = Path(tmpdir) / "package.json"
+        pkg_file.write_text('{"name": "test"}')
+
+        event = Event(
+            type="file:modified",
+            source="filesystem",
+            payload={"path": str(pkg_file)},
+        )
+
+        # Mock snyk output with vulnerabilities
+        mock_output = json.dumps(
+            {
+                "vulnerabilities": [
+                    {
+                        "id": "SNYK-JS-AXIOS-1234567",
+                        "title": "Server-Side Request Forgery in axios",
+                        "severity": "critical",
+                        "cvssScore": 9.8,
+                        "package": "axios",
+                        "from": ["axios@0.21.1"],
+                        "fixAvailable": True,
+                        "upgradePath": ["axios@0.21.2"],
+                    },
+                ]
+            }
+        ).encode()
+
+        # Mock context store
+        from devloop.core.context_store import context_store
+
+        findings_added = []
+
+        async def mock_add_finding(finding):
+            findings_added.append(finding)
+
+        original_add_finding = context_store.add_finding
+        context_store.add_finding = mock_add_finding
+
+        try:
+            with patch("asyncio.create_subprocess_exec") as mock_exec:
+                version_response = AsyncMock()
+                version_response.returncode = 0
+
+                test_response = AsyncMock()
+                test_response.returncode = 1
+                test_response.communicate = AsyncMock(return_value=(mock_output, b""))
+
+                mock_exec.side_effect = [version_response, test_response]
+
+                result = await agent.handle(event)
+
+                assert result.success
+                assert len(findings_added) == 1
+
+                finding = findings_added[0]
+                assert finding.agent == "snyk"
+                assert finding.severity.value == "error"  # critical maps to ERROR
+                assert "axios" in finding.message
+                assert finding.context["vulnerability_id"] == "SNYK-JS-AXIOS-1234567"
+                assert finding.context["cvss_score"] == 9.8
+                assert finding.suggestion  # Should have upgrade path
+        finally:
+            context_store.add_finding = original_add_finding
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
