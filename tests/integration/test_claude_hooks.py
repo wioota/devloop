@@ -81,7 +81,7 @@ def hook_tester(tmp_path):
     hooks_dir.mkdir(parents=True)
 
     # Copy hook scripts from actual project
-    actual_hooks_dir = Path(__file__).parent.parent / ".agents" / "hooks"
+    actual_hooks_dir = Path(__file__).parent.parent.parent / ".agents" / "hooks"
     for hook_file in actual_hooks_dir.glob("claude-*"):
         if hook_file.is_file():
             dest = hooks_dir / hook_file.name
@@ -122,7 +122,7 @@ class TestSessionStartHook:
 
         hook_path = hooks_dir / "claude-session-start"
         actual_hook = (
-            Path(__file__).parent.parent / ".agents" / "hooks" / "claude-session-start"
+            Path(__file__).parent.parent.parent / ".agents" / "hooks" / "claude-session-start"
         )
         hook_path.write_text(actual_hook.read_text())
         hook_path.chmod(0o755)
@@ -407,7 +407,7 @@ class TestHooksWithPythonProject:
         hooks_dir = project / ".agents" / "hooks"
         hooks_dir.mkdir(parents=True)
 
-        actual_hooks_dir = Path(__file__).parent.parent / ".agents" / "hooks"
+        actual_hooks_dir = Path(__file__).parent.parent.parent / ".agents" / "hooks"
         for hook_file in actual_hooks_dir.glob("claude-*"):
             if hook_file.is_file():
                 dest = hooks_dir / hook_file.name
@@ -452,7 +452,7 @@ class TestHooksWithNodeProject:
         hooks_dir = project / ".agents" / "hooks"
         hooks_dir.mkdir(parents=True)
 
-        actual_hooks_dir = Path(__file__).parent.parent / ".agents" / "hooks"
+        actual_hooks_dir = Path(__file__).parent.parent.parent / ".agents" / "hooks"
         for hook_file in actual_hooks_dir.glob("claude-*"):
             if hook_file.is_file():
                 dest = hooks_dir / hook_file.name
@@ -619,7 +619,7 @@ class TestHooksWithEdgeCases:
 
         hook_path = hooks_dir / "claude-session-start"
         actual_hook = (
-            Path(__file__).parent.parent / ".agents" / "hooks" / "claude-session-start"
+            Path(__file__).parent.parent.parent / ".agents" / "hooks" / "claude-session-start"
         )
         hook_path.write_text(actual_hook.read_text())
         hook_path.chmod(0o755)

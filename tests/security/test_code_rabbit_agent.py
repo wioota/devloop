@@ -1,6 +1,5 @@
 """End-to-end tests for CodeRabbitAgent."""
 
-import asyncio
 import json
 import tempfile
 from pathlib import Path
@@ -123,8 +122,6 @@ async def test_agent_parses_code_rabbit_output(agent):
         ).encode()
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
-            mock_proc = AsyncMock()
-
             # First call: version check (success)
             version_response = AsyncMock()
             version_response.returncode = 0
@@ -209,7 +206,6 @@ async def test_agent_filters_by_severity(agent):
         ).encode()
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
-            mock_proc = AsyncMock()
             version_response = AsyncMock()
             version_response.returncode = 0
 
@@ -293,7 +289,9 @@ async def test_agent_writes_findings_to_context_store(agent):
 
                 analyze_response = AsyncMock()
                 analyze_response.returncode = 0
-                analyze_response.communicate = AsyncMock(return_value=(mock_output, b""))
+                analyze_response.communicate = AsyncMock(
+                    return_value=(mock_output, b"")
+                )
 
                 mock_exec.side_effect = [version_response, analyze_response]
 
@@ -316,7 +314,10 @@ async def test_agent_writes_findings_to_context_store(agent):
                 assert warning_finding.severity.value == "warning"
                 assert warning_finding.line == 2
                 assert warning_finding.column == 5
-                assert "not used" in warning_finding.message.lower() or "unused" in warning_finding.message.lower()
+                assert (
+                    "not used" in warning_finding.message.lower()
+                    or "unused" in warning_finding.message.lower()
+                )
                 assert warning_finding.category == "unused-variable"
                 assert warning_finding.context["issue_type"] == "code-smell"
         finally:
