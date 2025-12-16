@@ -240,5 +240,88 @@ async def test_agent_event_with_no_path(agent):
     assert "No file path" in result.message
 
 
+@pytest.mark.asyncio
+async def test_agent_writes_findings_to_context_store(agent):
+    """Test agent correctly writes findings to context store."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        py_file = Path(tmpdir) / "example.py"
+        py_file.write_text("x = 1\ny = 2")
+
+        event = Event(
+            type="file:modified",
+            source="filesystem",
+            payload={"path": str(py_file)},
+        )
+
+        # Mock code-rabbit output with multiple issues
+        mock_output = json.dumps(
+            [
+                {
+                    "line": 1,
+                    "column": 1,
+                    "code": "complexity-high",
+                    "message": "Function complexity is too high",
+                    "severity": "error",
+                    "type": "complexity",
+                },
+                {
+                    "line": 2,
+                    "column": 5,
+                    "code": "unused-variable",
+                    "message": "Variable 'y' is not used",
+                    "severity": "warning",
+                    "type": "code-smell",
+                },
+            ]
+        ).encode()
+
+        # Mock context store
+        from devloop.core.context_store import context_store
+
+        findings_added = []
+
+        async def mock_add_finding(finding):
+            findings_added.append(finding)
+
+        original_add_finding = context_store.add_finding
+        context_store.add_finding = mock_add_finding
+
+        try:
+            with patch("asyncio.create_subprocess_exec") as mock_exec:
+                version_response = AsyncMock()
+                version_response.returncode = 0
+
+                analyze_response = AsyncMock()
+                analyze_response.returncode = 0
+                analyze_response.communicate = AsyncMock(return_value=(mock_output, b""))
+
+                mock_exec.side_effect = [version_response, analyze_response]
+
+                result = await agent.handle(event)
+
+                assert result.success
+                assert len(findings_added) == 2
+
+                # Check error-level finding
+                error_finding = findings_added[0]
+                assert error_finding.agent == "code-rabbit"
+                assert error_finding.severity.value == "error"
+                assert error_finding.line == 1
+                assert "complexity" in error_finding.message.lower()
+                assert error_finding.category == "complexity-high"
+                assert error_finding.context["issue_type"] == "complexity"
+
+                # Check warning-level finding
+                warning_finding = findings_added[1]
+                assert warning_finding.severity.value == "warning"
+                assert warning_finding.line == 2
+                assert warning_finding.column == 5
+                assert "not used" in warning_finding.message.lower() or "unused" in warning_finding.message.lower()
+                assert warning_finding.category == "unused-variable"
+                assert warning_finding.context["issue_type"] == "code-smell"
+        finally:
+            context_store.add_finding = original_add_finding
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
