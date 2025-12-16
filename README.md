@@ -1364,6 +1364,46 @@ devloop custom-list
 ls -la .devloop/custom_agents/
 ```
 
+### Snyk or CodeRabbit not working
+
+**Snyk Agent Issues:**
+
+```bash
+# Verify Snyk CLI is installed
+snyk --version
+
+# Check authentication
+snyk auth status
+
+# Re-authenticate if needed
+snyk auth
+
+# Verify token is set
+echo $SNYK_TOKEN
+
+# Test manually
+snyk test --json
+```
+
+**CodeRabbit Agent Issues:**
+
+```bash
+# Verify CodeRabbit CLI is installed
+coderabbit --version
+
+# Check API key is set
+echo $CODE_RABBIT_API_KEY
+
+# Test manually
+coderabbit review --format json <file>
+```
+
+**Common Issues:**
+- **"CLI not installed"** — Install via `npm install -g snyk` or `npm install -g @code-rabbit/cli`
+- **"Authentication failed"** — Re-run `snyk auth` or verify `CODE_RABBIT_API_KEY`
+- **"No vulnerabilities found but expected some"** — Ensure dependency files exist (package.json, requirements.txt, etc.)
+- **Agent not triggering** — Check file patterns in `.devloop/agents.json` match your dependency files
+
 ### Agent modified my files unexpectedly
 
 1. Check git diff: `git diff`
