@@ -60,6 +60,7 @@ mypy = "^1.8"
 bandit = "^1.7"
 radon = "^6.0"
 types-aiofiles = "^23.2"
+pytest-rerunfailures = "^16.1"
 
 [tool.poetry.extras]
 snyk = []
