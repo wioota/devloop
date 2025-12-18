@@ -122,7 +122,10 @@ class TestSessionStartHook:
 
         hook_path = hooks_dir / "claude-session-start"
         actual_hook = (
-            Path(__file__).parent.parent.parent / ".agents" / "hooks" / "claude-session-start"
+            Path(__file__).parent.parent.parent
+            / ".agents"
+            / "hooks"
+            / "claude-session-start"
         )
         hook_path.write_text(actual_hook.read_text())
         hook_path.chmod(0o755)
@@ -619,7 +622,10 @@ class TestHooksWithEdgeCases:
 
         hook_path = hooks_dir / "claude-session-start"
         actual_hook = (
-            Path(__file__).parent.parent.parent / ".agents" / "hooks" / "claude-session-start"
+            Path(__file__).parent.parent.parent
+            / ".agents"
+            / "hooks"
+            / "claude-session-start"
         )
         hook_path.write_text(actual_hook.read_text())
         hook_path.chmod(0o755)
