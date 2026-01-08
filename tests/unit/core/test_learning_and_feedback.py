@@ -379,19 +379,26 @@ class TestFeedbackAndPerformance:
 
     @pytest.mark.asyncio
     async def test_performance_optimizer(self):
-        """Test performance optimizer."""
+        """Test performance optimizer with debounce logic."""
+        from unittest.mock import patch
+        import time
+
         with tempfile.TemporaryDirectory() as tmpdir:
             monitor = PerformanceMonitor(Path(tmpdir))
             optimizer = PerformanceOptimizer(monitor)
 
-            # Test debouncing
-            skip1 = await optimizer.should_skip_operation("test_op", 1.0)
-            assert skip1 is False
+            # Mock time to avoid flaky timing-based tests
+            mock_time_values = [100.0, 100.0, 102.0]  # First two calls at same time, third at +2 seconds
+            
+            with patch("devloop.core.performance.time.time") as mock_time:
+                mock_time.side_effect = mock_time_values
 
-            skip2 = await optimizer.should_skip_operation("test_op", 1.0)
-            assert skip2 is True
+                # Test debouncing
+                skip1 = await optimizer.should_skip_operation("test_op", 1.0)
+                assert skip1 is False, "First call should not skip"
 
-            # Wait and try again
-            await asyncio.sleep(1.1)
-            skip3 = await optimizer.should_skip_operation("test_op", 1.0)
-            assert skip3 is False
+                skip2 = await optimizer.should_skip_operation("test_op", 1.0)
+                assert skip2 is True, "Second call within debounce window should skip"
+
+                skip3 = await optimizer.should_skip_operation("test_op", 1.0)
+                assert skip3 is False, "Call after debounce window should not skip"
