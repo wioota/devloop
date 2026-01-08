@@ -381,15 +381,18 @@ class TestFeedbackAndPerformance:
     async def test_performance_optimizer(self):
         """Test performance optimizer with debounce logic."""
         from unittest.mock import patch
-        import time
 
         with tempfile.TemporaryDirectory() as tmpdir:
             monitor = PerformanceMonitor(Path(tmpdir))
             optimizer = PerformanceOptimizer(monitor)
 
             # Mock time to avoid flaky timing-based tests
-            mock_time_values = [100.0, 100.0, 102.0]  # First two calls at same time, third at +2 seconds
-            
+            mock_time_values = [
+                100.0,
+                100.0,
+                102.0,
+            ]  # First two calls at same time, third at +2 seconds
+
             with patch("devloop.core.performance.time.time") as mock_time:
                 mock_time.side_effect = mock_time_values
 
