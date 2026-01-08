@@ -611,149 +611,141 @@ async def watch_async(path: Path, config_path: Path | None):
         pass
 
 
-@app.command()
-def init(
-    path: Path = typer.Argument(Path.cwd(), help="Project directory"),
-    skip_config: bool = typer.Option(
-        False, "--skip-config", help="Skip creating configuration file"
-    ),
-    non_interactive: bool = typer.Option(
-        False, "--non-interactive", help="Skip interactive prompts for optional agents"
-    ),
-):
-    """Initialize devloop in a project."""
+def _setup_devloop_directory(path: Path) -> Path:
+    """Create and configure .devloop directory."""
     claude_dir = path / ".devloop"
 
     if claude_dir.exists():
         console.print(f"[yellow]Directory already exists: {claude_dir}[/yellow]")
-        # Ensure proper permissions even if directory exists
         claude_dir.chmod(0o755)
     else:
         claude_dir.mkdir(parents=True, exist_ok=True)
-        # Set proper permissions (rwxr-xr-x) so agents can write
         claude_dir.chmod(0o755)
         console.print(f"[green]✓[/green] Created: {claude_dir}")
 
-    # Create default configuration
-    if not skip_config:
-        config_file = claude_dir / "agents.json"
-        if config_file.exists():
-            console.print(
-                f"[yellow]Configuration already exists: {config_file}[/yellow]"
-            )
-        else:
-            optional_agents = {}
+    return claude_dir
 
-            # Interactive prompts for optional agents (unless non-interactive mode)
-            if not non_interactive:
-                console.print("\n[cyan]Optional Agents Setup[/cyan]")
-                console.print("The following optional agents can be enabled:\n")
 
-                # Snyk prompt
-                if typer.confirm(
-                    "Enable [yellow]Snyk[/yellow] agent for security vulnerability scanning?",
-                    default=False,
-                ):
-                    optional_agents["snyk"] = True
-                    console.print(
-                        "  [green]✓[/green] Snyk agent enabled (requires SNYK_TOKEN env var)"
-                    )
-                    # Install and configure Snyk CLI if needed
-                    from devloop.cli.snyk_installer import prompt_snyk_installation
+def _setup_config(claude_dir: Path, skip_config: bool, non_interactive: bool) -> None:
+    """Create default configuration."""
+    if skip_config:
+        return
 
-                    prompt_snyk_installation(non_interactive=False)
+    config_file = claude_dir / "agents.json"
+    if config_file.exists():
+        console.print(f"[yellow]Configuration already exists: {config_file}[/yellow]")
+        return
 
-                # Code Rabbit prompt
-                if typer.confirm(
-                    "Enable [yellow]Code Rabbit[/yellow] agent for code analysis insights?",
-                    default=False,
-                ):
-                    optional_agents["code-rabbit"] = True
-                    console.print(
-                        "  [green]✓[/green] Code Rabbit agent enabled (requires CODE_RABBIT_API_KEY env var)"
-                    )
-                    # Install and configure CodeRabbit CLI if needed
-                    from devloop.cli.coderabbit_installer import (
-                        prompt_coderabbit_installation,
-                    )
+    optional_agents = {}
 
-                    prompt_coderabbit_installation(non_interactive=False)
+    # Interactive prompts for optional agents
+    if not non_interactive:
+        console.print("\n[cyan]Optional Agents Setup[/cyan]")
+        console.print("The following optional agents can be enabled:\n")
 
-                # CI Monitor prompt
-                if typer.confirm(
-                    "Enable [yellow]CI Monitor[/yellow] agent to track CI/CD pipeline status?",
-                    default=False,
-                ):
-                    optional_agents["ci-monitor"] = True
-                    console.print("  [green]✓[/green] CI Monitor agent enabled")
-
-                # Pyodide WASM Sandbox prompt and installation
-                from devloop.cli.pyodide_installer import prompt_pyodide_installation
-
-                prompt_pyodide_installation(non_interactive=False)
-
-            config = Config()
-            config._config = config._get_default_config(optional_agents=optional_agents)
-            config.save(config_file)
-            console.print(f"\n[green]✓[/green] Created: {config_file}")
-
-    # Check for and manage AGENTS.md with DevLoop template
-    agents_md = path / "AGENTS.md"
-    devloop_template = (
-        Path(__file__).parent / "templates" / "devloop_agents_template.md"
-    )
-
-    # Legacy beads template (for backward compatibility)
-    beads_template = claude_dir / "beads_template.md"
-
-    # Check if AGENTS.md needs DevLoop content
-    needs_devloop_content = False
-    if agents_md.exists():
-        content = agents_md.read_text()
-        # Check for critical DevLoop sections
-        missing_sections = []
-        if "Task Management with Beads" not in content:
-            missing_sections.append("Beads task management")
-        if "NO MARKDOWN FILES FOR PLANNING" not in content:
-            missing_sections.append("No markdown files rule")
-        if (
-            "Secrets Management & Token Security" not in content
-            and "Secrets Management" not in content
+        # Snyk prompt
+        if typer.confirm(
+            "Enable [yellow]Snyk[/yellow] agent for security vulnerability scanning?",
+            default=False,
         ):
+            optional_agents["snyk"] = True
+            console.print(
+                "  [green]✓[/green] Snyk agent enabled (requires SNYK_TOKEN env var)"
+            )
+            from devloop.cli.snyk_installer import prompt_snyk_installation
+
+            prompt_snyk_installation(non_interactive=False)
+
+        # Code Rabbit prompt
+        if typer.confirm(
+            "Enable [yellow]Code Rabbit[/yellow] agent for code analysis insights?",
+            default=False,
+        ):
+            optional_agents["code-rabbit"] = True
+            console.print(
+                "  [green]✓[/green] Code Rabbit agent enabled (requires CODE_RABBIT_API_KEY env var)"
+            )
+            from devloop.cli.coderabbit_installer import (
+                prompt_coderabbit_installation,
+            )
+
+            prompt_coderabbit_installation(non_interactive=False)
+
+        # CI Monitor prompt
+        if typer.confirm(
+            "Enable [yellow]CI Monitor[/yellow] agent to track CI/CD pipeline status?",
+            default=False,
+        ):
+            optional_agents["ci-monitor"] = True
+            console.print("  [green]✓[/green] CI Monitor agent enabled")
+
+        # Pyodide WASM Sandbox
+        from devloop.cli.pyodide_installer import prompt_pyodide_installation
+
+        prompt_pyodide_installation(non_interactive=False)
+
+    config = Config()
+    config._config = config._get_default_config(optional_agents=optional_agents)
+    config.save(config_file)
+    console.print(f"\n[green]✓[/green] Created: {config_file}")
+
+
+def _check_missing_devloop_sections(content: str) -> list:
+    """Check for missing DevLoop sections in AGENTS.md."""
+    missing_sections = []
+
+    checks = [
+        ("Task Management with Beads", "Beads task management"),
+        ("NO MARKDOWN FILES FOR PLANNING", "No markdown files rule"),
+        ("Development Discipline", "Development discipline"),
+        ("Pre-Flight Development Checklist", "Pre-flight checklist"),
+        ("Documentation Practices", "Documentation practices"),
+        (
+            "Publishing & Security Considerations",
+            "Publishing & security considerations",
+        ),
+        ("Release Process", "Release process"),
+        ("Configuration", "Configuration (logging, agents)"),
+        ("Security & Privacy", "Security & privacy"),
+        ("Success Metrics", "Success metrics"),
+        ("Future Considerations", "Future considerations"),
+    ]
+
+    for check_str, display_name in checks:
+        if check_str not in content:
+            missing_sections.append(display_name)
+
+    # Special case for token security (two variants)
+    if (
+        "Secrets Management & Token Security" not in content
+        and "Secrets Management" not in content
+    ):
+        if "Token security" not in missing_sections:
             missing_sections.append("Token security")
-        if "Development Discipline" not in content:
-            missing_sections.append("Development discipline")
-        if "Pre-Flight Development Checklist" not in content:
-            missing_sections.append("Pre-flight checklist")
-        if "CI Verification" not in content and "Pre-Push Hook" not in content:
+
+    # Special case for CI verification (two variants)
+    if "CI Verification" not in content and "Pre-Push Hook" not in content:
+        if "CI verification (pre-push hook)" not in missing_sections:
             missing_sections.append("CI verification (pre-push hook)")
-        if "Documentation Practices" not in content:
-            missing_sections.append("Documentation practices")
-        if "Publishing & Security Considerations" not in content:
-            missing_sections.append("Publishing & security considerations")
-        if "Release Process" not in content:
-            missing_sections.append("Release process")
-        if "Configuration" not in content:
-            missing_sections.append("Configuration (logging, agents)")
-        if "Security & Privacy" not in content:
-            missing_sections.append("Security & privacy")
-        if "Success Metrics" not in content:
-            missing_sections.append("Success metrics")
-        if "Future Considerations" not in content:
-            missing_sections.append("Future considerations")
 
-        needs_devloop_content = len(missing_sections) > 0
+    return missing_sections
 
-        if needs_devloop_content:
-            # Copy template to .devloop for reference
-            devloop_template_copy = claude_dir / "devloop_agents_template.md"
-            if devloop_template.exists():
-                import shutil
 
-                shutil.copy(devloop_template, devloop_template_copy)
+def _inject_devloop_instructions(
+    agents_md: Path,
+    claude_dir: Path,
+    content: str,
+    missing_sections: list,
+    devloop_template: Path,
+) -> None:
+    """Inject DevLoop setup instructions into existing AGENTS.md."""
+    import shutil
 
-                # Inject self-executing merge instruction directly into AGENTS.md
-                instruction_section = f"""
+    devloop_template_copy = claude_dir / "devloop_agents_template.md"
+    if devloop_template.exists():
+        shutil.copy(devloop_template, devloop_template_copy)
+
+        instruction_section = f"""
 
 ---
 
@@ -796,45 +788,58 @@ Please complete this setup automatically:
 ---
 
 """
-                # Insert at the beginning of the file (after title if present)
-                lines = content.split("\n")
-                insert_pos = 0
+        # Insert at the beginning of the file (after title if present)
+        lines = content.split("\n")
+        insert_pos = 0
 
-                # Find first heading
-                for i, line in enumerate(lines):
-                    if line.startswith("# "):
-                        insert_pos = i + 1
-                        break
+        for i, line in enumerate(lines):
+            if line.startswith("# "):
+                insert_pos = i + 1
+                break
 
-                # Insert the instruction
-                new_content = (
-                    "\n".join(lines[:insert_pos])
-                    + instruction_section
-                    + "\n".join(lines[insert_pos:])
-                )
-                agents_md.write_text(new_content)
+        new_content = (
+            "\n".join(lines[:insert_pos])
+            + instruction_section
+            + "\n".join(lines[insert_pos:])
+        )
+        agents_md.write_text(new_content)
 
-                console.print(
-                    "\n[green]✓[/green] Injected DevLoop setup instructions into AGENTS.md"
-                )
-                console.print(
-                    f"[cyan]→[/cyan] Template copied to: {devloop_template_copy}"
-                )
-                console.print("\n[cyan]Next step:[/cyan]")
-                console.print(
-                    "  • Open this project in Claude Code/Amp - it will automatically merge the template!"
-                )
+        console.print(
+            "\n[green]✓[/green] Injected DevLoop setup instructions into AGENTS.md"
+        )
+        console.print(f"[cyan]→[/cyan] Template copied to: {devloop_template_copy}")
+        console.print("\n[cyan]Next step:[/cyan]")
+        console.print(
+            "  • Open this project in Claude Code/Amp - it will automatically merge the template!"
+        )
+
+
+def _setup_agents_md(path: Path, claude_dir: Path) -> None:
+    """Setup AGENTS.md file."""
+    import shutil
+
+    agents_md = path / "AGENTS.md"
+    devloop_template = (
+        Path(__file__).parent / "templates" / "devloop_agents_template.md"
+    )
+    beads_template = claude_dir / "beads_template.md"
+
+    if agents_md.exists():
+        content = agents_md.read_text()
+        missing_sections = _check_missing_devloop_sections(content)
+
+        if missing_sections:
+            _inject_devloop_instructions(
+                agents_md, claude_dir, content, missing_sections, devloop_template
+            )
     else:
-        # Create new AGENTS.md from devloop template
+        # Create new AGENTS.md from template
         if devloop_template.exists():
-            import shutil
-
             shutil.copy(devloop_template, agents_md)
             console.print(
                 f"[green]✓[/green] Created: {agents_md} (from DevLoop template)"
             )
         elif beads_template.exists():
-            # Fallback to legacy beads template
             beads_content = beads_template.read_text()
             template_header = """# Development Workflow
 
@@ -844,8 +849,11 @@ This project uses background agents and Beads for task management.
             agents_md.write_text(template_header + beads_content)
             console.print(f"[green]✓[/green] Created: {agents_md} (legacy template)")
 
-    # Handle Claude.md symlink for Claude code tools
+
+def _setup_claude_md(path: Path) -> None:
+    """Setup CLAUDE.md symlink."""
     claude_md = path / "CLAUDE.md"
+
     if claude_md.exists():
         if claude_md.is_symlink():
             target = claude_md.resolve()
@@ -860,7 +868,6 @@ This project uses background agents and Beads for task management.
             console.print("  [cyan]Consider replacing it with a symlink:[/cyan]")
             console.print("    rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md")
     else:
-        # Create symlink for Claude
         try:
             claude_md.symlink_to("AGENTS.md")
             console.print(f"[green]✓[/green] Created: {claude_md} -> AGENTS.md")
@@ -869,71 +876,79 @@ This project uses background agents and Beads for task management.
                 f"[yellow]Warning:[/yellow] Could not create CLAUDE.md symlink: {e}"
             )
 
-    # Set up Claude Code slash commands
+
+def _setup_claude_commands(path: Path) -> None:
+    """Setup Claude Code slash commands."""
+    import shutil
+
     claude_commands_dir = path / ".claude" / "commands"
     template_commands_dir = Path(__file__).parent / "templates" / "claude_commands"
 
-    if template_commands_dir.exists():
-        claude_commands_dir.mkdir(parents=True, exist_ok=True)
+    if not template_commands_dir.exists():
+        return
 
-        # Copy command templates
-        import shutil
+    claude_commands_dir.mkdir(parents=True, exist_ok=True)
 
-        commands_copied = []
-        for template_file in template_commands_dir.glob("*.md"):
-            dest_file = claude_commands_dir / template_file.name
-            if not dest_file.exists():
-                shutil.copy2(template_file, dest_file)
-                commands_copied.append(template_file.stem)
+    commands_copied = []
+    for template_file in template_commands_dir.glob("*.md"):
+        dest_file = claude_commands_dir / template_file.name
+        if not dest_file.exists():
+            shutil.copy2(template_file, dest_file)
+            commands_copied.append(template_file.stem)
 
-        if commands_copied:
-            console.print("\n[green]✓[/green] Created Claude Code slash commands:")
-            for cmd in commands_copied:
-                console.print(f"  • /{cmd}")
+    if commands_copied:
+        console.print("\n[green]✓[/green] Created Claude Code slash commands:")
+        for cmd in commands_copied:
+            console.print(f"  • /{cmd}")
 
-    # Install git hooks if this is a git repository
+
+def _setup_git_hooks(path: Path) -> None:
+    """Setup git hooks."""
+    import shutil
+
     git_dir = path / ".git"
-    if git_dir.exists() and git_dir.is_dir():
-        # Check prerequisites before installing hooks
-        from devloop.cli.prerequisites import PrerequisiteChecker
+    if not (git_dir.exists() and git_dir.is_dir()):
+        return
 
-        checker = PrerequisiteChecker()
-        available, missing = checker.validate_for_git_hooks(interactive=True)
+    from devloop.cli.prerequisites import PrerequisiteChecker
 
-        hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
-        hooks_dest_dir = git_dir / "hooks"
+    checker = PrerequisiteChecker()
+    available, missing = checker.validate_for_git_hooks(interactive=True)
 
-        if hooks_template_dir.exists():
-            hooks_installed = []
-            for template_file in hooks_template_dir.iterdir():
-                if template_file.is_file():
-                    dest_file = hooks_dest_dir / template_file.name
+    hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
+    hooks_dest_dir = git_dir / "hooks"
 
-                    # Backup existing hook if present
-                    if dest_file.exists():
-                        backup_file = hooks_dest_dir / f"{template_file.name}.backup"
-                        shutil.copy2(dest_file, backup_file)
+    if not hooks_template_dir.exists():
+        return
 
-                    # Install new hook
-                    shutil.copy2(template_file, dest_file)
-                    dest_file.chmod(0o755)  # Make executable
-                    hooks_installed.append(template_file.name)
+    hooks_installed = []
+    for template_file in hooks_template_dir.iterdir():
+        if template_file.is_file():
+            dest_file = hooks_dest_dir / template_file.name
 
-            if hooks_installed:
-                console.print("\n[green]✓[/green] Installed git hooks:")
-                for hook in hooks_installed:
-                    console.print(f"  • {hook}")
+            # Backup existing hook if present
+            if dest_file.exists():
+                backup_file = hooks_dest_dir / f"{template_file.name}.backup"
+                shutil.copy2(dest_file, backup_file)
 
-            # Show installation guide if prerequisites missing
-            if missing:
-                checker.show_installation_guide(missing)
+            # Install new hook
+            shutil.copy2(template_file, dest_file)
+            dest_file.chmod(0o755)  # Make executable
+            hooks_installed.append(template_file.name)
 
-    # Set up Claude Code hooks
-    agents_hooks_dir = path / ".agents" / "hooks"
-    agents_hooks_dir.mkdir(parents=True, exist_ok=True)
+    if hooks_installed:
+        console.print("\n[green]✓[/green] Installed git hooks:")
+        for hook in hooks_installed:
+            console.print(f"  • {hook}")
 
-    # Define Claude hook scripts
-    claude_hooks = {
+    # Show installation guide if prerequisites missing
+    if missing:
+        checker.show_installation_guide(missing)
+
+
+def _create_claude_hooks(agents_hooks_dir: Path) -> list:
+    """Create Claude Code hook scripts."""
+    hooks = {
         "claude-session-start": """#!/bin/bash
 #
 # SessionStart hook: Pre-load DevLoop findings when Claude Code starts
@@ -1000,21 +1015,28 @@ exit 0
 """,
     }
 
-    # Create hook scripts
     hooks_created = []
-    for hook_name, hook_content in claude_hooks.items():
+    for hook_name, hook_content in hooks.items():
         hook_file = agents_hooks_dir / hook_name
         if not hook_file.exists():
             hook_file.write_text(hook_content)
             hook_file.chmod(0o755)
             hooks_created.append(hook_name)
 
+    return hooks_created
+
+
+def _setup_claude_hooks(
+    path: Path, agents_hooks_dir: Path, non_interactive: bool
+) -> None:
+    """Setup Claude Code hooks."""
+    hooks_created = _create_claude_hooks(agents_hooks_dir)
+
     if hooks_created:
         console.print("\n[green]✓[/green] Created Claude Code hooks:")
         for hook in hooks_created:
             console.print(f"  • {hook}")
 
-        # Offer to install hooks to Claude settings (skip in non-interactive mode)
         install_hooks = True
         if not non_interactive:
             install_hooks = typer.confirm(
@@ -1043,6 +1065,41 @@ exit 0
                     console.print(f"  {install_hook_script} {path}")
     else:
         console.print("\n[green]✓[/green] Claude Code hooks already exist")
+
+
+@app.command()
+def init(
+    path: Path = typer.Argument(Path.cwd(), help="Project directory"),
+    skip_config: bool = typer.Option(
+        False, "--skip-config", help="Skip creating configuration file"
+    ),
+    non_interactive: bool = typer.Option(
+        False, "--non-interactive", help="Skip interactive prompts for optional agents"
+    ),
+):
+    """Initialize devloop in a project."""
+    # Setup .devloop directory
+    claude_dir = _setup_devloop_directory(path)
+
+    # Create default configuration
+    _setup_config(claude_dir, skip_config, non_interactive)
+
+    # Setup AGENTS.md with DevLoop template
+    _setup_agents_md(path, claude_dir)
+
+    # Setup CLAUDE.md symlink
+    _setup_claude_md(path)
+
+    # Setup Claude Code slash commands
+    _setup_claude_commands(path)
+
+    # Setup git hooks
+    _setup_git_hooks(path)
+
+    # Setup Claude Code hooks
+    agents_hooks_dir = path / ".agents" / "hooks"
+    agents_hooks_dir.mkdir(parents=True, exist_ok=True)
+    _setup_claude_hooks(path, agents_hooks_dir, non_interactive)
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
