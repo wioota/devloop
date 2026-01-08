@@ -1072,6 +1072,30 @@ files = [
 ]
 
 [[package]]
+name = "types-psutil"
+version = "7.2.1.20251231"
+description = "Typing stubs for psutil"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_psutil-7.2.1.20251231-py3-none-any.whl", hash = "sha256:40735ca2fc818aed9dcbff7acb3317a774896615e3f4a7bd356afa224b9178e3"},
+    {file = "types_psutil-7.2.1.20251231.tar.gz", hash = "sha256:dbf9df530b1130e131e4211ed8cea62c08007bfa69faf2883d296bd241d30e4a"},
+]
+
+[[package]]
+name = "types-pyyaml"
+version = "6.0.12.20250915"
+description = "Typing stubs for PyYAML"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_pyyaml-6.0.12.20250915-py3-none-any.whl", hash = "sha256:e7d4d9e064e89a3b3cae120b4990cd370874d2bf12fa5f46c97018dd5d3c9ab6"},
+    {file = "types_pyyaml-6.0.12.20250915.tar.gz", hash = "sha256:0f8b54a528c303f0e6f7165687dd33fafa81c807fcac23f632b63aa624ced1d3"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
@@ -1148,4 +1172,4 @@ snyk = []
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "21d625252865ddfab0556b4723f0748fcc4926748312b8129e9ae15ef45281a3"
+content-hash = "44bd62277b1a96429b93cc45cef7179e7e3b615d97340d7d3e5fd47fdc44eebb"

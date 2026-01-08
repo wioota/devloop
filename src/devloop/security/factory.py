@@ -77,7 +77,7 @@ async def _create_explicit_sandbox(config: SandboxConfig) -> SandboxExecutor:
     if config.mode == "capsule":
         try:
             # Import only when needed (Capsule not available until Jan 2025)
-            from devloop.security.capsule_sandbox import CapsuleSandbox
+            from devloop.security.capsule_sandbox import CapsuleSandbox  # type: ignore[import-untyped]
 
             sandbox = CapsuleSandbox(config)
             if await sandbox.is_available():
@@ -106,7 +106,7 @@ async def _create_explicit_sandbox(config: SandboxConfig) -> SandboxExecutor:
     elif config.mode == "seccomp":
         try:
             # Import only when needed
-            from devloop.security.seccomp_sandbox import SeccompSandbox
+            from devloop.security.seccomp_sandbox import SeccompSandbox  # type: ignore[import-untyped]
 
             sandbox = SeccompSandbox(config)
             if await sandbox.is_available():

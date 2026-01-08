@@ -333,31 +333,31 @@ class TelemetryLogger:
         }
 
         for event in events:
-            event_type: Optional[str] = event.get("event_type")  # type: ignore
+            event_type: Optional[str] = event.get("event_type")
             if event_type is not None:
-                events_by_type: dict[str, Any] = stats["events_by_type"]  # type: ignore
+                events_by_type: dict[str, Any] = stats["events_by_type"]
                 events_by_type[event_type] = events_by_type.get(event_type, 0) + 1
 
-            findings: Any = event.get("findings", 0)  # type: ignore
+            findings: Any = event.get("findings", 0)
             if findings:
-                stats["total_findings"] += findings  # type: ignore
+                stats["total_findings"] += findings
 
-            duration: Any = event.get("duration_ms", 0)  # type: ignore
+            duration: Any = event.get("duration_ms", 0)
             if duration and event_type == "value_event":
-                stats["total_time_saved_ms"] += duration  # type: ignore
+                stats["total_time_saved_ms"] += duration
 
             if event_type == "ci_roundtrip_prevented":
-                stats["ci_roundtrips_prevented"] += 1  # type: ignore
+                stats["ci_roundtrips_prevented"] += 1
 
-            agent: Optional[str] = event.get("agent")  # type: ignore
+            agent: Optional[str] = event.get("agent")
             if agent:
-                agents_executed: dict[str, Any] = stats["agents_executed"]  # type: ignore
+                agents_executed: dict[str, Any] = stats["agents_executed"]
                 if agent not in agents_executed:
                     agents_executed[agent] = {
                         "count": 0,
                         "total_duration_ms": 0,
                     }
-                agent_stats: dict[str, Any] = agents_executed[agent]  # type: ignore
+                agent_stats: dict[str, Any] = agents_executed[agent]
                 agent_stats["count"] += 1
                 if duration:
                     agent_stats["total_duration_ms"] += duration
