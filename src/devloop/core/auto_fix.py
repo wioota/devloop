@@ -363,3 +363,49 @@ def rollback_all_session() -> int:
 def get_change_history(limit: Optional[int] = None) -> List[Dict]:
     """Convenience function to get change history."""
     return auto_fix.get_change_history(limit=limit)
+
+
+async def apply_fix(finding_id: str) -> bool:
+    """Apply a single fix by finding ID.
+
+    Args:
+        finding_id: The ID of the finding to apply a fix for
+
+    Returns:
+        True if fix was applied successfully, False otherwise
+    """
+    try:
+        # Get the finding from context store
+        all_findings = await context_store.get_findings()
+        finding = next((f for f in all_findings if f.id == finding_id), None)
+
+        if not finding:
+            logger.warning(f"Finding {finding_id} not found")
+            return False
+
+        if not finding.auto_fixable:
+            logger.warning(f"Finding {finding_id} is not auto-fixable")
+            return False
+
+        # Check if autonomous fixes are enabled
+        global_config = config.get_global_config()
+        if (
+            not global_config.autonomous_fixes
+            or not global_config.autonomous_fixes.enabled
+        ):
+            logger.info("Autonomous fixes are disabled in configuration")
+            return False
+
+        # Apply the fix using the global auto_fix instance
+        success = await auto_fix._apply_single_fix(
+            finding.agent, finding, global_config.autonomous_fixes
+        )
+
+        if success:
+            # Clear the finding from context store
+            await context_store.clear_findings(file_filter=finding.file)
+
+        return success
+    except Exception as e:
+        logger.error(f"Error applying fix for {finding_id}: {e}")
+        return False
