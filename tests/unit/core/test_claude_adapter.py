@@ -3,7 +3,7 @@
 import json
 import subprocess
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -41,10 +41,15 @@ class TestInitialization:
         assert adapter.project_root == Path.cwd()
 
     def test_verify_script_path(self, adapter, temp_project):
-        assert adapter.verify_script == temp_project / ".agents" / "verify-common-checks"
+        assert (
+            adapter.verify_script == temp_project / ".agents" / "verify-common-checks"
+        )
 
     def test_extract_script_path(self, adapter, temp_project):
-        assert adapter.extract_script == temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        assert (
+            adapter.extract_script
+            == temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        )
 
 
 class TestCheckResults:
@@ -58,10 +63,7 @@ class TestCheckResults:
 
     def test_no_actionable_items(self, adapter, temp_project):
         # Create index with no check_now items
-        index_data = {
-            "check_now": {"count": 0},
-            "last_updated": "2024-01-01T00:00:00"
-        }
+        index_data = {"check_now": {"count": 0}, "last_updated": "2024-01-01T00:00:00"}
         index_file = temp_project / ".claude" / "context" / "index.json"
         index_file.write_text(json.dumps(index_data))
 
@@ -74,11 +76,8 @@ class TestCheckResults:
     def test_with_actionable_items(self, adapter, temp_project):
         # Create index with check_now items
         index_data = {
-            "check_now": {
-                "count": 2,
-                "severity_breakdown": {"error": 1, "warning": 1}
-            },
-            "last_updated": "2024-01-01T00:00:00"
+            "check_now": {"count": 2, "severity_breakdown": {"error": 1, "warning": 1}},
+            "last_updated": "2024-01-01T00:00:00",
         }
         index_file = temp_project / ".claude" / "context" / "index.json"
         index_file.write_text(json.dumps(index_data))
@@ -90,7 +89,7 @@ class TestCheckResults:
                     "file": "test.py",
                     "severity": "error",
                     "message": "Test error",
-                    "line": 10
+                    "line": 10,
                 }
             ]
         }
@@ -120,9 +119,11 @@ class TestGetDetailedFindings:
         # Create findings for different tiers
         for tier in ["immediate", "relevant", "background", "auto_fixed"]:
             tier_file = temp_project / ".claude" / "context" / f"{tier}.json"
-            tier_file.write_text(json.dumps({
-                "findings": [{"agent": "test", "message": f"{tier} finding"}]
-            }))
+            tier_file.write_text(
+                json.dumps(
+                    {"findings": [{"agent": "test", "message": f"{tier} finding"}]}
+                )
+            )
 
         result = adapter.get_detailed_findings("all")
         assert result["status"] == "success"
@@ -133,9 +134,9 @@ class TestGetDetailedFindings:
 
     def test_get_specific_tier(self, adapter, temp_project):
         immediate_file = temp_project / ".claude" / "context" / "immediate.json"
-        immediate_file.write_text(json.dumps({
-            "findings": [{"agent": "linter", "message": "lint error"}]
-        }))
+        immediate_file.write_text(
+            json.dumps({"findings": [{"agent": "linter", "message": "lint error"}]})
+        )
 
         result = adapter.get_detailed_findings("immediate")
         assert result["status"] == "success"
@@ -173,15 +174,15 @@ class TestGetAgentInsights:
                 "severity": "error",
                 "message": "Missing semicolon",
                 "file": "test.py",
-                "auto_fixable": True
+                "auto_fixable": True,
             },
             {
                 "agent": "linter",
                 "severity": "warning",
                 "message": "Unused variable",
                 "file": "test.py",
-                "auto_fixable": False
-            }
+                "auto_fixable": False,
+            },
         ]
         self._create_index_and_findings(temp_project, findings)
 
@@ -193,12 +194,7 @@ class TestGetAgentInsights:
         assert any("auto-fix" in insight for insight in result["insights"])
 
     def test_test_insights(self, adapter, temp_project):
-        findings = [
-            {
-                "agent": "test-runner",
-                "message": "Test failed: test_something"
-            }
-        ]
+        findings = [{"agent": "test-runner", "message": "Test failed: test_something"}]
         self._create_index_and_findings(temp_project, findings)
 
         result = adapter.get_agent_insights("test")
@@ -211,7 +207,7 @@ class TestGetAgentInsights:
                 "agent": "security-scanner",
                 "severity": "high",
                 "message": "SQL injection risk",
-                "blocking": True
+                "blocking": True,
             }
         ]
         self._create_index_and_findings(temp_project, findings)
@@ -222,12 +218,7 @@ class TestGetAgentInsights:
         assert any("high-priority" in insight for insight in result["insights"])
 
     def test_format_insights(self, adapter, temp_project):
-        findings = [
-            {
-                "agent": "formatter",
-                "message": "Line too long"
-            }
-        ]
+        findings = [{"agent": "formatter", "message": "Line too long"}]
         self._create_index_and_findings(temp_project, findings)
 
         result = adapter.get_agent_insights("format")
@@ -235,10 +226,7 @@ class TestGetAgentInsights:
         assert "1 formatting issue(s)" in result["insights"][0]
 
     def test_general_insights_no_issues(self, adapter, temp_project):
-        index_data = {
-            "check_now": {"count": 0},
-            "last_updated": "2024-01-01T00:00:00"
-        }
+        index_data = {"check_now": {"count": 0}, "last_updated": "2024-01-01T00:00:00"}
         index_file = temp_project / ".claude" / "context" / "index.json"
         index_file.write_text(json.dumps(index_data))
 
@@ -248,11 +236,8 @@ class TestGetAgentInsights:
 
     def test_general_insights_with_issues(self, adapter, temp_project):
         index_data = {
-            "check_now": {
-                "count": 3,
-                "severity_breakdown": {"error": 2, "warning": 1}
-            },
-            "last_updated": "2024-01-01T00:00:00"
+            "check_now": {"count": 3, "severity_breakdown": {"error": 2, "warning": 1}},
+            "last_updated": "2024-01-01T00:00:00",
         }
         index_file = temp_project / ".claude" / "context" / "index.json"
         index_file.write_text(json.dumps(index_data))
@@ -260,7 +245,7 @@ class TestGetAgentInsights:
         immediate_findings = [
             {"agent": "linter", "message": "Error 1", "auto_fixable": True},
             {"agent": "linter", "message": "Error 2", "auto_fixable": False},
-            {"agent": "test-runner", "message": "Test failed", "auto_fixable": False}
+            {"agent": "test-runner", "message": "Test failed", "auto_fixable": False},
         ]
         immediate_file = temp_project / ".claude" / "context" / "immediate.json"
         immediate_file.write_text(json.dumps({"findings": immediate_findings}))
@@ -284,7 +269,7 @@ class TestGetAgentInsights:
         """Helper to create index and findings files"""
         index_data = {
             "check_now": {"count": len(findings)},
-            "last_updated": "2024-01-01T00:00:00"
+            "last_updated": "2024-01-01T00:00:00",
         }
         index_file = temp_project / ".claude" / "context" / "index.json"
         index_file.write_text(json.dumps(index_data))
@@ -330,14 +315,14 @@ class TestPrivateMethods:
                 "file": "test.py",
                 "severity": "error",
                 "message": "Error message",
-                "line": 10
+                "line": 10,
             },
             {
                 "file": "test.py",
                 "severity": "warning",
                 "message": "Warning message",
-                "line": 20
-            }
+                "line": 20,
+            },
         ]
 
         result = adapter._format_immediate_display(check_now, findings)
@@ -363,13 +348,11 @@ class TestPrivateMethods:
             "immediate": [
                 {"agent": "linter", "message": "Error 1"},
                 {"agent": "linter", "message": "Error 2"},
-                {"agent": "test-runner", "message": "Test failed"}
+                {"agent": "test-runner", "message": "Test failed"},
             ],
-            "relevant": [
-                {"agent": "formatter", "message": "Format issue"}
-            ],
+            "relevant": [{"agent": "formatter", "message": "Format issue"}],
             "background": [],
-            "auto_fixed": []
+            "auto_fixed": [],
         }
 
         result = adapter._create_detailed_summary(findings)
@@ -396,9 +379,7 @@ class TestRunVerification:
         verify_script.touch()
 
         mock_run.return_value = Mock(
-            returncode=0,
-            stdout="✅ All checks passed\n",
-            stderr=""
+            returncode=0, stdout="✅ All checks passed\n", stderr=""
         )
 
         result = adapter.run_verification()
@@ -416,7 +397,7 @@ class TestRunVerification:
         mock_run.return_value = Mock(
             returncode=1,
             stdout="",
-            stderr="❌ FAIL: Tests failed\n⚠️ Warning: Coverage low\n"
+            stderr="❌ FAIL: Tests failed\n⚠️ Warning: Coverage low\n",
         )
 
         result = adapter.run_verification()
@@ -466,13 +447,15 @@ class TestExtractFindings:
     @patch("subprocess.run")
     def test_extraction_success(self, mock_run, adapter, temp_project):
         # Create extract script
-        extract_script = temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        extract_script = (
+            temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        )
         extract_script.touch()
 
         mock_run.return_value = Mock(
             returncode=0,
             stdout="Created formatter issue: claude-agents-abc123\nCreated linter issue: claude-agents-xyz789\n",
-            stderr=""
+            stderr="",
         )
 
         result = adapter.extract_findings()
@@ -485,13 +468,13 @@ class TestExtractFindings:
     @patch("subprocess.run")
     def test_extraction_no_issues(self, mock_run, adapter, temp_project):
         # Create extract script
-        extract_script = temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        extract_script = (
+            temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        )
         extract_script.touch()
 
         mock_run.return_value = Mock(
-            returncode=0,
-            stdout="No findings to extract\n",
-            stderr=""
+            returncode=0, stdout="No findings to extract\n", stderr=""
         )
 
         result = adapter.extract_findings()
@@ -501,7 +484,9 @@ class TestExtractFindings:
     @patch("subprocess.run")
     def test_extraction_timeout(self, mock_run, adapter, temp_project):
         # Create extract script
-        extract_script = temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        extract_script = (
+            temp_project / ".agents" / "hooks" / "extract-findings-to-beads"
+        )
         extract_script.touch()
 
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="extract", timeout=60)
@@ -521,14 +506,14 @@ class TestVerifyAndExtract:
             "status": "success",
             "verified": True,
             "blocking_issues": [],
-            "warnings": []
+            "warnings": [],
         }
 
         mock_extract.return_value = {
             "status": "success",
             "extracted": True,
             "issues_created": 2,
-            "issue_ids": ["issue-1", "issue-2"]
+            "issue_ids": ["issue-1", "issue-2"],
         }
 
         result = adapter.verify_and_extract()
@@ -540,18 +525,17 @@ class TestVerifyAndExtract:
 
     @patch.object(ClaudeCodeAdapter, "run_verification")
     @patch.object(ClaudeCodeAdapter, "extract_findings")
-    def test_combined_workflow_verification_failed(self, mock_extract, mock_verify, adapter):
+    def test_combined_workflow_verification_failed(
+        self, mock_extract, mock_verify, adapter
+    ):
         mock_verify.return_value = {
             "status": "failed",
             "verified": False,
             "blocking_issues": ["Error 1", "Error 2"],
-            "warnings": ["Warning 1"]
+            "warnings": ["Warning 1"],
         }
 
-        mock_extract.return_value = {
-            "status": "success",
-            "issues_created": 2
-        }
+        mock_extract.return_value = {"status": "success", "issues_created": 2}
 
         result = adapter.verify_and_extract()
         assert result["status"] == "failed"
