@@ -80,9 +80,7 @@ class TestInstallPyodide:
         mock_security_module = Mock()
         mock_security_module.__file__ = "/fake/path/devloop/security/__init__.py"
 
-        with patch.dict(
-            "sys.modules", {"devloop.security": mock_security_module}
-        ):
+        with patch.dict("sys.modules", {"devloop.security": mock_security_module}):
             with patch("devloop.cli.pyodide_installer.Path") as MockPath:
                 mock_security_dir = Mock()
                 mock_package_json = Mock()
@@ -95,7 +93,9 @@ class TestInstallPyodide:
 
                     assert result is False
 
-    @pytest.mark.skip(reason="Complex mocking of dynamic import - covered by failure tests")
+    @pytest.mark.skip(
+        reason="Complex mocking of dynamic import - covered by failure tests"
+    )
     def test_npm_install_success(self):
         """Test successful npm install."""
         # Skipped due to complex mocking requirements with dynamic imports
@@ -111,9 +111,7 @@ class TestInstallPyodide:
         mock_security_module = Mock()
         mock_security_module.__file__ = "/fake/path/devloop/security/__init__.py"
 
-        with patch.dict(
-            "sys.modules", {"devloop.security": mock_security_module}
-        ):
+        with patch.dict("sys.modules", {"devloop.security": mock_security_module}):
             with patch.object(Path, "exists", return_value=True):
                 with patch(
                     "devloop.cli.pyodide_installer.subprocess.run",
@@ -129,9 +127,7 @@ class TestInstallPyodide:
         mock_security_module = Mock()
         mock_security_module.__file__ = "/fake/path/devloop/security/__init__.py"
 
-        with patch.dict(
-            "sys.modules", {"devloop.security": mock_security_module}
-        ):
+        with patch.dict("sys.modules", {"devloop.security": mock_security_module}):
             with patch.object(Path, "exists", return_value=True):
                 with patch(
                     "devloop.cli.pyodide_installer.subprocess.run",
@@ -147,9 +143,7 @@ class TestInstallPyodide:
         mock_security_module = Mock()
         mock_security_module.__file__ = "/fake/path/devloop/security/__init__.py"
 
-        with patch.dict(
-            "sys.modules", {"devloop.security": mock_security_module}
-        ):
+        with patch.dict("sys.modules", {"devloop.security": mock_security_module}):
             with patch.object(Path, "exists", return_value=True):
                 with patch(
                     "devloop.cli.pyodide_installer.subprocess.run",

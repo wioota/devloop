@@ -32,8 +32,12 @@ class TestCheckSnykAvailable:
         mock_result.returncode = 0
         mock_result.stdout = "1.1050.0\n"
 
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"
+        ):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 available, version = check_snyk_available()
 
                 assert available is True
@@ -44,8 +48,12 @@ class TestCheckSnykAvailable:
         mock_result = Mock()
         mock_result.returncode = 1
 
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"
+        ):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 available, message = check_snyk_available()
 
                 assert available is False
@@ -53,7 +61,9 @@ class TestCheckSnykAvailable:
 
     def test_snyk_command_exception(self):
         """Test when snyk command raises exception."""
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/snyk"
+        ):
             with patch(
                 "devloop.cli.snyk_installer.subprocess.run",
                 side_effect=subprocess.TimeoutExpired("snyk", 5),
@@ -103,15 +113,22 @@ class TestInstallSnykCli:
                 result = install_snyk_cli()
 
                 assert result is False
-                assert any("npm not found" in str(call) for call in mock_console.print.call_args_list)
+                assert any(
+                    "npm not found" in str(call)
+                    for call in mock_console.print.call_args_list
+                )
 
     def test_npm_install_success(self):
         """Test successful npm install."""
         mock_result = Mock()
         mock_result.returncode = 0
 
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"
+        ):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 with patch("devloop.cli.snyk_installer.console"):
                     result = install_snyk_cli()
 
@@ -123,8 +140,12 @@ class TestInstallSnykCli:
         mock_result.returncode = 1
         mock_result.stderr = "Permission denied"
 
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"
+        ):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 with patch("devloop.cli.snyk_installer.console"):
                     result = install_snyk_cli()
 
@@ -132,7 +153,9 @@ class TestInstallSnykCli:
 
     def test_npm_install_timeout(self):
         """Test npm install timeout."""
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"
+        ):
             with patch(
                 "devloop.cli.snyk_installer.subprocess.run",
                 side_effect=subprocess.TimeoutExpired("npm", 180),
@@ -144,7 +167,9 @@ class TestInstallSnykCli:
 
     def test_npm_install_exception(self):
         """Test npm install with unexpected exception."""
-        with patch("devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"):
+        with patch(
+            "devloop.cli.snyk_installer.shutil.which", return_value="/usr/bin/npm"
+        ):
             with patch(
                 "devloop.cli.snyk_installer.subprocess.run",
                 side_effect=Exception("Network error"),
@@ -172,7 +197,9 @@ class TestAuthenticateSnyk:
         mock_result.returncode = 0
 
         with patch.dict(os.environ, {"SNYK_TOKEN": "test-token"}, clear=True):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 with patch("devloop.cli.snyk_installer.console"):
                     result = authenticate_snyk()
 
@@ -185,7 +212,9 @@ class TestAuthenticateSnyk:
         mock_result.stderr = "Invalid token"
 
         with patch.dict(os.environ, {"SNYK_TOKEN": "bad-token"}, clear=True):
-            with patch("devloop.cli.snyk_installer.subprocess.run", return_value=mock_result):
+            with patch(
+                "devloop.cli.snyk_installer.subprocess.run", return_value=mock_result
+            ):
                 with patch("devloop.cli.snyk_installer.console"):
                     result = authenticate_snyk()
 
@@ -230,9 +259,16 @@ class TestPromptSnykInstallation:
             "devloop.cli.snyk_installer.check_snyk_available",
             return_value=(True, "1.1050.0"),
         ):
-            with patch("devloop.cli.snyk_installer.check_snyk_token", return_value=True):
-                with patch("devloop.cli.snyk_installer.typer.confirm", return_value=True):
-                    with patch("devloop.cli.snyk_installer.authenticate_snyk", return_value=True):
+            with patch(
+                "devloop.cli.snyk_installer.check_snyk_token", return_value=True
+            ):
+                with patch(
+                    "devloop.cli.snyk_installer.typer.confirm", return_value=True
+                ):
+                    with patch(
+                        "devloop.cli.snyk_installer.authenticate_snyk",
+                        return_value=True,
+                    ):
                         with patch("devloop.cli.snyk_installer.console"):
                             result = prompt_snyk_installation(non_interactive=False)
 
@@ -244,7 +280,9 @@ class TestPromptSnykInstallation:
             "devloop.cli.snyk_installer.check_snyk_available",
             return_value=(True, "1.1050.0"),
         ):
-            with patch("devloop.cli.snyk_installer.check_snyk_token", return_value=False):
+            with patch(
+                "devloop.cli.snyk_installer.check_snyk_token", return_value=False
+            ):
                 with patch("devloop.cli.snyk_installer.console"):
                     result = prompt_snyk_installation(non_interactive=False)
 
@@ -256,9 +294,15 @@ class TestPromptSnykInstallation:
             "devloop.cli.snyk_installer.check_snyk_available",
             return_value=(False, "not found"),
         ):
-            with patch("devloop.cli.snyk_installer.check_snyk_token", return_value=False):
-                with patch("devloop.cli.snyk_installer.typer.confirm", return_value=True):
-                    with patch("devloop.cli.snyk_installer.install_snyk_cli", return_value=True):
+            with patch(
+                "devloop.cli.snyk_installer.check_snyk_token", return_value=False
+            ):
+                with patch(
+                    "devloop.cli.snyk_installer.typer.confirm", return_value=True
+                ):
+                    with patch(
+                        "devloop.cli.snyk_installer.install_snyk_cli", return_value=True
+                    ):
                         with patch("devloop.cli.snyk_installer.console"):
                             result = prompt_snyk_installation(non_interactive=False)
 
@@ -271,7 +315,9 @@ class TestPromptSnykInstallation:
             return_value=(False, "not found"),
         ):
             with patch("devloop.cli.snyk_installer.typer.confirm", return_value=True):
-                with patch("devloop.cli.snyk_installer.install_snyk_cli", return_value=False):
+                with patch(
+                    "devloop.cli.snyk_installer.install_snyk_cli", return_value=False
+                ):
                     with patch("devloop.cli.snyk_installer.console"):
                         result = prompt_snyk_installation(non_interactive=False)
 
@@ -295,9 +341,15 @@ class TestPromptSnykInstallation:
             "devloop.cli.snyk_installer.check_snyk_available",
             return_value=(False, "not found"),
         ):
-            with patch("devloop.cli.snyk_installer.check_snyk_token", return_value=True):
-                with patch("devloop.cli.snyk_installer.typer.confirm", return_value=True):
-                    with patch("devloop.cli.snyk_installer.install_snyk_cli", return_value=True):
+            with patch(
+                "devloop.cli.snyk_installer.check_snyk_token", return_value=True
+            ):
+                with patch(
+                    "devloop.cli.snyk_installer.typer.confirm", return_value=True
+                ):
+                    with patch(
+                        "devloop.cli.snyk_installer.install_snyk_cli", return_value=True
+                    ):
                         with patch(
                             "devloop.cli.snyk_installer.authenticate_snyk"
                         ) as mock_auth:

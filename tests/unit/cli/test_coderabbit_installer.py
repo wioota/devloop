@@ -226,9 +226,7 @@ class TestAuthenticateCodeRabbit:
 
     def test_api_key_set(self):
         """Test when CODE_RABBIT_API_KEY is configured."""
-        with patch.dict(
-            os.environ, {"CODE_RABBIT_API_KEY": "test-key"}, clear=True
-        ):
+        with patch.dict(os.environ, {"CODE_RABBIT_API_KEY": "test-key"}, clear=True):
             with patch("devloop.cli.coderabbit_installer.console"):
                 result = authenticate_coderabbit()
 
