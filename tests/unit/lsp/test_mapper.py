@@ -84,7 +84,9 @@ class TestFindingMapper:
         assert diagnostic is not None
         assert diagnostic.related_information is not None
         assert len(diagnostic.related_information) == 1
-        assert diagnostic.related_information[0].message == "Expected 'str' but got 'int'"
+        assert (
+            diagnostic.related_information[0].message == "Expected 'str' but got 'int'"
+        )
 
     def test_to_diagnostic_without_location_returns_none(self):
         """Test that findings without line number return None."""
