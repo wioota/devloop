@@ -32,7 +32,9 @@ class TestPrerequisiteChecker:
 
     def test_check_tool_available_found(self):
         """Test check_tool_available when tool is found."""
-        with patch("devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/gh"):
+        with patch(
+            "devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/gh"
+        ):
             result = PrerequisiteChecker.check_tool_available("gh")
             assert result is True
 
@@ -44,7 +46,9 @@ class TestPrerequisiteChecker:
 
     def test_check_prerequisites_all_available(self):
         """Test check_prerequisites when all tools are available."""
-        with patch("devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"):
+        with patch(
+            "devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"
+        ):
             results = PrerequisiteChecker.check_prerequisites()
 
             assert isinstance(results, dict)
@@ -54,6 +58,7 @@ class TestPrerequisiteChecker:
 
     def test_check_prerequisites_some_missing(self):
         """Test check_prerequisites when some tools are missing."""
+
         def mock_which(tool):
             return "/usr/bin/gh" if tool == "gh" else None
 
@@ -73,7 +78,9 @@ class TestPrerequisiteChecker:
 
     def test_check_optional_prerequisites_all_available(self):
         """Test check_optional_prerequisites when all tools are available."""
-        with patch("devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"):
+        with patch(
+            "devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"
+        ):
             results = PrerequisiteChecker.check_optional_prerequisites()
 
             assert isinstance(results, dict)
@@ -83,6 +90,7 @@ class TestPrerequisiteChecker:
 
     def test_check_optional_prerequisites_some_missing(self):
         """Test check_optional_prerequisites when some tools are missing."""
+
         def mock_which(tool):
             return "/usr/bin/snyk" if tool == "snyk" else None
 
@@ -94,7 +102,9 @@ class TestPrerequisiteChecker:
 
     def test_validate_for_git_hooks_all_available(self):
         """Test validate_for_git_hooks when all tools are available."""
-        with patch("devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"):
+        with patch(
+            "devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"
+        ):
             all_available, missing = PrerequisiteChecker.validate_for_git_hooks(
                 interactive=False
             )
@@ -193,7 +203,9 @@ class TestValidatePrerequisites:
 
     def test_validate_prerequisites_all_available(self):
         """Test validate_prerequisites when all tools are available."""
-        with patch("devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"):
+        with patch(
+            "devloop.cli.prerequisites.shutil.which", return_value="/usr/bin/tool"
+        ):
             result = validate_prerequisites(interactive=False)
 
             assert result is True
@@ -215,6 +227,7 @@ class TestValidatePrerequisites:
 
     def test_validate_prerequisites_partial_availability(self):
         """Test validate_prerequisites when some tools are available."""
+
         def mock_which(tool):
             return "/usr/bin/gh" if tool == "gh" else None
 
