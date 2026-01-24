@@ -146,9 +146,7 @@ class TestPublish:
                 "devloop.marketplace.AgentPublisher",
                 return_value=mock_publisher,
             ):
-                with patch(
-                    "devloop.marketplace.AgentSigner"
-                ) as MockSigner:
+                with patch("devloop.marketplace.AgentSigner") as MockSigner:
                     with patch("devloop.cli.commands.agent_publish.typer.echo"):
                         publish(
                             agent_dir=agent_dir,
@@ -192,9 +190,7 @@ class TestPublish:
 
         custom_registry = Path("/custom/registry")
 
-        with patch(
-            "devloop.marketplace.create_registry_client"
-        ) as mock_client:
+        with patch("devloop.marketplace.create_registry_client") as mock_client:
             with patch(
                 "devloop.marketplace.AgentPublisher",
                 return_value=mock_publisher,
@@ -545,9 +541,7 @@ class TestCheck:
 
         custom_registry = Path("/custom/registry")
 
-        with patch(
-            "devloop.marketplace.create_registry_client"
-        ) as mock_client:
+        with patch("devloop.marketplace.create_registry_client") as mock_client:
             with patch(
                 "devloop.marketplace.AgentPublisher",
                 return_value=mock_publisher,
@@ -589,9 +583,7 @@ class TestVersion:
         """Test version bump with patch."""
         from devloop.cli.commands.agent_publish import version
 
-        with patch(
-            "devloop.marketplace.VersionManager"
-        ) as MockVersionMgr:
+        with patch("devloop.marketplace.VersionManager") as MockVersionMgr:
             MockVersionMgr.bump_version.return_value = "1.0.1"
             MockVersionMgr.update_agent_json.return_value = True
 
@@ -607,9 +599,7 @@ class TestVersion:
         """Test version bump with minor."""
         from devloop.cli.commands.agent_publish import version
 
-        with patch(
-            "devloop.marketplace.VersionManager"
-        ) as MockVersionMgr:
+        with patch("devloop.marketplace.VersionManager") as MockVersionMgr:
             MockVersionMgr.bump_version.return_value = "1.1.0"
             MockVersionMgr.update_agent_json.return_value = True
 
@@ -622,9 +612,7 @@ class TestVersion:
         """Test version bump with major."""
         from devloop.cli.commands.agent_publish import version
 
-        with patch(
-            "devloop.marketplace.VersionManager"
-        ) as MockVersionMgr:
+        with patch("devloop.marketplace.VersionManager") as MockVersionMgr:
             MockVersionMgr.bump_version.return_value = "2.0.0"
             MockVersionMgr.update_agent_json.return_value = True
 
@@ -678,9 +666,7 @@ class TestVersion:
 
         from devloop.cli.commands.agent_publish import version
 
-        with patch(
-            "devloop.marketplace.VersionManager"
-        ) as MockVersionMgr:
+        with patch("devloop.marketplace.VersionManager") as MockVersionMgr:
             MockVersionMgr.bump_version.return_value = "1.0.1"
             MockVersionMgr.update_agent_json.return_value = False
 
@@ -769,9 +755,7 @@ class TestDeprecate:
 
         custom_registry = Path("/custom/registry")
 
-        with patch(
-            "devloop.marketplace.create_registry_client"
-        ) as mock_client:
+        with patch("devloop.marketplace.create_registry_client") as mock_client:
             with patch(
                 "devloop.marketplace.DeprecationManager",
                 return_value=mock_manager,
