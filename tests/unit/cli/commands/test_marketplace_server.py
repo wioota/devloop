@@ -358,7 +358,9 @@ class TestStatus:
             }
         }
 
-        with patch("devloop.marketplace.create_registry_client", return_value=mock_client):
+        with patch(
+            "devloop.marketplace.create_registry_client", return_value=mock_client
+        ):
             with patch(
                 "devloop.cli.commands.marketplace_server.typer.echo"
             ) as mock_echo:
@@ -390,7 +392,9 @@ class TestStatus:
             }
         }
 
-        with patch("devloop.marketplace.create_registry_client", return_value=mock_client):
+        with patch(
+            "devloop.marketplace.create_registry_client", return_value=mock_client
+        ):
             with patch(
                 "devloop.cli.commands.marketplace_server.typer.echo"
             ) as mock_echo:
@@ -415,7 +419,9 @@ class TestStatus:
         mock_client = Mock()
         mock_client.get_registry_stats.side_effect = Exception("Database error")
 
-        with patch("devloop.marketplace.create_registry_client", return_value=mock_client):
+        with patch(
+            "devloop.marketplace.create_registry_client", return_value=mock_client
+        ):
             with patch("devloop.cli.commands.marketplace_server.typer.echo"):
                 with pytest.raises(typer_module.Exit) as exc_info:
                     status(registry_dir=registry_dir)
@@ -428,7 +434,9 @@ class TestRegisterMarketplaceCommands:
 
     def test_register_marketplace_commands(self):
         """Test register_marketplace_commands adds typer app."""
-        from devloop.cli.commands.marketplace_server import register_marketplace_commands
+        from devloop.cli.commands.marketplace_server import (
+            register_marketplace_commands,
+        )
 
         mock_main_app = Mock()
 

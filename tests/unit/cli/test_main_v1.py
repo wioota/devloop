@@ -185,7 +185,9 @@ class TestWatchAsync:
                     ):
                         with patch("devloop.cli.main_v1.console"):
                             with patch("devloop.cli.main_v1.signal"):
-                                with patch("devloop.cli.main_v1.asyncio.Event") as MockEvent:
+                                with patch(
+                                    "devloop.cli.main_v1.asyncio.Event"
+                                ) as MockEvent:
                                     # Make shutdown_event.wait() return immediately
                                     mock_shutdown = Mock()
                                     mock_shutdown.wait = AsyncMock()

@@ -17,7 +17,9 @@ class TestGetCurrentBranch:
         mock_result = Mock()
         mock_result.stdout = "main\n"
 
-        with patch("devloop.cli.pre_push_check.subprocess.run", return_value=mock_result):
+        with patch(
+            "devloop.cli.pre_push_check.subprocess.run", return_value=mock_result
+        ):
             branch = get_current_branch()
 
             assert branch == "main"
@@ -49,7 +51,9 @@ class TestMain:
 
     def test_main_no_provider(self):
         """Test main returns 0 when no CI provider."""
-        with patch("devloop.cli.pre_push_check.get_current_branch", return_value="main"):
+        with patch(
+            "devloop.cli.pre_push_check.get_current_branch", return_value="main"
+        ):
             mock_manager = Mock()
             mock_manager.auto_detect_ci_provider.return_value = None
 
@@ -61,11 +65,15 @@ class TestMain:
                     result = main()
 
                     assert result == 0
-                    mock_print.assert_called_once_with("WARNING: No CI provider available")
+                    mock_print.assert_called_once_with(
+                        "WARNING: No CI provider available"
+                    )
 
     def test_main_provider_not_available(self):
         """Test main returns 0 when provider not available."""
-        with patch("devloop.cli.pre_push_check.get_current_branch", return_value="main"):
+        with patch(
+            "devloop.cli.pre_push_check.get_current_branch", return_value="main"
+        ):
             mock_provider = Mock()
             mock_provider.is_available.return_value = False
             mock_provider.get_provider_name.return_value = "GitHub Actions"
@@ -87,7 +95,9 @@ class TestMain:
 
     def test_main_no_runs(self):
         """Test main returns 0 when no CI runs found."""
-        with patch("devloop.cli.pre_push_check.get_current_branch", return_value="main"):
+        with patch(
+            "devloop.cli.pre_push_check.get_current_branch", return_value="main"
+        ):
             mock_provider = Mock()
             mock_provider.is_available.return_value = True
             mock_provider.list_runs.return_value = []
@@ -107,7 +117,9 @@ class TestMain:
 
     def test_main_success(self):
         """Test main returns 0 and outputs JSON with run info."""
-        with patch("devloop.cli.pre_push_check.get_current_branch", return_value="main"):
+        with patch(
+            "devloop.cli.pre_push_check.get_current_branch", return_value="main"
+        ):
             mock_run = Mock()
             mock_run.status.value = "completed"
             mock_run.conclusion.value = "success"
@@ -136,11 +148,15 @@ class TestMain:
                     assert output["branch"] == "main"
                     assert output["status"] == "completed"
                     assert output["conclusion"] == "success"
-                    assert output["url"] == "https://github.com/org/repo/actions/runs/123"
+                    assert (
+                        output["url"] == "https://github.com/org/repo/actions/runs/123"
+                    )
 
     def test_main_success_no_conclusion(self):
         """Test main handles run with no conclusion."""
-        with patch("devloop.cli.pre_push_check.get_current_branch", return_value="develop"):
+        with patch(
+            "devloop.cli.pre_push_check.get_current_branch", return_value="develop"
+        ):
             mock_run = Mock()
             mock_run.status.value = "in_progress"
             mock_run.conclusion = None
