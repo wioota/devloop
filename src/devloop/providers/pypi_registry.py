@@ -1,6 +1,7 @@
 """PyPI package registry provider implementation."""
 
 import json
+import os
 import subprocess
 from typing import List, Optional
 
@@ -125,12 +126,26 @@ class PyPIRegistry(PackageRegistry):
             return []
 
     def check_credentials(self) -> bool:
-        """Check if registry credentials are valid."""
+        """Check if registry credentials are valid.
+
+        Checks both environment variables and poetry config for PyPI tokens.
+        Poetry supports tokens via:
+        - Environment variable: POETRY_PYPI_TOKEN_PYPI
+        - Config: poetry config pypi-token.pypi <token>
+        """
         if not self._poetry_available:
             return False
 
+        # Check environment variable first (Poetry reads this automatically)
+        if os.environ.get("POETRY_PYPI_TOKEN_PYPI"):
+            return True
+
+        # Also check PYPI_TOKEN as a fallback
+        if os.environ.get("PYPI_TOKEN"):
+            return True
+
         try:
-            # Try to check poetry config
+            # Fall back to checking poetry config
             result = subprocess.run(
                 ["poetry", "config", "pypi-token.pypi"],
                 capture_output=True,
