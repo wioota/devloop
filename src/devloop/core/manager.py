@@ -263,6 +263,10 @@ class AgentManager:
             try:
                 await asyncio.sleep(self.resource_limits.check_interval_seconds)
 
+                # Skip if resource tracker not available
+                if self.resource_tracker is None:
+                    continue
+
                 for agent_name, agent in self.agents.items():
                     if not agent.enabled or not agent._running:
                         continue

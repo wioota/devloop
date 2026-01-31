@@ -29,6 +29,7 @@ class DaemonHealthCheck:
         self.heartbeat_interval = heartbeat_interval
         self._task: Optional[asyncio.Task] = None
         self._running = False
+        self._start_time: Optional[float] = None
 
     async def start(self):
         """Start the heartbeat task."""
@@ -77,19 +78,15 @@ class DaemonHealthCheck:
             # Ensure proper permissions (rwxr-xr-x)
             self.devloop_dir.chmod(0o755)
 
+            # Initialize start time on first heartbeat
+            if self._start_time is None:
+                self._start_time = time.time()
+
             heartbeat_data = {
                 "timestamp": datetime.now().isoformat(),
                 "pid": os.getpid(),
-                "uptime_seconds": (
-                    time.time() - self._start_time
-                    if hasattr(self, "_start_time")
-                    else 0
-                ),
+                "uptime_seconds": time.time() - self._start_time,
             }
-
-            # Initialize start time on first heartbeat
-            if not hasattr(self, "_start_time"):
-                self._start_time = time.time()
 
             # Write atomically (write to temp file, then rename)
             temp_file = self.heartbeat_file.with_suffix(".tmp")

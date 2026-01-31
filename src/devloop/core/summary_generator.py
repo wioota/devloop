@@ -125,7 +125,7 @@ class SummaryGenerator:
         start_time, end_time = time_range
 
         # Get findings from all tiers
-        all_findings = []
+        all_findings: List[Finding] = []
         for tier in [Tier.IMMEDIATE, Tier.RELEVANT, Tier.BACKGROUND]:
             tier_findings = await self.context_store.get_findings(tier=tier)
             all_findings.extend(tier_findings)

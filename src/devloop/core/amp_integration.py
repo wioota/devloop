@@ -13,7 +13,7 @@ async def check_agent_findings():
     findings = await context_store.get_findings()
 
     # Group findings by agent
-    findings_by_agent = {}
+    findings_by_agent: Dict[str, list] = {}
     for finding in findings:
         agent = finding.agent
         if agent not in findings_by_agent:
@@ -45,15 +45,16 @@ async def check_agent_findings():
 async def apply_autonomous_fixes():
     """Apply safe fixes automatically."""
     global_config = config.get_global_config()
+    auto_fixes = global_config.autonomous_fixes
 
-    if not global_config.autonomous_fixes.enabled:
+    if auto_fixes is None or not auto_fixes.enabled:
         return {
             "message": "Autonomous fixes are disabled in configuration",
             "applied_fixes": {},
             "total_applied": 0,
             "config_status": {
                 "enabled": False,
-                "safety_level": global_config.autonomous_fixes.safety_level,
+                "safety_level": auto_fixes.safety_level if auto_fixes else "safe_only",
             },
         }
 
@@ -76,7 +77,7 @@ async def apply_autonomous_fixes():
         "total_applied": total_applied,
         "config_status": {
             "enabled": True,
-            "safety_level": global_config.autonomous_fixes.safety_level,
+            "safety_level": auto_fixes.safety_level if auto_fixes else "safe_only",
         },
     }
 
@@ -86,14 +87,14 @@ async def show_agent_status():
     findings = await context_store.get_findings()
 
     # Group findings by agent
-    findings_by_agent = {}
+    findings_by_agent: Dict[str, list] = {}
     for finding in findings:
         agent = finding.agent
         if agent not in findings_by_agent:
             findings_by_agent[agent] = []
         findings_by_agent[agent].append(finding)
 
-    status = {
+    status: Dict[str, Any] = {
         "agent_activity": {},
         "total_findings": len(findings),
         "findings_by_agent": {k: len(v) for k, v in findings_by_agent.items()},
