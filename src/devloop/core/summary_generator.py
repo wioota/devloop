@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, UTC
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .context_store import Finding, Severity, Tier, context_store
 
@@ -59,7 +59,7 @@ class SummaryGenerator:
         self.context_store = context_store_instance or context_store
 
     async def generate_summary(
-        self, scope: str = "recent", filters: Dict[str, Any] = None
+        self, scope: str = "recent", filters: Optional[Dict[str, Any]] = None
     ) -> SummaryReport:
         """Generate intelligent summary of findings.
 

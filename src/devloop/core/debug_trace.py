@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 class ExecutionTrace:
     """Records execution details for debugging"""
 
-    def __init__(self, name: str, args: tuple = None, kwargs: dict = None):
+    def __init__(
+        self, name: str, args: Optional[tuple] = None, kwargs: Optional[dict] = None
+    ):
         self.name = name
         self.args = args or ()
         self.kwargs = kwargs or {}
@@ -41,7 +43,7 @@ class ExecutionTrace:
         self.start_time = time.time()
         logger.debug(f"[TRACE] {self.name} START")
 
-    def end(self, result: Any = None, exception: Exception = None):
+    def end(self, result: Any = None, exception: Optional[Exception] = None):
         """Mark end of execution"""
         self.end_time = time.time()
         self.duration = (
@@ -85,7 +87,7 @@ def clear_trace_history():
     _trace_history = []
 
 
-def trace_execution(name: str = None):
+def trace_execution(name: Optional[str] = None):
     """Decorator for tracing function execution
 
     Usage:

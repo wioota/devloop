@@ -5,7 +5,7 @@ from devloop.core.config import config
 from devloop.core.context_store import context_store
 from devloop.core.summary_generator import SummaryGenerator
 from devloop.core.summary_formatter import SummaryFormatter
-from typing import Any, Callable, Coroutine, Dict
+from typing import Any, Callable, Coroutine, Dict, Optional
 
 
 async def check_agent_findings():
@@ -127,7 +127,7 @@ async def show_agent_status():
     return status
 
 
-async def generate_agent_summary(scope: str = "recent", filters: dict = None):
+async def generate_agent_summary(scope: str = "recent", filters: Optional[dict] = None):
     """Generate agent summary report for Amp/Claude Code slash command."""
     if filters is None:
         filters = {}

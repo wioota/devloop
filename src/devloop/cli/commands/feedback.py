@@ -15,7 +15,7 @@ app = typer.Typer(help="Feedback and performance monitoring")
 console = Console()
 
 
-def get_feedback_api(project_dir: Path = None) -> FeedbackAPI:
+def get_feedback_api(project_dir: Optional[Path] = None) -> FeedbackAPI:
     """Get feedback API instance for the project."""
     if project_dir is None:
         project_dir = Path.cwd()
@@ -25,7 +25,7 @@ def get_feedback_api(project_dir: Path = None) -> FeedbackAPI:
     return FeedbackAPI(feedback_store)
 
 
-def get_performance_monitor(project_dir: Path = None) -> PerformanceMonitor:
+def get_performance_monitor(project_dir: Optional[Path] = None) -> PerformanceMonitor:
     """Get performance monitor instance for the project."""
     if project_dir is None:
         project_dir = Path.cwd()

@@ -41,7 +41,10 @@ class SecurityResult:
     """Security scan result."""
 
     def __init__(
-        self, tool: str, issues: List[Dict[str, Any]], errors: List[str] = None
+        self,
+        tool: str,
+        issues: List[Dict[str, Any]],
+        errors: Optional[List[str]] = None,
     ):
         self.tool = tool
         self.issues = issues

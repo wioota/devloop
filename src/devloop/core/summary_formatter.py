@@ -1,6 +1,6 @@
 """Format summary reports for different outputs."""
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 from .summary_generator import SummaryReport
 from .operational_health import OperationalHealthAnalyzer
@@ -10,7 +10,9 @@ class SummaryFormatter:
     """Format summary reports for different output formats."""
 
     @staticmethod
-    def format_markdown(report: SummaryReport, devloop_dir: Path = None) -> str:
+    def format_markdown(
+        report: SummaryReport, devloop_dir: Optional[Path] = None
+    ) -> str:
         """Format summary report as markdown."""
         lines = []
 

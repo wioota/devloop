@@ -46,7 +46,7 @@ class CommitSuggestion:
         message: str,
         confidence: float,
         reasoning: str,
-        alternatives: List[str] = None,
+        alternatives: Optional[List[str]] = None,
     ):
         self.message = message
         self.confidence = confidence

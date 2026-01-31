@@ -35,7 +35,10 @@ class PerformanceResult:
     """Performance analysis result."""
 
     def __init__(
-        self, tool: str, metrics: List[Dict[str, Any]], errors: List[str] = None
+        self,
+        tool: str,
+        metrics: List[Dict[str, Any]],
+        errors: Optional[List[str]] = None,
     ):
         self.tool = tool
         self.metrics = metrics
