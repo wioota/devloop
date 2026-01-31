@@ -1,24 +1,69 @@
 #!/bin/bash
+# SessionStart hook: Load DevLoop findings when Claude Code starts
 #
-# SessionStart hook: Pre-load DevLoop findings when Claude Code starts
-#
-# This makes DevLoop findings available in Claude's context without
-# requiring a manual /verify-work command.
-#
-# Runs when Claude Code starts a new session or resumes an existing one.
-# Non-blocking: failures don't prevent session start.
+# This makes DevLoop findings available in Claude's context at session start.
+# Provides clear warnings if DevLoop is not properly configured.
 
 set -e
-
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 0
 
-# Try to load and display context
-if command -v devloop &>/dev/null; then
-    devloop amp_context 2>/dev/null || {
-        # If devloop fails, just continue silently
-        exit 0
-    }
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "DevLoop Context Check"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Check if devloop is available
+if ! command -v devloop &>/dev/null; then
+    echo "⚠️  DevLoop not installed"
+    echo "   Install with: pip install devloop"
+    echo "   Agent findings will not be available."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
 fi
 
+# Check if devloop watch is running
+if ! pgrep -f "devloop watch" >/dev/null 2>&1; then
+    echo "⚠️  DevLoop watch not running"
+    echo "   Start with: devloop watch ."
+    echo "   Agent findings won't be collected until started."
+    echo ""
+fi
+
+# Check context freshness
+CONTEXT_INDEX="$PROJECT_DIR/.devloop/context/index.json"
+if [[ -f "$CONTEXT_INDEX" ]]; then
+    # Get age of context file
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        LAST_UPDATED=$(stat -f %m "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+    else
+        LAST_UPDATED=$(stat -c %Y "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+    fi
+    NOW=$(date +%s)
+    if [[ "$LAST_UPDATED" -gt 0 ]]; then
+        AGE_MINUTES=$(( (NOW - LAST_UPDATED) / 60 ))
+        if [[ $AGE_MINUTES -gt 30 ]]; then
+            echo "🟡 Context is stale (${AGE_MINUTES}m old)"
+        fi
+    fi
+fi
+
+# Load and display context
+echo ""
+CONTEXT=$(devloop amp-context 2>&1) || {
+    echo "⚠️  Failed to load context: $CONTEXT"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+}
+
+# Parse and display summary using grep (faster than jq)
+CHECK_NOW=$(echo "$CONTEXT" | grep -o '"check_now":[^}]*"count": [0-9]*' 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+
+if [[ "$CHECK_NOW" -gt 0 ]]; then
+    echo "🔴 $CHECK_NOW issue(s) need attention"
+    echo "   Run /agent-summary for details"
+else
+    echo "🟢 No immediate issues from agents"
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 exit 0
