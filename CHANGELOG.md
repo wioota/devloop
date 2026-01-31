@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0] - 2026-01-31
+
+### New Features
+
+#### Test Coverage Infrastructure
+- **pytest-cov integration** - Implemented comprehensive test coverage reporting with pytest-cov
+- **Coverage targets** - CLI module coverage improved from 24% to 60%+
+- **Core module coverage** - Core modules improved to 53%+ with claude_adapter at 86%
+
+#### External Tool Integration
+- **Snyk CLI integration** - Seamless Snyk installation and setup via `devloop setup`
+- **CodeRabbit CLI integration** - CodeRabbit installation integrated into devloop workflow
+- **Troubleshooting guides** - Added comprehensive troubleshooting for Snyk and CodeRabbit agents
+
+### Testing
+
+#### Comprehensive Test Suite Expansion
+- **CLI coverage**: 24% → 60%+ through systematic test additions
+- **Installer tests**: snyk_installer (100%), coderabbit_installer (100%), pyodide_installer (77%)
+- **LSP tests**: Achieved 71.2% coverage (target: >60%)
+- **claude_adapter tests**: 0% → 86% coverage with comprehensive unit tests
+- **Command tests**: Added tests for telemetry, marketplace, release, audit, agent_publish commands
+
+#### Test Infrastructure Improvements
+- **Reorganized test directory structure** - Better organization for unit/integration tests
+- **Reduced test duplication** - Introduced `registered_agent` fixture
+- **Fixed async warnings** - Resolved async deprecation warnings throughout test suite
+- **Stabilized flaky tests** - Fixed performance_optimizer and other timing-sensitive tests
+
+### Bug Fixes
+
+- **Fixed critical mypy python_version bug** - Added missing type stubs
+- **Stabilized flaky performance tests** - Mocked time-dependent operations
+- **Fixed path resolution** - Corrected path handling in test_claude_hooks.py
+- **Resolved async warnings** - Fixed deprecated async patterns in tests
+
+### Refactoring
+
+- **Reduced init() complexity** - Refactored from cyclomatic complexity 58 to ~10 by extracting helpers
+- **Test organization** - Restructured tests directory for better maintainability
+
+### Documentation
+
+- **DevLoop Claude context integration design** - Added design plan for Claude Code context integration
+- **Troubleshooting guides** - Added Snyk and CodeRabbit agent troubleshooting sections
+- **Mypy improvements tracking** - Documented future mypy configuration improvements in beads
+
+---
+
 ## [0.6.4] - 2025-12-15
 
 ### Documentation
