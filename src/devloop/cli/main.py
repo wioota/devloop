@@ -1040,17 +1040,24 @@ fi
 # Consume stdin
 cat > /dev/null
 
-# Fast check: Does context file exist?
-CONTEXT_INDEX="$PROJECT_DIR/.devloop/context/index.json"
-if [[ ! -f "$CONTEXT_INDEX" ]]; then
+# Fast check: Does context exist? Prefer .last_update marker (fastest)
+CONTEXT_DIR="$PROJECT_DIR/.devloop/context"
+MARKER_FILE="$CONTEXT_DIR/.last_update"
+CONTEXT_INDEX="$CONTEXT_DIR/index.json"
+
+if [[ -f "$MARKER_FILE" ]]; then
+    CHECK_FILE="$MARKER_FILE"
+elif [[ -f "$CONTEXT_INDEX" ]]; then
+    CHECK_FILE="$CONTEXT_INDEX"
+else
     exit 0
 fi
 
 # Fast check: Is context stale (>30 min)?
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    LAST_UPDATED=$(stat -f %m "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+    LAST_UPDATED=$(stat -f %m "$CHECK_FILE" 2>/dev/null || echo "0")
 else
-    LAST_UPDATED=$(stat -c %Y "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+    LAST_UPDATED=$(stat -c %Y "$CHECK_FILE" 2>/dev/null || echo "0")
 fi
 NOW=$(date +%s)
 AGE_SECONDS=$((NOW - LAST_UPDATED))

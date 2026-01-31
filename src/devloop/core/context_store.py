@@ -485,6 +485,11 @@ class ContextStore:
             temp_file.write_text(json.dumps(index, indent=2))
             temp_file.replace(index_file)
 
+            # Write .last_update marker for fast change detection by hooks
+            # Hooks can stat this file instead of parsing JSON
+            marker_file = self.context_dir / ".last_update"
+            marker_file.write_text(datetime.now(UTC).isoformat() + "\n")
+
             logger.debug(f"Updated index: {index_file}")
 
         except Exception as e:
