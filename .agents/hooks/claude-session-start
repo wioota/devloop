@@ -21,8 +21,17 @@ if ! command -v devloop &>/dev/null; then
     exit 0
 fi
 
-# Check if devloop watch is running
-if ! pgrep -f "devloop watch" >/dev/null 2>&1; then
+# Check if devloop watch is running (via PID file)
+PID_FILE="$PROJECT_DIR/.devloop/devloop.pid"
+WATCH_RUNNING=false
+if [[ -f "$PID_FILE" ]]; then
+    WATCH_PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
+        WATCH_RUNNING=true
+    fi
+fi
+
+if [[ "$WATCH_RUNNING" != "true" ]]; then
     echo "⚠️  DevLoop watch not running"
     echo "   Start with: devloop watch ."
     echo "   Agent findings won't be collected until started."

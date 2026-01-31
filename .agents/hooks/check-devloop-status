@@ -27,10 +27,16 @@ if ! command -v devloop &>/dev/null; then
 fi
 echo "✓ DevLoop installed"
 
-# 2. Check if devloop watch is running
-if pgrep -f "devloop watch" >/dev/null 2>&1; then
-    WATCH_PID=$(pgrep -f "devloop watch" | head -1)
-    echo "✓ Watch process running (PID: $WATCH_PID)"
+# 2. Check if devloop watch is running (via PID file)
+PID_FILE="$PROJECT_DIR/.devloop/devloop.pid"
+if [[ -f "$PID_FILE" ]]; then
+    WATCH_PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
+        echo "✓ Watch process running (PID: $WATCH_PID)"
+    else
+        echo "⚠️  Watch process NOT running (stale PID file)"
+        echo "   Start with: devloop watch ."
+    fi
 else
     echo "⚠️  Watch process NOT running"
     echo "   Start with: devloop watch ."
