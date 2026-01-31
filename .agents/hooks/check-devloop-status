@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+# DevLoop Status Check Script
+#
+# Comprehensive status reporting for DevLoop integration:
+# - Watch process detection (is devloop watch running?)
+# - Context freshness check (how old is the context?)
+# - Finding counts display (immediate, relevant, background issues)
+#
+# Usage: .agents/hooks/check-devloop-status
+#        Can also be used as a Claude Code hook
+
+set -e
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "DevLoop Status Check"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# 1. Check if devloop is installed
+if ! command -v devloop &>/dev/null; then
+    echo "⚠️  DevLoop not installed"
+    echo "   Install with: pip install devloop"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+fi
+echo "✓ DevLoop installed"
+
+# 2. Check if devloop watch is running
+if pgrep -f "devloop watch" >/dev/null 2>&1; then
+    WATCH_PID=$(pgrep -f "devloop watch" | head -1)
+    echo "✓ Watch process running (PID: $WATCH_PID)"
+else
+    echo "⚠️  Watch process NOT running"
+    echo "   Start with: devloop watch ."
+fi
+
+# 3. Check context freshness
+CONTEXT_DIR="$PROJECT_DIR/.devloop/context"
+MARKER_FILE="$CONTEXT_DIR/.last_update"
+CONTEXT_INDEX="$CONTEXT_DIR/index.json"
+
+# Prefer marker file, fall back to index.json
+if [[ -f "$MARKER_FILE" ]]; then
+    CHECK_FILE="$MARKER_FILE"
+elif [[ -f "$CONTEXT_INDEX" ]]; then
+    CHECK_FILE="$CONTEXT_INDEX"
+else
+    echo "⚠️  No context files found"
+    echo "   Run: devloop watch . (to start collecting)"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+fi
+
+# Get age of context
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LAST_UPDATED=$(stat -f %m "$CHECK_FILE" 2>/dev/null || echo "0")
+else
+    LAST_UPDATED=$(stat -c %Y "$CHECK_FILE" 2>/dev/null || echo "0")
+fi
+NOW=$(date +%s)
+AGE_SECONDS=$((NOW - LAST_UPDATED))
+AGE_MINUTES=$((AGE_SECONDS / 60))
+
+if [[ $AGE_MINUTES -eq 0 ]]; then
+    echo "✓ Context fresh (updated <1 minute ago)"
+elif [[ $AGE_MINUTES -lt 5 ]]; then
+    echo "✓ Context recent (${AGE_MINUTES}m ago)"
+elif [[ $AGE_MINUTES -lt 30 ]]; then
+    echo "🟡 Context aging (${AGE_MINUTES}m ago)"
+else
+    echo "🔴 Context stale (${AGE_MINUTES}m ago)"
+    echo "   Watch may have stopped. Restart with: devloop watch ."
+fi
+
+# 4. Display finding counts
+if [[ -f "$CONTEXT_INDEX" ]]; then
+    echo ""
+    echo "Finding Summary:"
+
+    # Parse counts using grep (faster than jq)
+    CHECK_NOW=$(grep -o '"check_now"[^}]*"count": [0-9]*' "$CONTEXT_INDEX" 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+    RELEVANT=$(grep -o '"mention_if_relevant"[^}]*"count": [0-9]*' "$CONTEXT_INDEX" 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+    DEFERRED=$(grep -o '"deferred"[^}]*"count": [0-9]*' "$CONTEXT_INDEX" 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+    AUTO_FIXED=$(grep -o '"auto_fixed"[^}]*"count": [0-9]*' "$CONTEXT_INDEX" 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+
+    if [[ "$CHECK_NOW" -gt 0 ]]; then
+        echo "  🔴 Immediate:   $CHECK_NOW (need attention now)"
+    else
+        echo "  ✓  Immediate:   0"
+    fi
+
+    if [[ "$RELEVANT" -gt 0 ]]; then
+        echo "  🟡 Relevant:    $RELEVANT (mention when relevant)"
+    else
+        echo "  ✓  Relevant:    0"
+    fi
+
+    echo "  ⚪ Background:  $DEFERRED"
+    echo "  ✓  Auto-fixed:  $AUTO_FIXED"
+
+    TOTAL=$((CHECK_NOW + RELEVANT + DEFERRED))
+    echo ""
+    echo "  Total active: $TOTAL findings"
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Exit suggestions
+if [[ "$CHECK_NOW" -gt 0 ]]; then
+    echo "Run /agent-summary for details on immediate issues"
+fi
+
+exit 0
