@@ -1,7 +1,7 @@
 """Tests for agent_publish CLI commands."""
 
 from pathlib import Path
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -506,11 +506,16 @@ class TestCheck:
                 with patch(
                     "devloop.cli.commands.agent_publish.typer.echo"
                 ) as mock_echo:
-                    check(agent_dir=agent_dir, registry_dir=None)
+                    with patch(
+                        "devloop.cli.commands.agent_publish.typer.secho"
+                    ) as mock_secho:
+                        check(agent_dir=agent_dir, registry_dir=None)
 
-                    # Should show update info
-                    calls = [str(call) for call in mock_echo.call_args_list]
-                    assert any("Update available" in call for call in calls)
+                        # Should show update info (via secho for colored output)
+                        echo_calls = [str(call) for call in mock_echo.call_args_list]
+                        secho_calls = [str(call) for call in mock_secho.call_args_list]
+                        all_calls = echo_calls + secho_calls
+                        assert any("Update available" in call for call in all_calls)
 
     def test_check_no_updates(self, agent_dir, mock_publisher):
         """Test check when no updates available."""

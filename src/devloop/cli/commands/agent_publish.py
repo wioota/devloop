@@ -76,18 +76,18 @@ def publish(
         typer.echo("=" * 50)
 
         if readiness["errors"]:
-            typer.echo("Errors (blocking):", fg=typer.colors.RED)
+            typer.secho("Errors (blocking):", fg=typer.colors.RED)
             for error in readiness["errors"]:
-                typer.echo(f"  ✗ {error}", fg=typer.colors.RED)
+                typer.secho(f"  ✗ {error}", fg=typer.colors.RED)
             raise typer.Exit(1)
 
         if readiness["warnings"]:
-            typer.echo("Warnings:", fg=typer.colors.YELLOW)
+            typer.secho("Warnings:", fg=typer.colors.YELLOW)
             for warning in readiness["warnings"]:
-                typer.echo(f"  ⚠ {warning}", fg=typer.colors.YELLOW)
+                typer.secho(f"  ⚠ {warning}", fg=typer.colors.YELLOW)
 
         if readiness["ready"]:
-            typer.echo("✓ Agent is ready to publish", fg=typer.colors.GREEN)
+            typer.secho("✓ Agent is ready to publish", fg=typer.colors.GREEN)
 
         typer.echo()
 
@@ -97,7 +97,7 @@ def publish(
             signer = AgentSigner(signer_id or "devloop-agent")
             success, signature = signer.sign_agent(agent_dir)
 
-            if success:
+            if success and signature is not None:
                 signer.save_signature(agent_dir, signature)
                 typer.echo(f"✓ Agent signed by {signature.signer}")
                 typer.echo(f"  Checksum: {signature.checksum[:16]}...")
@@ -111,9 +111,9 @@ def publish(
         success, message = publisher.publish_agent(agent_dir, force=force)
 
         if success:
-            typer.echo(f"✓ {message}", fg=typer.colors.GREEN)
+            typer.secho(f"✓ {message}", fg=typer.colors.GREEN)
         else:
-            typer.echo(f"✗ {message}", fg=typer.colors.RED, err=True)
+            typer.secho(f"✗ {message}", fg=typer.colors.RED, err=True)
             raise typer.Exit(1)
 
     except Exception as e:
@@ -164,7 +164,7 @@ def check(
         # Show status
         status = "✓ READY" if readiness["ready"] else "✗ NOT READY"
         color = typer.colors.GREEN if readiness["ready"] else typer.colors.RED
-        typer.echo(f"Status: {status}", fg=color)
+        typer.secho(f"Status: {status}", fg=color)
         typer.echo()
 
         # Show checks
@@ -173,19 +173,19 @@ def check(
             for check_name, result in readiness["checks"].items():
                 symbol = "✓" if result else "✗"
                 color = typer.colors.GREEN if result else typer.colors.RED
-                typer.echo(f"  {symbol} {check_name}", fg=color)
+                typer.secho(f"  {symbol} {check_name}", fg=color)
 
         # Show errors
         if readiness["errors"]:
             typer.echo()
-            typer.echo("Errors (blocking):", fg=typer.colors.RED)
+            typer.secho("Errors (blocking):", fg=typer.colors.RED)
             for error in readiness["errors"]:
                 typer.echo(f"  • {error}")
 
         # Show warnings
         if readiness["warnings"]:
             typer.echo()
-            typer.echo("Warnings:", fg=typer.colors.YELLOW)
+            typer.secho("Warnings:", fg=typer.colors.YELLOW)
             for warning in readiness["warnings"]:
                 typer.echo(f"  • {warning}")
 
@@ -193,7 +193,7 @@ def check(
         typer.echo()
         updates = publisher.check_updates(agent_dir)
         if updates.get("has_updates"):
-            typer.echo(
+            typer.secho(
                 f"Update available: {updates['published_version']} → "
                 f"{updates['local_version']}",
                 fg=typer.colors.BLUE,
@@ -256,7 +256,7 @@ def version(
         success = VersionManager.update_agent_json(agent_dir, new_version)
 
         if success:
-            typer.echo(
+            typer.secho(
                 f"✓ Version bumped: {current} → {new_version}", fg=typer.colors.GREEN
             )
         else:
@@ -314,9 +314,9 @@ def deprecate(
         )
 
         if success:
-            typer.echo(f"✓ {result_message}", fg=typer.colors.GREEN)
+            typer.secho(f"✓ {result_message}", fg=typer.colors.GREEN)
         else:
-            typer.echo(f"✗ {result_message}", fg=typer.colors.RED, err=True)
+            typer.secho(f"✗ {result_message}", fg=typer.colors.RED, err=True)
             raise typer.Exit(1)
 
     except Exception as e:

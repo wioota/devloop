@@ -2,24 +2,13 @@
 
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from lsprotocol.types import (
-    CodeAction,
-    CodeActionKind,
-    CodeActionParams,
-    Diagnostic,
-    DiagnosticSeverity,
-    DidChangeTextDocumentParams,
-    DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams,
-    InitializeParams,
     MessageType,
     Position,
     Range,
-    TextDocumentIdentifier,
-    TextDocumentItem,
 )
 
 from devloop.core.context_store import Finding, Severity

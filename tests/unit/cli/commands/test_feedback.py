@@ -24,7 +24,7 @@ class TestHelperFunctions:
         with patch("devloop.cli.commands.feedback.FeedbackStore") as MockStore:
             with patch("devloop.cli.commands.feedback.FeedbackAPI") as MockAPI:
                 custom_dir = Path("/custom/project")
-                api = get_feedback_api(custom_dir)
+                _api = get_feedback_api(custom_dir)
 
                 # Should create store with correct path
                 MockStore.assert_called_once()
@@ -49,7 +49,7 @@ class TestHelperFunctions:
         """Test get_performance_monitor with custom project directory."""
         with patch("devloop.cli.commands.feedback.PerformanceMonitor") as MockMonitor:
             custom_dir = Path("/custom/project")
-            monitor = get_performance_monitor(custom_dir)
+            _monitor = get_performance_monitor(custom_dir)
 
             # Should create monitor with correct path
             MockMonitor.assert_called_once()

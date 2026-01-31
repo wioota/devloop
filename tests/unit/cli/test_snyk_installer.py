@@ -2,9 +2,8 @@
 
 import os
 import subprocess
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-import pytest
 
 from devloop.cli.snyk_installer import (
     authenticate_snyk,

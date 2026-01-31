@@ -4,7 +4,6 @@ import os
 import subprocess
 from unittest.mock import Mock, patch
 
-import pytest
 
 from devloop.cli.coderabbit_installer import (
     authenticate_coderabbit,

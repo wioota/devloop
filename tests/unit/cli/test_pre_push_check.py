@@ -4,7 +4,6 @@ import json
 import subprocess
 from unittest.mock import Mock, patch
 
-import pytest
 
 from devloop.cli.pre_push_check import get_current_branch, main
 

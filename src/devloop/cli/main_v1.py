@@ -64,7 +64,9 @@ async def watch_async(path: Path):
     event_bus = EventBus()
 
     # Create filesystem collector
-    fs_collector = FileSystemCollector(event_bus=event_bus, watch_paths=[str(path)])
+    fs_collector = FileSystemCollector(
+        event_bus=event_bus, config={"watch_paths": [str(path)]}
+    )
 
     # Create agents
     echo_agent = EchoAgent(

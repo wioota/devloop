@@ -53,23 +53,23 @@ from .commands import summary as summary_cmd
 from .commands import telemetry as telemetry_cmd
 from .commands import tools as tools_cmd
 
-app = typer.Typer(
+_typer_app = typer.Typer(
     help="DevLoop - Development workflow automation", add_completion=False
 )
 console = Console()
 
-app.add_typer(summary_cmd.app, name="summary")
-app.add_typer(custom_agents_cmd.app, name="custom")
-app.add_typer(feedback_cmd.app, name="feedback")
-app.add_typer(marketplace_cmd.app, name="agent")
-app.add_typer(metrics_cmd.app, name="metrics")
-app.add_typer(release_cmd.app, name="release")
-app.add_typer(telemetry_cmd.app, name="telemetry")
-app.add_typer(tools_cmd.app, name="tools")
+_typer_app.add_typer(summary_cmd.app, name="summary")
+_typer_app.add_typer(custom_agents_cmd.app, name="custom")
+_typer_app.add_typer(feedback_cmd.app, name="feedback")
+_typer_app.add_typer(marketplace_cmd.app, name="agent")
+_typer_app.add_typer(metrics_cmd.app, name="metrics")
+_typer_app.add_typer(release_cmd.app, name="release")
+_typer_app.add_typer(telemetry_cmd.app, name="telemetry")
+_typer_app.add_typer(tools_cmd.app, name="tools")
 
 # Wrap Typer app to handle Click-based audit command
 # Note: We can't use add_typer with Click groups due to Typer version compatibility
-_original_app = app
+_original_app = _typer_app
 
 
 class _WrappedApp:
@@ -411,7 +411,6 @@ async def watch_async(path: Path, config_path: Path | None):
                     f"Configuration file not found: {config_path_str}",
                     severity=ErrorSeverity.CRITICAL,
                     details="Run 'devloop init' to create a default configuration.",
-                    suggested_action="devloop init",
                 )
             config_manager = Config(config_path_str)
 

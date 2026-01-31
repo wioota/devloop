@@ -1,7 +1,6 @@
 """Tests for main_v1 CLI (prototype version)."""
 
 import logging
-from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest

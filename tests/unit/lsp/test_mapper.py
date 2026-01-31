@@ -2,12 +2,9 @@
 
 from datetime import datetime
 
-import pytest
 from lsprotocol.types import (
     Diagnostic,
     DiagnosticSeverity,
-    Position,
-    Range,
 )
 
 from devloop.core.context_store import Finding, Severity

@@ -79,7 +79,7 @@ class TestAgentSummary:
                             agent_summary(scope="recent", agent="linter")
 
                             # Check that filters were passed
-                            call_args = mock_run.call_args[0][0]
+                            _call_args = mock_run.call_args[0][0]
                             # The coroutine is passed, we can't easily check its args
                             mock_run.assert_called_once()
 
