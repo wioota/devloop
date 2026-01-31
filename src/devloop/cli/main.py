@@ -1026,6 +1026,85 @@ exit 0
     return hooks_created
 
 
+def _create_claude_settings_json(path: Path) -> bool:
+    """Create project-level .claude/settings.json with hook registrations.
+
+    This registers hooks at the project level so they work automatically
+    when Claude Code is used in this project.
+
+    Args:
+        path: Project root directory
+
+    Returns:
+        True if settings.json was created or updated, False if unchanged
+    """
+    import json
+
+    claude_dir = path / ".claude"
+    claude_dir.mkdir(parents=True, exist_ok=True)
+    settings_file = claude_dir / "settings.json"
+
+    # Hook configuration using relative paths from project root
+    hooks_config = {
+        "hooks": {
+            "SessionStart": {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "matcher": "startup",
+                        "command": ".agents/hooks/claude-session-start",
+                    }
+                ]
+            },
+            "Stop": {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/claude-stop",
+                    }
+                ]
+            },
+            "PreToolUse": {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "matcher": "Write|Edit",
+                        "command": ".agents/hooks/claude-file-protection",
+                    }
+                ]
+            },
+        }
+    }
+
+    # Load existing settings if present
+    existing_settings = {}
+    if settings_file.exists():
+        try:
+            with open(settings_file) as f:
+                existing_settings = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Merge hooks into existing settings (don't overwrite other settings)
+    if "hooks" not in existing_settings:
+        existing_settings["hooks"] = {}
+
+    # Only add hooks that don't already exist
+    changed = False
+    for hook_name, hook_config in hooks_config["hooks"].items():
+        if hook_name not in existing_settings["hooks"]:
+            existing_settings["hooks"][hook_name] = hook_config
+            changed = True
+
+    if changed:
+        with open(settings_file, "w") as f:
+            json.dump(existing_settings, f, indent=2)
+            f.write("\n")
+        return True
+
+    return False
+
+
 def _setup_claude_hooks(
     path: Path, agents_hooks_dir: Path, non_interactive: bool
 ) -> None:
@@ -1065,6 +1144,13 @@ def _setup_claude_hooks(
                     console.print(f"  {install_hook_script} {path}")
     else:
         console.print("\n[green]✓[/green] Claude Code hooks already exist")
+
+    # Create project-level .claude/settings.json with hook registrations
+    settings_created = _create_claude_settings_json(path)
+    if settings_created:
+        console.print(
+            "[green]✓[/green] Created .claude/settings.json with hook registrations"
+        )
 
 
 @app.command()
