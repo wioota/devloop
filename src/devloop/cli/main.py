@@ -1013,6 +1013,64 @@ EOF
 fi
 exit 0
 """,
+        "check-devloop-context": """#!/bin/bash
+#
+# PreToolUse hook: Check for unreviewed DevLoop findings before file operations
+#
+# Fast (<100ms) hook that warns about agent findings before file ops.
+# Includes debouncing (warns at most once per 30 seconds) to avoid spam.
+#
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+# Debounce settings
+DEBOUNCE_SECONDS=30
+DEBOUNCE_FILE="/tmp/devloop-context-warned-${PPID:-$$}"
+
+# Check if we've warned recently
+if [[ -f "$DEBOUNCE_FILE" ]]; then
+    LAST_WARN=$(cat "$DEBOUNCE_FILE" 2>/dev/null || echo "0")
+    NOW=$(date +%s)
+    ELAPSED=$((NOW - LAST_WARN))
+    if [[ $ELAPSED -lt $DEBOUNCE_SECONDS ]]; then
+        exit 0
+    fi
+fi
+
+# Consume stdin
+cat > /dev/null
+
+# Fast check: Does context file exist?
+CONTEXT_INDEX="$PROJECT_DIR/.devloop/context/index.json"
+if [[ ! -f "$CONTEXT_INDEX" ]]; then
+    exit 0
+fi
+
+# Fast check: Is context stale (>30 min)?
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LAST_UPDATED=$(stat -f %m "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+else
+    LAST_UPDATED=$(stat -c %Y "$CONTEXT_INDEX" 2>/dev/null || echo "0")
+fi
+NOW=$(date +%s)
+AGE_SECONDS=$((NOW - LAST_UPDATED))
+if [[ $AGE_SECONDS -gt 1800 ]]; then
+    exit 0
+fi
+
+# Quick grep for check_now count
+CHECK_NOW_COUNT=$(grep -o '"check_now"[^}]*"count": [0-9]*' "$CONTEXT_INDEX" 2>/dev/null | grep -o '[0-9]*$' || echo "0")
+
+if [[ "$CHECK_NOW_COUNT" -gt 0 ]]; then
+    date +%s > "$DEBOUNCE_FILE"
+    cat >&2 <<EOF
+DevLoop: $CHECK_NOW_COUNT agent finding(s) need attention.
+Run /agent-summary for details before continuing.
+EOF
+fi
+
+exit 0
+""",
     }
 
     hooks_created = []
@@ -1070,7 +1128,12 @@ def _create_claude_settings_json(path: Path) -> bool:
                         "type": "command",
                         "matcher": "Write|Edit",
                         "command": ".agents/hooks/claude-file-protection",
-                    }
+                    },
+                    {
+                        "type": "command",
+                        "matcher": "Write|Edit",
+                        "command": ".agents/hooks/check-devloop-context",
+                    },
                 ]
             },
         }
