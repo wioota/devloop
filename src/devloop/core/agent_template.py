@@ -437,7 +437,7 @@ class AgentMarketplace:
         # Copy agent file to marketplace
         agent_id = metadata.get("name", agent_file.stem)
         agent_dir = self.agents_dir / agent_id
-        agent_dir.mkdir(exist_ok=True)
+        agent_dir.mkdir(parents=True, exist_ok=True)
 
         import shutil
 
