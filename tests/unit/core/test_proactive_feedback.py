@@ -152,7 +152,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_agent_completed(event)
 
             mock_schedule.assert_called_once()
@@ -173,7 +175,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_agent_completed(event)
 
             mock_schedule.assert_called_once()
@@ -183,7 +187,9 @@ class TestProactiveFeedbackManager:
             assert "issue" in call_kwargs["message"]
 
     @pytest.mark.asyncio
-    async def test_on_agent_completed_no_agent_name(self, mock_event_bus, mock_feedback_api):
+    async def test_on_agent_completed_no_agent_name(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test handling completion without agent name."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -194,12 +200,16 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_agent_completed(event)
             mock_schedule.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_on_file_modified_does_nothing(self, mock_event_bus, mock_feedback_api):
+    async def test_on_file_modified_does_nothing(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test file modified handler does nothing (placeholder)."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -225,7 +235,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_build_success(event)
 
             mock_schedule.assert_called_once()
@@ -246,7 +258,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_build_failure(event)
 
             mock_schedule.assert_called_once()
@@ -267,7 +281,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_git_commit(event)
 
             mock_schedule.assert_called_once()
@@ -276,7 +292,9 @@ class TestProactiveFeedbackManager:
             assert call_kwargs["delay_seconds"] == 1  # Immediate for commits
 
     @pytest.mark.asyncio
-    async def test_on_git_commit_too_many_prompts(self, mock_event_bus, mock_feedback_api):
+    async def test_on_git_commit_too_many_prompts(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test git commit doesn't add prompt when too many active."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -291,7 +309,9 @@ class TestProactiveFeedbackManager:
             source="test",
         )
 
-        with patch.object(manager, "_schedule_prompt", new_callable=AsyncMock) as mock_schedule:
+        with patch.object(
+            manager, "_schedule_prompt", new_callable=AsyncMock
+        ) as mock_schedule:
             await manager._on_git_commit(event)
             mock_schedule.assert_not_called()
 
@@ -318,7 +338,9 @@ class TestProactiveFeedbackManager:
             mock_create_task.assert_called()
 
     @pytest.mark.asyncio
-    async def test_show_prompt_after_delay_expired(self, mock_event_bus, mock_feedback_api):
+    async def test_show_prompt_after_delay_expired(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test prompt not shown when expired."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -336,13 +358,17 @@ class TestProactiveFeedbackManager:
         )
         manager.active_prompts["expired-prompt"] = prompt
 
-        with patch.object(manager, "_display_feedback_prompt", new_callable=AsyncMock) as mock_display:
+        with patch.object(
+            manager, "_display_feedback_prompt", new_callable=AsyncMock
+        ) as mock_display:
             with patch.object(asyncio, "sleep", new_callable=AsyncMock):
                 await manager._show_prompt_after_delay(prompt, 0)
                 mock_display.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_show_prompt_after_delay_not_active(self, mock_event_bus, mock_feedback_api):
+    async def test_show_prompt_after_delay_not_active(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test prompt not shown when removed from active."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -359,13 +385,17 @@ class TestProactiveFeedbackManager:
         )
         # Don't add to active_prompts
 
-        with patch.object(manager, "_display_feedback_prompt", new_callable=AsyncMock) as mock_display:
+        with patch.object(
+            manager, "_display_feedback_prompt", new_callable=AsyncMock
+        ) as mock_display:
             with patch.object(asyncio, "sleep", new_callable=AsyncMock):
                 await manager._show_prompt_after_delay(prompt, 0)
                 mock_display.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_show_prompt_after_delay_success(self, mock_event_bus, mock_feedback_api):
+    async def test_show_prompt_after_delay_success(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test prompt shown when active and not expired."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -382,7 +412,9 @@ class TestProactiveFeedbackManager:
         )
         manager.active_prompts["active-prompt"] = prompt
 
-        with patch.object(manager, "_display_feedback_prompt", new_callable=AsyncMock) as mock_display:
+        with patch.object(
+            manager, "_display_feedback_prompt", new_callable=AsyncMock
+        ) as mock_display:
             with patch.object(asyncio, "sleep", new_callable=AsyncMock):
                 await manager._show_prompt_after_delay(prompt, 0)
                 mock_display.assert_called_once_with(prompt)
@@ -412,7 +444,9 @@ class TestProactiveFeedbackManager:
         assert emitted_event.payload["prompt_id"] == "display-prompt"
 
     @pytest.mark.asyncio
-    async def test_auto_dismiss_prompt_immediate(self, mock_event_bus, mock_feedback_api):
+    async def test_auto_dismiss_prompt_immediate(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test auto-dismiss when already expired."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -425,7 +459,9 @@ class TestProactiveFeedbackManager:
             assert "auto-dismiss" not in manager.active_prompts
 
     @pytest.mark.asyncio
-    async def test_auto_dismiss_prompt_with_wait(self, mock_event_bus, mock_feedback_api):
+    async def test_auto_dismiss_prompt_with_wait(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test auto-dismiss with remaining time."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -439,7 +475,9 @@ class TestProactiveFeedbackManager:
             assert "auto-dismiss" not in manager.active_prompts
 
     @pytest.mark.asyncio
-    async def test_submit_prompt_feedback_not_found(self, mock_event_bus, mock_feedback_api):
+    async def test_submit_prompt_feedback_not_found(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test submitting feedback for nonexistent prompt."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -454,7 +492,9 @@ class TestProactiveFeedbackManager:
         mock_feedback_api.submit_feedback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_submit_prompt_feedback_success(self, mock_event_bus, mock_feedback_api):
+    async def test_submit_prompt_feedback_success(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test successfully submitting feedback."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)
@@ -516,7 +556,9 @@ class TestProactiveFeedbackManager:
         assert prompts[0]["message"] == "Test message"
         assert prompts[0]["time_remaining"] > 0
 
-    def test_get_active_prompts_excludes_expired(self, mock_event_bus, mock_feedback_api):
+    def test_get_active_prompts_excludes_expired(
+        self, mock_event_bus, mock_feedback_api
+    ):
         """Test getting active prompts excludes expired ones."""
         with patch.object(asyncio, "create_task"):
             manager = ProactiveFeedbackManager(mock_event_bus, mock_feedback_api)

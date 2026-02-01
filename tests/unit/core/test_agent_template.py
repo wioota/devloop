@@ -237,13 +237,15 @@ class TestAgentFactory:
 
         # Create a Python file with Agent class
         agent_file = tmp_path / "custom_agent.py"
-        agent_file.write_text("""
+        agent_file.write_text(
+            """
 from devloop.core.agent import Agent
 
 class CustomAgent(Agent):
     async def handle(self, event):
         pass
-""")
+"""
+        )
 
         agent = await factory.create_from_file(
             file_path=agent_file,

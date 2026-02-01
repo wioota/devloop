@@ -392,18 +392,25 @@ async def _cleanup_old_data(context_store, event_store, interval_minutes: int = 
             console.print(f"[yellow]Cleanup error: {e}[/yellow]")
 
 
-async def watch_async(path: Path, config_path: Path | None):
-    """Async watch implementation."""
-    # Initialize error handler
+def _load_watch_config(path: Path, config_path: Path | None) -> ConfigWrapper:
+    """Load and validate watch configuration.
+
+    Args:
+        path: Project directory path
+        config_path: Optional explicit config file path
+
+    Returns:
+        ConfigWrapper instance with loaded configuration
+
+    Raises:
+        SystemExit: On configuration errors (handled by error_handler)
+    """
     error_handler = get_error_handler()
 
-    # Load configuration with fail-fast on errors
     try:
         if config_path:
-            # Ensure it's a Path object and convert to string
             config_manager = Config(str(Path(config_path).resolve()))
         else:
-            # Default to project .devloop/agents.json
             config_path_str = str((path / ".devloop" / "agents.json").resolve())
             if not Path(config_path_str).exists():
                 error_handler.handle_startup_error(
@@ -415,7 +422,7 @@ async def watch_async(path: Path, config_path: Path | None):
             config_manager = Config(config_path_str)
 
         config_dict = config_manager.load()
-        config = ConfigWrapper(config_dict)
+        return ConfigWrapper(config_dict)
     except ValueError as e:
         error_handler.handle_startup_error(
             ErrorCode.CONFIG_INVALID,
@@ -423,6 +430,7 @@ async def watch_async(path: Path, config_path: Path | None):
             exception=e,
             severity=ErrorSeverity.CRITICAL,
         )
+        raise  # Unreachable but satisfies type checker
     except Exception as e:
         error_handler.handle_startup_error(
             ErrorCode.CONFIG_INVALID,
@@ -430,6 +438,126 @@ async def watch_async(path: Path, config_path: Path | None):
             exception=e,
             severity=ErrorSeverity.CRITICAL,
         )
+        raise  # Unreachable but satisfies type checker
+
+
+# Agent registry: maps agent names to (class, default_triggers, uses_name_param)
+_AGENT_REGISTRY: dict[str, tuple[type, list[str], bool]] = {
+    "linter": (LinterAgent, ["file:modified"], True),
+    "formatter": (FormatterAgent, ["file:modified"], True),
+    "test-runner": (TestRunnerAgent, ["file:modified"], True),
+    "agent-health-monitor": (AgentHealthMonitorAgent, ["agent:*:completed"], True),
+    "type-checker": (TypeCheckerAgent, [], False),
+    "security-scanner": (SecurityScannerAgent, [], False),
+    "git-commit-assistant": (GitCommitAssistantAgent, [], False),
+    "performance-profiler": (PerformanceProfilerAgent, [], False),
+    "snyk": (SnykAgent, ["file:modified", "file:created"], True),
+    "code-rabbit": (CodeRabbitAgent, ["file:modified", "file:created"], True),
+}
+
+
+def _register_agents(
+    config: ConfigWrapper, event_bus: EventBus, agent_manager: AgentManager
+) -> None:
+    """Register all enabled agents based on configuration.
+
+    Uses a data-driven approach to reduce code duplication and complexity.
+
+    Args:
+        config: Configuration wrapper with agent settings
+        event_bus: Event bus for agent communication
+        agent_manager: Agent manager to register agents with
+    """
+    for agent_name, (
+        agent_class,
+        default_triggers,
+        uses_name_param,
+    ) in _AGENT_REGISTRY.items():
+        if not config.is_agent_enabled(agent_name):
+            continue
+
+        agent_config = config.get_agent_config(agent_name) or {}
+        triggers = agent_config.get("triggers", default_triggers)
+        inner_config = agent_config.get("config", {})
+
+        if uses_name_param:
+            agent = agent_class(
+                name=agent_name,
+                triggers=triggers,
+                event_bus=event_bus,
+                config=inner_config,
+            )
+        else:
+            agent = agent_class(config=inner_config, event_bus=event_bus)
+
+        agent_manager.register(agent)
+
+
+async def _initialize_stores(path: Path) -> None:
+    """Initialize context and event stores.
+
+    Args:
+        path: Project directory path
+    """
+    context_store.context_dir = path / ".devloop" / "context"
+    await context_store.initialize()
+
+    event_store.db_path = path / ".devloop" / "events.db"
+    await event_store.initialize()
+
+    console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
+    console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
+
+
+async def _replay_events(event_bus: EventBus, agent_manager: AgentManager) -> None:
+    """Replay missed events and report gaps.
+
+    Args:
+        event_bus: Event bus for event replay
+        agent_manager: Agent manager with registered agents
+    """
+    replayer = EventReplayer(event_bus, agent_manager)
+    replay_stats = await replayer.replay_all_agents()
+
+    if replay_stats["total_replayed"] > 0:
+        console.print(
+            f"\n[cyan]Event Replay[/cyan]: Replayed {replay_stats['total_replayed']} missed events"
+        )
+        for agent_name, count in replay_stats["agents"].items():
+            if count > 0:
+                console.print(f"  • {agent_name}: {count} events")
+
+    if replay_stats["gaps"]:
+        console.print(
+            f"\n[yellow]⚠ Event Gaps Detected[/yellow]: {len(replay_stats['gaps'])} gaps in sequence"
+        )
+        console.print("[dim]Run 'devloop debug' for details[/dim]")
+
+
+async def _wait_for_shutdown() -> None:
+    """Wait for shutdown signal (SIGINT or SIGTERM)."""
+    shutdown_event = asyncio.Event()
+
+    def signal_handler(sig, frame):
+        shutdown_event.set()
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    await shutdown_event.wait()
+
+
+async def watch_async(path: Path, config_path: Path | None) -> None:
+    """Async watch implementation.
+
+    Watches the project directory for file changes and triggers agents accordingly.
+
+    Args:
+        path: Project directory to watch
+        config_path: Optional path to configuration file
+    """
+    # Load configuration
+    config = _load_watch_config(path, config_path)
 
     # Create event bus
     event_bus = EventBus()
@@ -437,15 +565,8 @@ async def watch_async(path: Path, config_path: Path | None):
     # Initialize transaction system (recovery and self-healing)
     initialize_transaction_system(path / ".devloop")
 
-    # Initialize context store
-    context_store.context_dir = path / ".devloop" / "context"
-    await context_store.initialize()
-
-    # Initialize event store
-    event_store.db_path = path / ".devloop" / "events.db"
-    await event_store.initialize()
-    console.print(f"[dim]Context store: {context_store.context_dir}[/dim]")
-    console.print(f"[dim]Event store: {event_store.db_path}[/dim]")
+    # Initialize stores
+    await _initialize_stores(path)
 
     # Get global config for resource limits
     global_config = config.get_global_config()
@@ -466,96 +587,8 @@ async def watch_async(path: Path, config_path: Path | None):
     health_check = DaemonHealthCheck(path, heartbeat_interval=30)
     await health_check.start()
 
-    # Create and register agents based on configuration
-    if config.is_agent_enabled("linter"):
-        linter_config = config.get_agent_config("linter") or {}
-        linter = LinterAgent(
-            name="linter",
-            triggers=linter_config.get("triggers", ["file:modified"]),
-            event_bus=event_bus,
-            config=linter_config.get("config", {}),
-        )
-        agent_manager.register(linter)
-
-    if config.is_agent_enabled("formatter"):
-        formatter_config = config.get_agent_config("formatter") or {}
-        formatter = FormatterAgent(
-            name="formatter",
-            triggers=formatter_config.get("triggers", ["file:modified"]),
-            event_bus=event_bus,
-            config=formatter_config.get("config", {}),
-        )
-        agent_manager.register(formatter)
-
-    if config.is_agent_enabled("test-runner"):
-        test_config = config.get_agent_config("test-runner") or {}
-        test_runner = TestRunnerAgent(
-            name="test-runner",
-            triggers=test_config.get("triggers", ["file:modified"]),
-            event_bus=event_bus,
-            config=test_config.get("config", {}),
-        )
-        agent_manager.register(test_runner)
-
-    if config.is_agent_enabled("agent-health-monitor"):
-        monitor_config = config.get_agent_config("agent-health-monitor") or {}
-        health_monitor = AgentHealthMonitorAgent(
-            name="agent-health-monitor",
-            triggers=monitor_config.get("triggers", ["agent:*:completed"]),
-            event_bus=event_bus,
-            config=monitor_config.get("config", {}),
-        )
-        agent_manager.register(health_monitor)
-
-    if config.is_agent_enabled("type-checker"):
-        type_config = config.get_agent_config("type-checker") or {}
-        type_checker = TypeCheckerAgent(
-            config=type_config.get("config", {}), event_bus=event_bus
-        )
-        agent_manager.register(type_checker)
-
-    if config.is_agent_enabled("security-scanner"):
-        security_config = config.get_agent_config("security-scanner") or {}
-        security_scanner = SecurityScannerAgent(
-            config=security_config.get("config", {}), event_bus=event_bus
-        )
-        agent_manager.register(security_scanner)
-
-    if config.is_agent_enabled("git-commit-assistant"):
-        commit_config = config.get_agent_config("git-commit-assistant") or {}
-        commit_assistant = GitCommitAssistantAgent(
-            config=commit_config.get("config", {}), event_bus=event_bus
-        )
-        agent_manager.register(commit_assistant)
-
-    if config.is_agent_enabled("performance-profiler"):
-        perf_config = config.get_agent_config("performance-profiler") or {}
-        performance_profiler = PerformanceProfilerAgent(
-            config=perf_config.get("config", {}), event_bus=event_bus
-        )
-        agent_manager.register(performance_profiler)
-
-    if config.is_agent_enabled("snyk"):
-        snyk_config = config.get_agent_config("snyk") or {}
-        snyk_agent = SnykAgent(
-            name="snyk",
-            triggers=snyk_config.get("triggers", ["file:modified", "file:created"]),
-            event_bus=event_bus,
-            config=snyk_config.get("config", {}),
-        )
-        agent_manager.register(snyk_agent)
-
-    if config.is_agent_enabled("code-rabbit"):
-        code_rabbit_config = config.get_agent_config("code-rabbit") or {}
-        code_rabbit_agent = CodeRabbitAgent(
-            name="code-rabbit",
-            triggers=code_rabbit_config.get(
-                "triggers", ["file:modified", "file:created"]
-            ),
-            event_bus=event_bus,
-            config=code_rabbit_config.get("config", {}),
-        )
-        agent_manager.register(code_rabbit_agent)
+    # Register all enabled agents
+    _register_agents(config, event_bus, agent_manager)
 
     # Start everything
     await fs_collector.start()
@@ -565,37 +598,13 @@ async def watch_async(path: Path, config_path: Path | None):
     for agent_name in agent_manager.list_agents():
         console.print(f"  • [cyan]{agent_name}[/cyan]")
 
-    # Replay missed events (event persistence and recovery)
-    replayer = EventReplayer(event_bus, agent_manager)
-    replay_stats = await replayer.replay_all_agents()
-
-    if replay_stats["total_replayed"] > 0:
-        console.print(
-            f"\n[cyan]Event Replay[/cyan]: Replayed {replay_stats['total_replayed']} missed events"
-        )
-        for agent_name, count in replay_stats["agents"].items():
-            if count > 0:
-                console.print(f"  • {agent_name}: {count} events")
-
-    if replay_stats["gaps"]:
-        console.print(
-            f"\n[yellow]⚠ Event Gaps Detected[/yellow]: {len(replay_stats['gaps'])} gaps in sequence"
-        )
-        console.print("[dim]Run 'devloop debug' for details[/dim]")
+    # Replay missed events
+    await _replay_events(event_bus, agent_manager)
 
     console.print("\n[dim]Waiting for file changes... (Ctrl+C to stop)[/dim]\n")
 
     # Wait for shutdown signal
-    shutdown_event = asyncio.Event()
-
-    def signal_handler(sig, frame):
-        shutdown_event.set()
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    # Keep running until shutdown
-    await shutdown_event.wait()
+    await _wait_for_shutdown()
 
     # Stop everything
     cleanup_task.cancel()

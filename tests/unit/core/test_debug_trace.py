@@ -173,6 +173,7 @@ class TestTraceHistory:
 
     def test_get_trace_history_with_limit(self):
         """Test get_trace_history with limit."""
+
         # Add some traces using the decorator
         @trace_execution("test_func")
         def test_func():
@@ -186,6 +187,7 @@ class TestTraceHistory:
 
     def test_clear_trace_history(self):
         """Test clear_trace_history."""
+
         @trace_execution("test_func")
         def test_func():
             return "result"
@@ -206,6 +208,7 @@ class TestTraceExecutionDecorator:
 
     def test_sync_function_success(self):
         """Test decorator with successful sync function."""
+
         @trace_execution("test_sync")
         def sync_func(a: int, b: int) -> int:
             return a + b
@@ -221,6 +224,7 @@ class TestTraceExecutionDecorator:
 
     def test_sync_function_exception(self):
         """Test decorator with sync function that raises."""
+
         @trace_execution("test_sync_error")
         def sync_func():
             raise ValueError("test error")
@@ -236,6 +240,7 @@ class TestTraceExecutionDecorator:
     @pytest.mark.asyncio
     async def test_async_function_success(self):
         """Test decorator with successful async function."""
+
         @trace_execution("test_async")
         async def async_func(a: int, b: int) -> int:
             await asyncio.sleep(0.001)
@@ -252,6 +257,7 @@ class TestTraceExecutionDecorator:
     @pytest.mark.asyncio
     async def test_async_function_exception(self):
         """Test decorator with async function that raises."""
+
         @trace_execution("test_async_error")
         async def async_func():
             raise ValueError("async error")
@@ -265,6 +271,7 @@ class TestTraceExecutionDecorator:
 
     def test_default_name_from_function(self):
         """Test decorator uses function name when no name provided."""
+
         @trace_execution()
         def my_function():
             return "result"
@@ -367,6 +374,7 @@ class TestTraceContextStoreDecorator:
     @pytest.mark.asyncio
     async def test_async_operation_success(self):
         """Test decorator with successful async operation."""
+
         class TestStore:
             @trace_context_store("get_findings")
             async def get_findings(self):
@@ -385,6 +393,7 @@ class TestTraceContextStoreDecorator:
     @pytest.mark.asyncio
     async def test_async_operation_exception(self):
         """Test decorator with async operation exception."""
+
         class TestStore:
             @trace_context_store("failing_operation")
             async def failing_operation(self):
@@ -400,6 +409,7 @@ class TestTraceContextStoreDecorator:
 
     def test_sync_operation_success(self):
         """Test decorator with successful sync operation."""
+
         class TestStore:
             @trace_context_store("sync_get")
             def sync_get(self):
@@ -416,6 +426,7 @@ class TestTraceContextStoreDecorator:
 
     def test_sync_operation_exception(self):
         """Test decorator with sync operation exception."""
+
         class TestStore:
             @trace_context_store("sync_failing")
             def sync_failing(self):
@@ -553,6 +564,7 @@ class TestReportDiagnostics:
 
     def test_report_diagnostics_includes_traces(self):
         """Test report_diagnostics includes trace history."""
+
         @trace_execution("test_func")
         def test_func():
             return "result"

@@ -82,7 +82,9 @@ class TestContextualFeedbackEngine:
     def test_init(self, mock_event_bus, mock_feedback_api, tmp_project):
         """Test ContextualFeedbackEngine initialization."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         assert engine.event_bus is mock_event_bus
         assert engine.feedback_api is mock_feedback_api
@@ -92,19 +94,27 @@ class TestContextualFeedbackEngine:
         assert engine.action_window == 300
         assert engine.agent_action_window == 600
 
-    def test_init_sets_up_event_listeners(self, mock_event_bus, mock_feedback_api, tmp_project):
+    def test_init_sets_up_event_listeners(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test that init sets up event listeners."""
         with patch.object(asyncio, "create_task") as mock_create_task:
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         # Should create tasks for event subscriptions
         assert mock_create_task.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_on_agent_completed_stores_action(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_agent_completed_stores_action(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test agent completion stores action."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         event = Event(
             type="agent:test:completed",
@@ -112,7 +122,9 @@ class TestContextualFeedbackEngine:
             source="test",
         )
 
-        with patch.object(engine, "_analyze_immediate_feedback", new_callable=AsyncMock):
+        with patch.object(
+            engine, "_analyze_immediate_feedback", new_callable=AsyncMock
+        ):
             await engine._on_agent_completed(event)
 
         assert len(engine.recent_agent_actions) == 1
@@ -120,16 +132,22 @@ class TestContextualFeedbackEngine:
         assert engine.recent_agent_actions[0]["success"] is True
 
     @pytest.mark.asyncio
-    async def test_on_agent_completed_cleans_old_actions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_agent_completed_cleans_old_actions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test agent completion cleans old actions."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         # Add old action
-        engine.recent_agent_actions.append({
-            "agent_name": "old_agent",
-            "timestamp": time.time() - 1000,  # Very old
-        })
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "old_agent",
+                "timestamp": time.time() - 1000,  # Very old
+            }
+        )
 
         event = Event(
             type="agent:test:completed",
@@ -137,7 +155,9 @@ class TestContextualFeedbackEngine:
             source="test",
         )
 
-        with patch.object(engine, "_analyze_immediate_feedback", new_callable=AsyncMock):
+        with patch.object(
+            engine, "_analyze_immediate_feedback", new_callable=AsyncMock
+        ):
             await engine._on_agent_completed(event)
 
         # Old action should be removed
@@ -145,10 +165,14 @@ class TestContextualFeedbackEngine:
         assert engine.recent_agent_actions[0]["agent_name"] == "new_agent"
 
     @pytest.mark.asyncio
-    async def test_on_file_event_no_path(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_file_event_no_path(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file event with no path returns early."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         event = Event(
             type="file:modified",
@@ -156,15 +180,21 @@ class TestContextualFeedbackEngine:
             source="test",
         )
 
-        with patch.object(engine, "_analyze_file_patterns", new_callable=AsyncMock) as mock_analyze:
+        with patch.object(
+            engine, "_analyze_file_patterns", new_callable=AsyncMock
+        ) as mock_analyze:
             await engine._on_file_event(event)
             mock_analyze.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_on_file_event_stores_action(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_file_event_stores_action(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file event stores developer action."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         event = Event(
             type="file:modified",
@@ -180,10 +210,14 @@ class TestContextualFeedbackEngine:
         assert engine.recent_actions[0].file_path == "/test/file.py"
 
     @pytest.mark.asyncio
-    async def test_on_file_event_tracks_interactions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_file_event_tracks_interactions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file event tracks interaction times."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         event = Event(
             type="file:modified",
@@ -198,10 +232,14 @@ class TestContextualFeedbackEngine:
         assert len(engine.file_interaction_times["/test/file.py"]) == 1
 
     @pytest.mark.asyncio
-    async def test_on_file_event_updates_last_modified(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_file_event_updates_last_modified(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file modified event updates last modified time."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         event = Event(
             type="file:modified",
@@ -215,13 +253,19 @@ class TestContextualFeedbackEngine:
         assert "/test/file.py" in engine.file_last_modified
 
     @pytest.mark.asyncio
-    async def test_on_file_event_cleans_old_interactions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_on_file_event_cleans_old_interactions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file event cleans old interactions."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         # Add old interaction
-        engine.file_interaction_times["/test/file.py"] = [time.time() - 100000]  # Very old
+        engine.file_interaction_times["/test/file.py"] = [
+            time.time() - 100000
+        ]  # Very old
 
         event = Event(
             type="file:modified",
@@ -236,25 +280,35 @@ class TestContextualFeedbackEngine:
         assert len(engine.file_interaction_times["/test/file.py"]) == 1
 
     @pytest.mark.asyncio
-    async def test_analyze_immediate_feedback_no_actions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_analyze_immediate_feedback_no_actions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test immediate feedback analysis with no recent actions."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         agent_action = {
             "agent_name": "test_agent",
             "timestamp": time.time(),
         }
 
-        with patch.object(engine, "_infer_feedback_from_file_changes", new_callable=AsyncMock) as mock_infer:
+        with patch.object(
+            engine, "_infer_feedback_from_file_changes", new_callable=AsyncMock
+        ) as mock_infer:
             await engine._analyze_immediate_feedback(agent_action)
             mock_infer.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_analyze_immediate_feedback_with_file_actions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_analyze_immediate_feedback_with_file_actions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test immediate feedback analysis with file actions."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         agent_time = time.time()
         agent_action = {
@@ -263,21 +317,29 @@ class TestContextualFeedbackEngine:
         }
 
         # Add a recent file action within 30 seconds
-        engine.recent_actions.append(DeveloperAction(
-            action_type="file_modified",
-            file_path="/test/file.py",
-            timestamp=agent_time + 5,
-        ))
+        engine.recent_actions.append(
+            DeveloperAction(
+                action_type="file_modified",
+                file_path="/test/file.py",
+                timestamp=agent_time + 5,
+            )
+        )
 
-        with patch.object(engine, "_infer_feedback_from_file_changes", new_callable=AsyncMock) as mock_infer:
+        with patch.object(
+            engine, "_infer_feedback_from_file_changes", new_callable=AsyncMock
+        ) as mock_infer:
             await engine._analyze_immediate_feedback(agent_action)
             mock_infer.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_analyze_file_patterns_no_interactions(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_analyze_file_patterns_no_interactions(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file pattern analysis with no prior interactions."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         action = DeveloperAction(
             action_type="file_modified",
@@ -289,10 +351,14 @@ class TestContextualFeedbackEngine:
         await engine._analyze_file_patterns("/nonexistent/file.py", action)
 
     @pytest.mark.asyncio
-    async def test_analyze_file_patterns_high_frequency(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_analyze_file_patterns_high_frequency(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file pattern analysis detects high frequency editing."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         # Add many interactions in short time span
         now = time.time()
@@ -308,16 +374,26 @@ class TestContextualFeedbackEngine:
             timestamp=now,
         )
 
-        with patch.object(engine, "_infer_feedback_from_interaction_pattern", new_callable=AsyncMock) as mock_infer:
-            with patch.object(engine, "_infer_feedback_from_quick_modification", new_callable=AsyncMock):
+        with patch.object(
+            engine, "_infer_feedback_from_interaction_pattern", new_callable=AsyncMock
+        ) as mock_infer:
+            with patch.object(
+                engine,
+                "_infer_feedback_from_quick_modification",
+                new_callable=AsyncMock,
+            ):
                 await engine._analyze_file_patterns("/test/file.py", action)
                 mock_infer.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_analyze_file_patterns_quick_modification(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_analyze_file_patterns_quick_modification(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test file pattern analysis detects quick modification."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         now = time.time()
         engine.file_last_modified["/test/file.py"] = now - 30  # Modified 30 seconds ago
@@ -329,15 +405,21 @@ class TestContextualFeedbackEngine:
             timestamp=now,
         )
 
-        with patch.object(engine, "_infer_feedback_from_quick_modification", new_callable=AsyncMock) as mock_infer:
+        with patch.object(
+            engine, "_infer_feedback_from_quick_modification", new_callable=AsyncMock
+        ) as mock_infer:
             await engine._analyze_file_patterns("/test/file.py", action)
             mock_infer.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_file_changes(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_file_changes(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test inferring feedback from file changes."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         agent_action = {
             "agent_name": "test_agent",
@@ -360,10 +442,14 @@ class TestContextualFeedbackEngine:
         assert call_kwargs["value"] == 3  # Neutral rating
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_file_changes_no_modified(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_file_changes_no_modified(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test no feedback when no modified files."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         agent_action = {"agent_name": "test_agent", "timestamp": time.time()}
 
@@ -380,69 +466,103 @@ class TestContextualFeedbackEngine:
         mock_feedback_api.submit_feedback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_interaction_pattern_no_agents(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_interaction_pattern_no_agents(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test no feedback when no recent agents."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
-        await engine._infer_feedback_from_interaction_pattern("/test/file.py", 0.02, "high_frequency")
+        await engine._infer_feedback_from_interaction_pattern(
+            "/test/file.py", 0.02, "high_frequency"
+        )
 
         mock_feedback_api.submit_feedback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_interaction_pattern_high_frequency(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_interaction_pattern_high_frequency(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test feedback for very high frequency interaction."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
-        engine.recent_agent_actions.append({
-            "agent_name": "test_agent",
-            "timestamp": time.time(),
-        })
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "test_agent",
+                "timestamp": time.time(),
+            }
+        )
 
-        await engine._infer_feedback_from_interaction_pattern("/test/file.py", 0.03, "high_frequency")
+        await engine._infer_feedback_from_interaction_pattern(
+            "/test/file.py", 0.03, "high_frequency"
+        )
 
         mock_feedback_api.submit_feedback.assert_called_once()
         call_kwargs = mock_feedback_api.submit_feedback.call_args[1]
         assert call_kwargs["value"] == 2  # Low rating for very high frequency
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_interaction_pattern_moderate(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_interaction_pattern_moderate(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test feedback for moderate frequency interaction."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
-        engine.recent_agent_actions.append({
-            "agent_name": "test_agent",
-            "timestamp": time.time(),
-        })
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "test_agent",
+                "timestamp": time.time(),
+            }
+        )
 
-        await engine._infer_feedback_from_interaction_pattern("/test/file.py", 0.015, "moderate_frequency")
+        await engine._infer_feedback_from_interaction_pattern(
+            "/test/file.py", 0.015, "moderate_frequency"
+        )
 
         mock_feedback_api.submit_feedback.assert_called_once()
         call_kwargs = mock_feedback_api.submit_feedback.call_args[1]
         assert call_kwargs["value"] == 3  # Neutral for moderate frequency
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_interaction_pattern_normal(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_interaction_pattern_normal(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test no feedback for normal frequency interaction."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
-        engine.recent_agent_actions.append({
-            "agent_name": "test_agent",
-            "timestamp": time.time(),
-        })
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "test_agent",
+                "timestamp": time.time(),
+            }
+        )
 
-        await engine._infer_feedback_from_interaction_pattern("/test/file.py", 0.005, "normal")
+        await engine._infer_feedback_from_interaction_pattern(
+            "/test/file.py", 0.005, "normal"
+        )
 
         mock_feedback_api.submit_feedback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_quick_modification_no_agent(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_quick_modification_no_agent(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test no feedback when no recent agent."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         action = DeveloperAction(
             action_type="file_modified",
@@ -455,15 +575,21 @@ class TestContextualFeedbackEngine:
         mock_feedback_api.submit_feedback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_infer_feedback_from_quick_modification_with_agent(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_infer_feedback_from_quick_modification_with_agent(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test feedback for quick modification with recent agent."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
-        engine.recent_agent_actions.append({
-            "agent_name": "test_agent",
-            "timestamp": time.time() - 60,  # 1 minute ago
-        })
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "test_agent",
+                "timestamp": time.time() - 60,  # 1 minute ago
+            }
+        )
 
         action = DeveloperAction(
             action_type="file_modified",
@@ -476,10 +602,14 @@ class TestContextualFeedbackEngine:
         mock_feedback_api.submit_feedback.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_contextual_insights_empty(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_get_contextual_insights_empty(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test getting contextual insights with no data."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         insights = await engine.get_contextual_insights("test_agent")
 
@@ -488,21 +618,29 @@ class TestContextualFeedbackEngine:
         assert insights["correlated_developer_actions"] == 0
 
     @pytest.mark.asyncio
-    async def test_get_contextual_insights_with_data(self, mock_event_bus, mock_feedback_api, tmp_project):
+    async def test_get_contextual_insights_with_data(
+        self, mock_event_bus, mock_feedback_api, tmp_project
+    ):
         """Test getting contextual insights with data."""
         with patch.object(asyncio, "create_task"):
-            engine = ContextualFeedbackEngine(mock_event_bus, mock_feedback_api, tmp_project)
+            engine = ContextualFeedbackEngine(
+                mock_event_bus, mock_feedback_api, tmp_project
+            )
 
         now = time.time()
-        engine.recent_agent_actions.append({
-            "agent_name": "test_agent",
-            "timestamp": now - 100,
-        })
-        engine.recent_actions.append(DeveloperAction(
-            action_type="file_modified",
-            file_path="/test/file.py",
-            timestamp=now - 50,  # Within 5 minutes after agent action
-        ))
+        engine.recent_agent_actions.append(
+            {
+                "agent_name": "test_agent",
+                "timestamp": now - 100,
+            }
+        )
+        engine.recent_actions.append(
+            DeveloperAction(
+                action_type="file_modified",
+                file_path="/test/file.py",
+                timestamp=now - 50,  # Within 5 minutes after agent action
+            )
+        )
 
         insights = await engine.get_contextual_insights("test_agent")
 
