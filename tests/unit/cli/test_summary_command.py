@@ -1,6 +1,5 @@
 """Tests for the summary subcommand."""
 
-
 import pytest
 from typer.testing import CliRunner
 

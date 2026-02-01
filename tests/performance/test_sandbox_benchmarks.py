@@ -217,13 +217,11 @@ class TestCPUIntensiveOverhead:
 
         # Create CPU-intensive Python script
         cpu_script = bench_workspace / "cpu_test.py"
-        cpu_script.write_text(
-            """
+        cpu_script.write_text("""
 import math
 result = sum(math.sqrt(i) for i in range(10000))
 print(result)
-"""
-        )
+""")
 
         iterations = 5  # Fewer iterations for CPU-intensive
         sandboxed_times = []

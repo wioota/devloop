@@ -83,8 +83,7 @@ def test_workspace(tmp_path):
 
     # Create a simple Python file to lint/check
     py_file = workspace / "example.py"
-    py_file.write_text(
-        """
+    py_file.write_text("""
 import os
 import sys
 from typing import List
@@ -102,8 +101,7 @@ class MyClass:
     def method(self):
         result=1+2+3
         return result
-"""
-    )
+""")
 
     return workspace
 

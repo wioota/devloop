@@ -14,7 +14,6 @@ from devloop.marketplace import RegistryClient, RegistryConfig
 from devloop.marketplace.installer import AgentInstaller
 from devloop.marketplace.registry import AgentRegistry
 
-
 logger = logging.getLogger(__name__)
 app = typer.Typer(help="Agent marketplace commands", add_completion=False)
 console = Console()

@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Set, Tuple
 from .metadata import AgentMetadata
 from .registry_client import RegistryClient
 
-
 logger = logging.getLogger(__name__)
 
 

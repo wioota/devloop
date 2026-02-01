@@ -21,8 +21,7 @@ class TestAgentRules:
             # Create formatter agent
             formatter_dir = agents_dir / "formatter"
             formatter_dir.mkdir()
-            (formatter_dir / "rules.yaml").write_text(
-                """
+            (formatter_dir / "rules.yaml").write_text("""
 agent: formatter
 preflight:
   - poetry run black src/
@@ -33,22 +32,19 @@ devloop_hints:
   - title: Formatting tip
     description: Format entire codebase at start
     workaround: poetry run black src/
-"""
-            )
+""")
 
             # Create test-runner agent
             test_dir = agents_dir / "test-runner"
             test_dir.mkdir()
-            (test_dir / "rules.yaml").write_text(
-                """
+            (test_dir / "rules.yaml").write_text("""
 agent: test-runner
 preflight:
   - poetry run pytest tests/
 dependencies:
   - requires: pytest
     version: ">=7.4"
-"""
-            )
+""")
 
             yield str(agents_dir)
 

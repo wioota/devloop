@@ -44,8 +44,7 @@ class EventStore:
     def _init_db(self) -> None:
         """Initialize database schema (runs in thread pool)."""
         self._connection = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        self.connection.execute(
-            """
+        self.connection.execute("""
         CREATE TABLE IF NOT EXISTS events (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -56,42 +55,31 @@ class EventStore:
         sequence INTEGER UNIQUE NOT NULL,
         created_at REAL NOT NULL
         )
-        """
-        )
+        """)
 
         # Create indexes for efficient queries
-        self.connection.execute(
-            """
+        self.connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)
-        """
-        )
-        self.connection.execute(
-            """
+        """)
+        self.connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)
-        """
-        )
-        self.connection.execute(
-            """
+        """)
+        self.connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_events_source ON events(source)
-        """
-        )
-        self.connection.execute(
-            """
+        """)
+        self.connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_events_sequence ON events(sequence)
-        """
-        )
+        """)
 
         # Replay state table - tracks last processed event for recovery
-        self.connection.execute(
-            """
+        self.connection.execute("""
             CREATE TABLE IF NOT EXISTS replay_state (
             agent_name TEXT PRIMARY KEY,
             last_processed_sequence INTEGER DEFAULT 0,
             last_processed_timestamp REAL DEFAULT 0,
             updated_at REAL NOT NULL
             )
-        """
-        )
+        """)
 
         self.connection.commit()
         logger.info(f"Event store initialized at {self.db_path}")
@@ -248,33 +236,27 @@ class EventStore:
             total_events = cursor.fetchone()[0]
 
             # Events by type
-            cursor = self.connection.execute(
-                """
+            cursor = self.connection.execute("""
                 SELECT type, COUNT(*) as count
                 FROM events
                 GROUP BY type
                 ORDER BY count DESC
-            """
-            )
+            """)
             events_by_type = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Events by source
-            cursor = self.connection.execute(
-                """
+            cursor = self.connection.execute("""
                 SELECT source, COUNT(*) as count
                 FROM events
                 GROUP BY source
                 ORDER BY count DESC
-            """
-            )
+            """)
             events_by_source = {row[0]: row[1] for row in cursor.fetchall()}
 
             # Time range
-            cursor = self.connection.execute(
-                """
+            cursor = self.connection.execute("""
                 SELECT MIN(timestamp), MAX(timestamp) FROM events
-            """
-            )
+            """)
             time_range = cursor.fetchone()
             oldest_timestamp = time_range[0] if time_range[0] else None
             newest_timestamp = time_range[1] if time_range[1] else None
@@ -492,12 +474,10 @@ class EventStore:
     def _detect_gaps_sync(self) -> Dict[str, int]:
         """Detect sequence gaps synchronously."""
         try:
-            cursor = self.connection.execute(
-                """
+            cursor = self.connection.execute("""
                 SELECT sequence FROM events
                 ORDER BY sequence ASC
-            """
-            )
+            """)
             sequences = [row[0] for row in cursor.fetchall()]
 
             gaps = {}

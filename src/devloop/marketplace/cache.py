@@ -9,7 +9,6 @@ from typing import Dict, List, Optional
 
 from .metadata import AgentMetadata
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -173,15 +173,15 @@ def _calculate_ci_metrics(events: list[dict]) -> dict[str, any]:
         "pre_commit_passed": pre_commit_passed,
         "pre_commit_failed": pre_commit_failed,
         "pre_commit_total": total_commits,
-        "pre_commit_pass_rate": (pre_commit_passed / total_commits * 100)
-        if total_commits > 0
-        else 0,
+        "pre_commit_pass_rate": (
+            (pre_commit_passed / total_commits * 100) if total_commits > 0 else 0
+        ),
         "pre_push_passed": pre_push_passed,
         "pre_push_failed": pre_push_failed,
         "pre_push_total": total_pushes,
-        "pre_push_pass_rate": (pre_push_passed / total_pushes * 100)
-        if total_pushes > 0
-        else 0,
+        "pre_push_pass_rate": (
+            (pre_push_passed / total_pushes * 100) if total_pushes > 0 else 0
+        ),
     }
 
 

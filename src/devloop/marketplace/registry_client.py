@@ -11,7 +11,6 @@ from .metadata import AgentMetadata
 from .registry import AgentRegistry, RegistryConfig
 from .search import SearchEngine
 
-
 logger = logging.getLogger(__name__)
 
 

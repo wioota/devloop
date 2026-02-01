@@ -17,13 +17,11 @@ class TestProjectContext:
 
             # Create pyproject.toml with devloop name
             pyproject = project_root / "pyproject.toml"
-            pyproject.write_text(
-                """
+            pyproject.write_text("""
 [tool.poetry]
 name = "devloop"
 version = "0.1.0"
-"""
-            )
+""")
 
             context = ProjectContext(project_root)
             assert context.is_devloop_repository() is True
@@ -37,13 +35,11 @@ version = "0.1.0"
             git_dir = project_root / ".git"
             git_dir.mkdir()
             git_config = git_dir / "config"
-            git_config.write_text(
-                """
+            git_config.write_text("""
 [remote "origin"]
     url = https://github.com/wioota/devloop.git
     fetch = +refs/heads/*:refs/remotes/origin/*
-"""
-            )
+""")
 
             context = ProjectContext(project_root)
             assert context.is_devloop_repository() is True
@@ -67,13 +63,11 @@ version = "0.1.0"
 
             # Create a user project pyproject.toml
             pyproject = project_root / "pyproject.toml"
-            pyproject.write_text(
-                """
+            pyproject.write_text("""
 [tool.poetry]
 name = "my-app"
 version = "1.0.0"
-"""
-            )
+""")
 
             context = ProjectContext(project_root)
             assert context.is_devloop_repository() is False

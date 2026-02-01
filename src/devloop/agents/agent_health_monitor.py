@@ -8,7 +8,6 @@ from devloop.core.auto_fix import auto_fix
 from devloop.core.context_store import context_store, Finding
 from devloop.core.event import Event
 
-
 logger = logging.getLogger(__name__)
 
 

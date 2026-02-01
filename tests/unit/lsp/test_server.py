@@ -119,9 +119,10 @@ class TestDevLoopLanguageServer:
     @pytest.mark.asyncio
     async def test_initialize_devloop(self, server):
         """Test DevLoop component initialization."""
-        with patch("devloop.lsp.server.ContextStore") as MockContextStore, patch(
-            "devloop.lsp.server.EventBus"
-        ) as MockEventBus:
+        with (
+            patch("devloop.lsp.server.ContextStore") as MockContextStore,
+            patch("devloop.lsp.server.EventBus") as MockEventBus,
+        ):
             mock_context_store = MockContextStore.return_value
             mock_event_bus = MockEventBus.return_value
 

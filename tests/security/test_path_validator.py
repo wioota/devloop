@@ -1,6 +1,5 @@
 """Tests for path validation and symlink protection."""
 
-
 import pytest
 from devloop.security.path_validator import (
     PathTraversalError,
