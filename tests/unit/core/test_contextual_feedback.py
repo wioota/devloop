@@ -5,7 +5,6 @@ Tests contextual feedback inference from developer behavior patterns.
 
 import asyncio
 import time
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -99,7 +98,7 @@ class TestContextualFeedbackEngine:
     ):
         """Test that init sets up event listeners."""
         with patch.object(asyncio, "create_task") as mock_create_task:
-            engine = ContextualFeedbackEngine(
+            _engine = ContextualFeedbackEngine(
                 mock_event_bus, mock_feedback_api, tmp_project
             )
 

@@ -4,8 +4,8 @@ Tests execution tracing, decorators, and failure detection.
 """
 
 import asyncio
-from datetime import datetime, UTC
-from unittest.mock import AsyncMock, Mock
+from datetime import datetime
+from unittest.mock import Mock
 
 import pytest
 

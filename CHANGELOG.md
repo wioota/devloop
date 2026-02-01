@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2026-02-01
+
+### New Features
+
+#### DevLoop Insights Command
+- **Pattern analysis** - New `devloop insights` command for analyzing development patterns and workflow metrics
+- **Actionable recommendations** - Provides suggestions based on usage patterns
+
+#### Claude Code Integration
+- **Project settings** - `devloop init` now creates project-level `.claude/settings.json` for Claude Code
+- **Pre-tool context hook** - Added `check-devloop-context` hook to inject DevLoop findings before Claude operations
+- **Status check script** - Comprehensive DevLoop status checker for environment validation
+- **Fast change detection** - `.last_update` marker file enables quick context freshness checks
+- **PID-based daemon detection** - More reliable daemon status checking in hooks
+
+### Improvements
+
+#### Code Quality
+- **watch_async refactoring** - Reduced cyclomatic complexity from 31 to 3 for better maintainability
+- **mypy no_implicit_optional** - Enabled stricter type checking for optional parameters
+- **Type annotations** - Added annotations to prepare for `check_untyped_defs`
+- **Ruff lint fixes** - Addressed various linting issues throughout codebase
+
+### Bug Fixes
+
+- **Session-start hook** - Removed silent error suppression for better debugging
+- **PyPI credentials** - Now checks environment variables for credentials
+- **Hook daemon detection** - Uses PID file for more reliable daemon status
+
+### Testing
+
+- **Core module coverage** - Added comprehensive tests for modules previously at 0% coverage
+
+---
+
 ## [0.7.0] - 2026-01-31
 
 ### New Features
