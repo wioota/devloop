@@ -46,6 +46,7 @@ from devloop.core.transactional_io import initialize_transaction_system
 from .commands import audit as audit_cmd
 from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
+from .commands import insights as insights_cmd
 from .commands import marketplace as marketplace_cmd
 from .commands import metrics as metrics_cmd
 from .commands import release as release_cmd
@@ -61,6 +62,7 @@ console = Console()
 _typer_app.add_typer(summary_cmd.app, name="summary")
 _typer_app.add_typer(custom_agents_cmd.app, name="custom")
 _typer_app.add_typer(feedback_cmd.app, name="feedback")
+_typer_app.add_typer(insights_cmd.app, name="insights")
 _typer_app.add_typer(marketplace_cmd.app, name="agent")
 _typer_app.add_typer(metrics_cmd.app, name="metrics")
 _typer_app.add_typer(release_cmd.app, name="release")
