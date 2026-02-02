@@ -132,7 +132,8 @@ class RegistryClient:
 
             if cache_age < cache_ttl and cache_key in self._remote_cache:
                 logger.debug(f"Using cached remote registry: {url}")
-                return self._remote_cache[cache_key]
+                cached: List[AgentMetadata] = self._remote_cache[cache_key]
+                return cached
 
         # Fetch remote registry
         # NOTE: In production, this would use aiohttp or requests

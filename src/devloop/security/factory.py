@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, cast
 
 from devloop.security.bubblewrap_sandbox import BubblewrapSandbox
 from devloop.security.no_sandbox import NoSandbox
@@ -82,7 +82,7 @@ async def _create_explicit_sandbox(config: SandboxConfig) -> SandboxExecutor:
             sandbox = CapsuleSandbox(config)
             if await sandbox.is_available():
                 logger.info("Using Capsule (WASM) sandbox")
-                return sandbox
+                return cast(SandboxExecutor, sandbox)
             raise SandboxNotAvailableError(
                 "Capsule sandbox requested but not available. "
                 "Install capsule: pip install capsule-runtime"
@@ -111,7 +111,7 @@ async def _create_explicit_sandbox(config: SandboxConfig) -> SandboxExecutor:
             sandbox = SeccompSandbox(config)
             if await sandbox.is_available():
                 logger.info("Using seccomp (syscall filtering) sandbox")
-                return sandbox
+                return cast(SandboxExecutor, sandbox)
             raise SandboxNotAvailableError(
                 "seccomp sandbox requested but not available on this system"
             )
@@ -146,31 +146,31 @@ async def _create_auto_sandbox(
         try:
             from devloop.security.capsule_sandbox import CapsuleSandbox
 
-            sandbox = CapsuleSandbox(config)
-            if await sandbox.is_available():
+            capsule_sandbox = CapsuleSandbox(config)
+            if await capsule_sandbox.is_available():
                 logger.info(f"Using Capsule (WASM) sandbox for {agent_type}")
-                return sandbox
+                return cast(SandboxExecutor, capsule_sandbox)
         except ImportError:
             pass  # Capsule not installed, try next option
 
     # Try Bubblewrap next (works for all agents)
-    sandbox = BubblewrapSandbox(config)
-    if await sandbox.is_available():
+    bwrap_sandbox = BubblewrapSandbox(config)
+    if await bwrap_sandbox.is_available():
         logger.info(
             f"Using Bubblewrap (Linux namespaces) sandbox for {agent_type or 'agent'}"
         )
-        return sandbox
+        return bwrap_sandbox
 
     # Try seccomp as fallback
     try:
         from devloop.security.seccomp_sandbox import SeccompSandbox
 
-        sandbox = SeccompSandbox(config)
-        if await sandbox.is_available():
+        seccomp_sandbox = SeccompSandbox(config)
+        if await seccomp_sandbox.is_available():
             logger.info(
                 f"Using seccomp (syscall filtering) sandbox for {agent_type or 'agent'}"
             )
-            return sandbox
+            return cast(SandboxExecutor, seccomp_sandbox)
     except ImportError:
         pass
 

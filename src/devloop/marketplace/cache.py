@@ -38,7 +38,8 @@ class RegistryCache:
 
         try:
             with open(metadata_file) as f:
-                return json.load(f)
+                result: Dict[Any, Any] = json.load(f)
+                return result
         except Exception as e:
             logger.warning(f"Failed to load cache metadata: {e}")
             return {}

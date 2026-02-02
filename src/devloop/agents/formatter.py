@@ -246,7 +246,8 @@ class FormatterAgent(Agent):
 
         language = extension_map.get(suffix)
         if language:
-            return self.config.formatters.get(language)
+            formatter = self.config.formatters.get(language)
+            return str(formatter) if formatter else None
 
         return None
 

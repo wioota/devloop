@@ -282,7 +282,7 @@ class JenkinsProvider(CIProvider):
                         # Remove refs/heads/ prefix if present
                         if branch_name.startswith("refs/heads/"):
                             branch_name = branch_name.replace("refs/heads/", "")
-                        return branch_name
+                        return str(branch_name)
         except (KeyError, IndexError, TypeError):
             pass
         return None

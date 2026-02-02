@@ -248,7 +248,8 @@ class CustomAgentStore:
             content = await f.read()
 
         try:
-            return json.loads(content)
+            result: Dict[str, Dict[str, Any]] = json.loads(content)
+            return result
         except json.JSONDecodeError:
             return {}
 

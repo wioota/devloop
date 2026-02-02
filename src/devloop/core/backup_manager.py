@@ -291,8 +291,8 @@ class BackupManager:
             List of change metadata dictionaries
         """
         try:
-            log_data = json.loads(self.change_log_file.read_text())
-            changes = log_data["changes"]
+            log_data: Dict[str, Any] = json.loads(self.change_log_file.read_text())
+            changes: List[Dict[Any, Any]] = log_data.get("changes", [])
 
             if not include_rolled_back:
                 changes = [c for c in changes if not c.get("rolled_back", False)]

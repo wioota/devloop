@@ -558,7 +558,7 @@ class ContextStore:
                     "auto_fixed": {"count": 0, "summary": "No auto-fixed items"},
                 }
 
-            data = json.loads(index_file.read_text())
+            data: Dict[str, Any] = json.loads(index_file.read_text())
             return data
 
         except Exception as e:

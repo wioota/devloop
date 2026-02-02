@@ -118,7 +118,7 @@ class SearchEngine:
             parts_agent = self._parse_agent_spec(agent_spec)
 
             # For now, do simple major version check
-            return parts_agent["major"] >= parts_required["major"]
+            return bool(parts_agent["major"] >= parts_required["major"])
         except Exception:
             return True  # If parsing fails, assume compatible
 

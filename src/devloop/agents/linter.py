@@ -180,7 +180,8 @@ class LinterAgent(Agent):
 
         language = extension_map.get(suffix)
         if language:
-            return self.config.linters.get(language)
+            linter = self.config.linters.get(language)
+            return str(linter) if linter else None
 
         return None
 

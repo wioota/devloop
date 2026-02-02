@@ -327,7 +327,8 @@ class TestRunnerAgent(Agent):
 
         language = extension_map.get(suffix)
         if language:
-            return self.config.test_frameworks.get(language)
+            framework = self.config.test_frameworks.get(language)
+            return str(framework) if framework else None
 
         return None
 

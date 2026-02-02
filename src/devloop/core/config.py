@@ -131,7 +131,7 @@ class Config:
         else:
             try:
                 with open(self.config_path, "r") as f:
-                    config = json.load(f)
+                    config: Dict[str, Any] = json.load(f)
 
                 # Migrate config if needed
                 if migrate:
@@ -429,11 +429,11 @@ class ConfigWrapper:
         """Check if an agent is enabled."""
         agents = self._config.get("agents", {})
         agent_config = agents.get(agent_name, {})
-        return agent_config.get("enabled", False)
+        return bool(agent_config.get("enabled", False))
 
     def get_agent_config(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """Get configuration for a specific agent."""
-        agents = self._config.get("agents", {})
+        agents: Dict[str, Dict[str, Any]] = self._config.get("agents", {})
         return agents.get(agent_name)
 
     def get_global_config(self) -> GlobalConfig:

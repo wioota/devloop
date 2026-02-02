@@ -471,7 +471,7 @@ class AgentMarketplace:
             content = await f.read()
 
         try:
-            agents = json.loads(content)
+            agents: List[Dict[str, Any]] = json.loads(content)
             if category:
                 agents = [a for a in agents if a.get("category") == category]
             return agents

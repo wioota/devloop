@@ -145,8 +145,9 @@ class ClaudeCodeAdapter:
 
         try:
             with open(tier_file, "r") as f:
-                data = json.load(f)
-                return data.get("findings", [])
+                data: Dict[str, Any] = json.load(f)
+                findings: List[Dict[str, Any]] = data.get("findings", [])
+                return findings
         except Exception:
             return []
 

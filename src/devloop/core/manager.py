@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, cast
 
 from devloop.core.agent import Agent
 from devloop.core.config import ResourceLimitConfig
@@ -66,11 +66,11 @@ class AgentManager:
         self.logger.info(f"Registered agent: {agent.name}")
 
     def create_agent(
-        self, agent_class, name: str, triggers: List[str], **kwargs
+        self, agent_class: Type[Agent], name: str, triggers: List[str], **kwargs: Any
     ) -> Agent:
         """Create and register an agent with feedback/performance systems."""
         # Build kwargs for agent constructor
-        agent_kwargs = {
+        agent_kwargs: Dict[str, Any] = {
             "name": name,
             "triggers": triggers,
             "event_bus": self.event_bus,
@@ -88,7 +88,7 @@ class AgentManager:
         if "resource_tracker" in sig.parameters:
             agent_kwargs["resource_tracker"] = self.resource_tracker
 
-        agent = agent_class(**agent_kwargs)
+        agent: Agent = agent_class(**agent_kwargs)
         self.register(agent)
         return agent
 

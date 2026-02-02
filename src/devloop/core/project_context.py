@@ -44,7 +44,7 @@ class ProjectContext:
         """
         # Check cache
         if "is_devloop_repo" in self._cache:
-            return self._cache["is_devloop_repo"]
+            return bool(self._cache["is_devloop_repo"])
 
         result = False
 
@@ -142,7 +142,7 @@ class ProjectContext:
         """
         # Check cache
         if "project_type" in self._cache:
-            return self._cache["project_type"]
+            return str(self._cache["project_type"])
 
         result = "unknown"
 

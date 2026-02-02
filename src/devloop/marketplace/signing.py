@@ -258,7 +258,8 @@ class AgentVerifier:
                 return None
 
             with open(sig_path) as f:
-                return json.load(f)
+                result: Dict[Any, Any] = json.load(f)
+                return result
 
         except Exception as e:
             logger.error(f"Failed to get signature info: {e}")

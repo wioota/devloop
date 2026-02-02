@@ -318,17 +318,19 @@ class GitCommitAssistantAgent(Agent):
         if not self.config.auto_generate_scope:
             return ""
 
-        modules = analysis.get("affected_modules", [])
+        modules: list[str] = analysis.get("affected_modules", [])
         if len(modules) == 1:
-            return modules[0].lower().replace(" ", "-")
+            return str(modules[0]).lower().replace(" ", "-")
         elif len(modules) > 1:
             # Find common prefix
             common = ""
-            for i, char in enumerate(modules[0]):
+            first_module = str(modules[0])
+            for i, char in enumerate(first_module):
                 if all(
-                    module.startswith(modules[0][: i + 1]) for module in modules[1:]
+                    str(module).startswith(first_module[: i + 1])
+                    for module in modules[1:]
                 ):
-                    common = modules[0][: i + 1]
+                    common = first_module[: i + 1]
                 else:
                     break
             return common.lower().replace(" ", "-") if common else ""

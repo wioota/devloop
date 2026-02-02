@@ -179,7 +179,7 @@ class ArtifactoryRegistry(PackageRegistry):
             )
 
             with urllib.request.urlopen(request, timeout=5) as response:
-                return response.status == 200
+                return bool(response.status == 200)
 
         except (HTTPError, URLError, Exception):
             return False

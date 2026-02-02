@@ -1,6 +1,6 @@
 """Provider manager for discovering and managing CI and registry providers."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from devloop.providers.artifactory_registry import ArtifactoryRegistry
 from devloop.providers.ci_provider import CIProvider
@@ -59,7 +59,7 @@ class ProviderManager:
             return None
 
         try:
-            return provider_class(**config)
+            return cast(CIProvider, provider_class(**config))
         except Exception:
             return None
 
@@ -85,7 +85,7 @@ class ProviderManager:
             return None
 
         try:
-            return provider_class(**config)
+            return cast(PackageRegistry, provider_class(**config))
         except Exception:
             return None
 
