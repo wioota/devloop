@@ -41,6 +41,7 @@ coverage.xml
 htmlcov/
 
 # Project specific
+.worktrees/
 .claude/
 # But track slash commands
 !.claude/commands/
