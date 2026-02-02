@@ -240,16 +240,14 @@ def setup_logging_with_rotation(verbose: bool = False, project_dir: Path | None 
     root_logger.addHandler(rotating_handler)
 
 
-def run_daemon(path: Path, config_path: Path | None, verbose: bool):
-    """Run devloop in daemon/background mode."""
+def _fork_to_background() -> None:
+    """Fork the process to run in background. Exits parent process."""
     import os
     import sys
 
-    # Fork to background
     try:
         pid = os.fork()
         if pid > 0:
-            # Parent process - exit
             console.print(
                 f"[green]✓[/green] DevLoop started in background (PID: {pid})"
             )
@@ -259,21 +257,21 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
         console.print(f"[red]✗[/red] Failed to start daemon: {e}")
         sys.exit(1)
 
-    # Child process continues
-    # Convert path to absolute before changing directory
-    project_dir = path.resolve()
+
+def _setup_daemon_environment(project_dir: Path, verbose: bool) -> None:
+    """Setup daemon environment (detach from terminal, setup logging)."""
+    import os
 
     os.chdir("/")
     os.setsid()
     os.umask(0)
-
-    # Setup logging with rotation BEFORE redirecting file descriptors
     setup_logging_with_rotation(verbose, project_dir)
 
-    # Don't redirect stdout/stderr - let logging handlers manage it
-    # This prevents unbounded log file growth
 
-    # Write PID file
+def _run_daemon_loop(project_dir: Path, config_path: Path | None) -> None:
+    """Run the daemon main loop with PID file management."""
+    import os
+
     pid_file = project_dir / ".devloop" / "devloop.pid"
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
@@ -281,8 +279,6 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
     print(f"DevLoop v2 daemon started (PID: {os.getpid()})")
     print(f"Watching: {project_dir}")
 
-    # Run the async main loop (will run indefinitely)
-    # Ensure config_path is also absolute if specified
     abs_config_path = (
         config_path.resolve()
         if config_path
@@ -296,9 +292,16 @@ def run_daemon(path: Path, config_path: Path | None, verbose: bool):
         print(f"Daemon error: {e}")
         traceback.print_exc()
     finally:
-        # Clean up PID file
         if pid_file.exists():
             pid_file.unlink()
+
+
+def run_daemon(path: Path, config_path: Path | None, verbose: bool):
+    """Run devloop in daemon/background mode."""
+    _fork_to_background()
+    project_dir = path.resolve()
+    _setup_daemon_environment(project_dir, verbose)
+    _run_daemon_loop(project_dir, config_path)
 
 
 @app.command()
@@ -1362,11 +1365,32 @@ def version():
     console.print(f"DevLoop v{__version__}")
 
 
+def _install_hook_from_template(
+    template_file: Path, hooks_dest_dir: Path
+) -> str | None:
+    """Install a single hook from template. Returns hook name if installed."""
+    import shutil
+
+    if not template_file.is_file():
+        return None
+
+    dest_file = hooks_dest_dir / template_file.name
+
+    if dest_file.exists():
+        backup_file = hooks_dest_dir / f"{template_file.name}.backup"
+        shutil.copy2(dest_file, backup_file)
+        console.print(
+            f"[dim]  Backed up existing hook: {template_file.name} -> {template_file.name}.backup[/dim]"
+        )
+
+    shutil.copy2(template_file, dest_file)
+    dest_file.chmod(0o755)
+    return template_file.name
+
+
 @app.command()
 def update_hooks(path: Path = typer.Argument(Path.cwd(), help="Project directory")):
     """Update git hooks from latest templates."""
-    import shutil
-
     git_dir = path / ".git"
 
     if not git_dir.exists() or not git_dir.is_dir():
@@ -1377,31 +1401,18 @@ def update_hooks(path: Path = typer.Argument(Path.cwd(), help="Project directory
         return
 
     hooks_template_dir = Path(__file__).parent / "templates" / "git_hooks"
-    hooks_dest_dir = git_dir / "hooks"
-
     if not hooks_template_dir.exists():
         console.print(f"[red]✗[/red] Hook templates not found at: {hooks_template_dir}")
         return
 
+    hooks_dest_dir = git_dir / "hooks"
     hooks_dest_dir.mkdir(parents=True, exist_ok=True)
-    hooks_updated = []
 
-    for template_file in hooks_template_dir.iterdir():
-        if template_file.is_file():
-            dest_file = hooks_dest_dir / template_file.name
-
-            # Backup existing hook if present
-            if dest_file.exists():
-                backup_file = hooks_dest_dir / f"{template_file.name}.backup"
-                shutil.copy2(dest_file, backup_file)
-                console.print(
-                    f"[dim]  Backed up existing hook: {template_file.name} -> {template_file.name}.backup[/dim]"
-                )
-
-            # Install new hook
-            shutil.copy2(template_file, dest_file)
-            dest_file.chmod(0o755)  # Make executable
-            hooks_updated.append(template_file.name)
+    hooks_updated = [
+        name
+        for template in hooks_template_dir.iterdir()
+        if (name := _install_hook_from_template(template, hooks_dest_dir))
+    ]
 
     if hooks_updated:
         console.print("\n[green]✓[/green] Updated git hooks:")
@@ -1409,6 +1420,42 @@ def update_hooks(path: Path = typer.Argument(Path.cwd(), help="Project directory
             console.print(f"  • {hook}")
     else:
         console.print("[yellow]No hooks found to update[/yellow]")
+
+
+def _display_verification_status(verification: dict) -> None:
+    """Display verification pass/fail status and blocking issues."""
+    if verification.get("verified"):
+        console.print("[green]✅ All checks passed[/green]")
+        return
+
+    console.print("[red]❌ Verification failed[/red]")
+    if verification.get("blocking_issues"):
+        console.print("\n[bold red]Blocking Issues:[/bold red]")
+        for issue in verification["blocking_issues"]:
+            console.print(f"  • {issue}")
+
+
+def _display_warnings(warnings: list, max_display: int = 5) -> None:
+    """Display warnings with truncation."""
+    if not warnings:
+        return
+
+    console.print("\n[bold yellow]Warnings:[/bold yellow]")
+    for warning in warnings[:max_display]:
+        console.print(f"  • {warning}")
+    if len(warnings) > max_display:
+        console.print(f"  ... and {len(warnings) - max_display} more")
+
+
+def _display_extraction_results(extraction: dict) -> None:
+    """Display findings extraction results."""
+    issues_created = extraction.get("issues_created", 0)
+    if issues_created > 0:
+        console.print(f"\n[green]✅ Created {issues_created} Beads issue(s)[/green]")
+        for issue_id in extraction.get("issue_ids", []):
+            console.print(f"  • {issue_id}")
+    else:
+        console.print("\n[dim]No new Beads issues created[/dim]")
 
 
 @app.command()
@@ -1422,36 +1469,10 @@ def verify_work():
     console.print("\n[bold]Code Quality Verification[/bold]")
     console.print("=" * 50)
 
-    # Verification status
     verification = result.get("verification", {})
-    if verification.get("verified"):
-        console.print("[green]✅ All checks passed[/green]")
-    else:
-        console.print("[red]❌ Verification failed[/red]")
-        if verification.get("blocking_issues"):
-            console.print("\n[bold red]Blocking Issues:[/bold red]")
-            for issue in verification["blocking_issues"]:
-                console.print(f"  • {issue}")
-
-    # Warnings
-    if verification.get("warnings"):
-        console.print("\n[bold yellow]Warnings:[/bold yellow]")
-        for warning in verification["warnings"][:5]:  # Show first 5
-            console.print(f"  • {warning}")
-        if len(verification["warnings"]) > 5:
-            console.print(f"  ... and {len(verification['warnings']) - 5} more")
-
-    # Findings extraction
-    extraction = result.get("extraction", {})
-    if extraction.get("issues_created") > 0:
-        console.print(
-            f"\n[green]✅ Created {extraction['issues_created']} Beads issue(s)[/green]"
-        )
-        if extraction.get("issue_ids"):
-            for issue_id in extraction["issue_ids"]:
-                console.print(f"  • {issue_id}")
-    else:
-        console.print("\n[dim]No new Beads issues created[/dim]")
+    _display_verification_status(verification)
+    _display_warnings(verification.get("warnings", []))
+    _display_extraction_results(result.get("extraction", {}))
 
     console.print("\n[dim]Use 'bd ready' to see ready work[/dim]")
 
