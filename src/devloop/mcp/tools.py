@@ -4,10 +4,19 @@ This module provides the MCP tools for interacting with DevLoop's findings:
 - get_findings: Query findings with filters
 - dismiss_finding: Mark a finding as seen/dismissed
 - apply_fix: Apply an auto-fix for a specific finding
+
+And verification tools for running code quality checks:
+- run_formatter: Run black on specified files or project
+- run_linter: Run ruff with optional --fix flag
+- run_type_checker: Run mypy on specified paths
+- run_tests: Run pytest with optional path/marker filters
 """
 
+import asyncio
 import logging
+import subprocess
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from devloop.core.auto_fix import apply_fix as apply_fix_impl
@@ -225,4 +234,291 @@ async def apply_fix(
             "success": False,
             "finding_id": finding_id,
             "message": f"Error applying fix: {e}",
+        }
+
+
+# ============================================================================
+# Verification Tools
+# ============================================================================
+
+
+async def run_formatter(
+    project_root: Path,
+    files: Optional[List[str]] = None,
+    timeout: int = 30,
+) -> Dict[str, Any]:
+    """Run black formatter on specified files or project.
+
+    This tool runs the black code formatter on the specified files,
+    or on the entire src/ and tests/ directories if no files are specified.
+
+    Args:
+        project_root: Path to the project root directory
+        files: Optional list of specific files to format
+        timeout: Timeout in seconds (default: 30)
+
+    Returns:
+        Dict with success status, stdout, stderr, and returncode
+
+    Example:
+        >>> result = await run_formatter(Path("/project"), files=["src/main.py"])
+        >>> if result["success"]:
+        ...     print("Code formatted successfully")
+    """
+    cmd = ["black"]
+    if files:
+        cmd.extend(files)
+    else:
+        cmd.extend(["src/", "tests/"])
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            logger.warning(f"Formatter timed out after {timeout}s")
+            return {
+                "success": False,
+                "error": f"Command timed out after {timeout} seconds",
+            }
+
+        return {
+            "success": process.returncode == 0,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+            "returncode": process.returncode,
+        }
+
+    except Exception as e:
+        logger.error(f"Error running formatter: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+async def run_linter(
+    project_root: Path,
+    paths: Optional[List[str]] = None,
+    fix: bool = False,
+    timeout: int = 30,
+) -> Dict[str, Any]:
+    """Run ruff linter on specified paths or project.
+
+    This tool runs the ruff linter on the specified paths,
+    or on the entire src/ and tests/ directories if no paths are specified.
+
+    Args:
+        project_root: Path to the project root directory
+        paths: Optional list of specific paths to lint
+        fix: If True, automatically fix fixable issues
+        timeout: Timeout in seconds (default: 30)
+
+    Returns:
+        Dict with success status, stdout, stderr, and returncode
+
+    Example:
+        >>> result = await run_linter(Path("/project"), fix=True)
+        >>> if result["success"]:
+        ...     print("No linting issues found")
+    """
+    cmd = ["ruff", "check"]
+
+    if fix:
+        cmd.append("--fix")
+
+    if paths:
+        cmd.extend(paths)
+    else:
+        cmd.extend(["src/", "tests/"])
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            logger.warning(f"Linter timed out after {timeout}s")
+            return {
+                "success": False,
+                "error": f"Command timed out after {timeout} seconds",
+            }
+
+        return {
+            "success": process.returncode == 0,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+            "returncode": process.returncode,
+        }
+
+    except Exception as e:
+        logger.error(f"Error running linter: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+async def run_type_checker(
+    project_root: Path,
+    paths: Optional[List[str]] = None,
+    timeout: int = 60,
+) -> Dict[str, Any]:
+    """Run mypy type checker on specified paths or project.
+
+    This tool runs the mypy type checker on the specified paths,
+    or on the src/ directory if no paths are specified.
+
+    Args:
+        project_root: Path to the project root directory
+        paths: Optional list of specific paths to check
+        timeout: Timeout in seconds (default: 60)
+
+    Returns:
+        Dict with success status, stdout, stderr, and returncode
+
+    Example:
+        >>> result = await run_type_checker(Path("/project"), paths=["src/"])
+        >>> if result["success"]:
+        ...     print("No type errors found")
+    """
+    cmd = ["mypy"]
+
+    if paths:
+        cmd.extend(paths)
+    else:
+        cmd.append("src/")
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            logger.warning(f"Type checker timed out after {timeout}s")
+            return {
+                "success": False,
+                "error": f"Command timed out after {timeout} seconds",
+            }
+
+        return {
+            "success": process.returncode == 0,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+            "returncode": process.returncode,
+        }
+
+    except Exception as e:
+        logger.error(f"Error running type checker: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+async def run_tests(
+    project_root: Path,
+    path: Optional[str] = None,
+    marker: Optional[str] = None,
+    keyword: Optional[str] = None,
+    verbose: bool = False,
+    timeout: int = 300,
+) -> Dict[str, Any]:
+    """Run pytest tests with optional filters.
+
+    This tool runs pytest with optional path, marker, and keyword filters.
+    Tests have a longer default timeout (300s / 5 minutes) due to their
+    potentially long running time.
+
+    Args:
+        project_root: Path to the project root directory
+        path: Optional specific test path to run
+        marker: Optional pytest marker to filter tests (e.g., "slow", "integration")
+        keyword: Optional keyword expression to filter tests
+        verbose: If True, run with verbose output (-v flag)
+        timeout: Timeout in seconds (default: 300)
+
+    Returns:
+        Dict with success status, stdout, stderr, and returncode
+
+    Example:
+        >>> result = await run_tests(Path("/project"), marker="unit", verbose=True)
+        >>> if result["success"]:
+        ...     print("All tests passed")
+    """
+    cmd = ["pytest"]
+
+    if verbose:
+        cmd.append("-v")
+
+    if marker:
+        cmd.extend(["-m", marker])
+
+    if keyword:
+        cmd.extend(["-k", keyword])
+
+    if path:
+        cmd.append(path)
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            logger.warning(f"Tests timed out after {timeout}s")
+            return {
+                "success": False,
+                "error": f"Command timed out after {timeout} seconds",
+            }
+
+        return {
+            "success": process.returncode == 0,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+            "returncode": process.returncode,
+        }
+
+    except Exception as e:
+        logger.error(f"Error running tests: {e}")
+        return {
+            "success": False,
+            "error": str(e),
         }

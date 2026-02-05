@@ -1,10 +1,7 @@
 """Tests for DevLoop MCP tools."""
 
-import json
-from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,7 +10,6 @@ from devloop.core.context_store import (
     ContextStore,
     Finding,
     Severity,
-    ScopeType,
     Tier,
 )
 from devloop.mcp.tools import (
@@ -88,9 +84,7 @@ class TestGetFindings:
         return store
 
     @pytest.mark.asyncio
-    async def test_get_findings_no_filters(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_get_findings_no_filters(self, mock_context_store: AsyncMock) -> None:
         """Test get_findings with no filters returns all findings."""
         findings = [
             create_test_finding(id="f1", severity=Severity.ERROR),
@@ -100,7 +94,9 @@ class TestGetFindings:
 
         result = await get_findings(mock_context_store)
 
-        mock_context_store.get_findings.assert_called_once_with(tier=None, file_filter=None)
+        mock_context_store.get_findings.assert_called_once_with(
+            tier=None, file_filter=None
+        )
         assert len(result) == 2
         assert result[0]["id"] == "f1"
         assert result[1]["id"] == "f2"
@@ -113,9 +109,7 @@ class TestGetFindings:
         findings = [create_test_finding(id="f1", file="/test/file.py")]
         mock_context_store.get_findings.return_value = findings
 
-        result = await get_findings(
-            mock_context_store, file="/test/file.py"
-        )
+        result = await get_findings(mock_context_store, file="/test/file.py")
 
         mock_context_store.get_findings.assert_called_once_with(
             tier=None, file_filter="/test/file.py"
@@ -136,6 +130,7 @@ class TestGetFindings:
         mock_context_store.get_findings.assert_called_once_with(
             tier=Tier.IMMEDIATE, file_filter=None
         )
+        assert len(result) == 1
 
     @pytest.mark.asyncio
     async def test_get_findings_with_severity_filter(
@@ -170,13 +165,9 @@ class TestGetFindings:
         assert result[0]["category"] == "security"
 
     @pytest.mark.asyncio
-    async def test_get_findings_with_limit(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_get_findings_with_limit(self, mock_context_store: AsyncMock) -> None:
         """Test get_findings respects limit."""
-        findings = [
-            create_test_finding(id=f"f{i}") for i in range(10)
-        ]
+        findings = [create_test_finding(id=f"f{i}") for i in range(10)]
         mock_context_store.get_findings.return_value = findings
 
         result = await get_findings(mock_context_store, limit=5)
@@ -191,7 +182,9 @@ class TestGetFindings:
         findings = [
             create_test_finding(id="f1", severity=Severity.ERROR, category="security"),
             create_test_finding(id="f2", severity=Severity.ERROR, category="style"),
-            create_test_finding(id="f3", severity=Severity.WARNING, category="security"),
+            create_test_finding(
+                id="f3", severity=Severity.WARNING, category="security"
+            ),
         ]
         mock_context_store.get_findings.return_value = findings
 
@@ -240,9 +233,7 @@ class TestDismissFinding:
         return store
 
     @pytest.mark.asyncio
-    async def test_dismiss_finding_success(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_dismiss_finding_success(self, mock_context_store: AsyncMock) -> None:
         """Test successfully dismissing a finding."""
         finding = create_test_finding(id="f1", seen_by_user=False)
         mock_context_store.get_findings.return_value = [finding]
@@ -304,9 +295,7 @@ class TestApplyFix:
         return store
 
     @pytest.mark.asyncio
-    async def test_apply_fix_success(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_apply_fix_success(self, mock_context_store: AsyncMock) -> None:
         """Test successfully applying a fix."""
         finding = create_test_finding(id="f1", auto_fixable=True)
         mock_context_store.get_findings.return_value = [finding]
@@ -346,9 +335,7 @@ class TestApplyFix:
         assert "not auto-fixable" in result["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_apply_fix_failure(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_apply_fix_failure(self, mock_context_store: AsyncMock) -> None:
         """Test handling fix application failure."""
         finding = create_test_finding(id="f1", auto_fixable=True)
         mock_context_store.get_findings.return_value = [finding]
@@ -362,9 +349,7 @@ class TestApplyFix:
             assert "failed" in result["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_apply_fix_exception(
-        self, mock_context_store: AsyncMock
-    ) -> None:
+    async def test_apply_fix_exception(self, mock_context_store: AsyncMock) -> None:
         """Test handling exceptions during fix application."""
         finding = create_test_finding(id="f1", auto_fixable=True)
         mock_context_store.get_findings.return_value = [finding]
@@ -386,15 +371,11 @@ class TestToolIntegration:
         """Create a real context store for testing."""
         context_dir = tmp_path / ".devloop" / "context"
         context_dir.mkdir(parents=True)
-        store = ContextStore(
-            context_dir=context_dir, enable_path_validation=False
-        )
+        store = ContextStore(context_dir=context_dir, enable_path_validation=False)
         return store
 
     @pytest.mark.asyncio
-    async def test_get_findings_integration(
-        self, context_store: ContextStore
-    ) -> None:
+    async def test_get_findings_integration(self, context_store: ContextStore) -> None:
         """Test get_findings with real context store."""
         await context_store.initialize()
 
@@ -431,3 +412,438 @@ class TestToolIntegration:
         dismissed = next((f for f in findings if f.id == "int-002"), None)
         assert dismissed is not None
         assert dismissed.seen_by_user is True
+
+
+# ============================================================================
+# Verification Tools Tests
+# ============================================================================
+
+
+class TestRunFormatter:
+    """Tests for run_formatter tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "test.py").write_text("x=1\n")
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_formatter_success(self, project_root: Path) -> None:
+        """Test running formatter successfully."""
+        from devloop.mcp.tools import run_formatter
+
+        # Mock subprocess to simulate black
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"All done!\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_formatter(project_root)
+
+            assert result["success"] is True
+            assert result["returncode"] == 0
+            assert "All done!" in result["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_run_formatter_with_files(self, project_root: Path) -> None:
+        """Test running formatter on specific files."""
+        from devloop.mcp.tools import run_formatter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"Formatted 1 file\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_formatter(project_root, files=["src/test.py"])
+
+            assert result["success"] is True
+            # Verify the files were passed to the command
+            call_args = mock_exec.call_args
+            assert "src/test.py" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_formatter_failure(self, project_root: Path) -> None:
+        """Test handling formatter failures."""
+        from devloop.mcp.tools import run_formatter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(b"", b"error: cannot format\n")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_formatter(project_root)
+
+            assert result["success"] is False
+            assert result["returncode"] == 1
+            assert "cannot format" in result["stderr"]
+
+    @pytest.mark.asyncio
+    async def test_run_formatter_timeout(self, project_root: Path) -> None:
+        """Test handling formatter timeout."""
+        import asyncio
+        from devloop.mcp.tools import run_formatter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.kill = MagicMock()
+            mock_exec.return_value = mock_process
+
+            # Patch wait_for to raise TimeoutError
+            with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
+                mock_wait_for.side_effect = asyncio.TimeoutError()
+
+                result = await run_formatter(project_root, timeout=1)
+
+                assert result["success"] is False
+                assert "timed out" in result["error"].lower()
+                mock_process.kill.assert_called_once()
+
+
+class TestRunLinter:
+    """Tests for run_linter tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "test.py").write_text("import os\nx = 1\n")
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_linter_success(self, project_root: Path) -> None:
+        """Test running linter successfully."""
+        from devloop.mcp.tools import run_linter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"All checks passed!\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_linter(project_root)
+
+            assert result["success"] is True
+            assert result["returncode"] == 0
+
+    @pytest.mark.asyncio
+    async def test_run_linter_with_fix(self, project_root: Path) -> None:
+        """Test running linter with --fix flag."""
+        from devloop.mcp.tools import run_linter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"Found 1 error, 1 fixed\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_linter(project_root, fix=True)
+
+            assert result["success"] is True
+            # Verify --fix was passed
+            call_args = mock_exec.call_args
+            assert "--fix" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_linter_with_paths(self, project_root: Path) -> None:
+        """Test running linter on specific paths."""
+        from devloop.mcp.tools import run_linter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_linter(project_root, paths=["src/"])
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "src/" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_linter_with_errors(self, project_root: Path) -> None:
+        """Test linter finding errors."""
+        from devloop.mcp.tools import run_linter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(b"src/test.py:1:1 F401 unused import\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_linter(project_root)
+
+            assert result["success"] is False
+            assert result["returncode"] == 1
+            assert "F401" in result["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_run_linter_timeout(self, project_root: Path) -> None:
+        """Test handling linter timeout."""
+        import asyncio
+        from devloop.mcp.tools import run_linter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.kill = MagicMock()
+            mock_exec.return_value = mock_process
+
+            # Patch wait_for to raise TimeoutError
+            with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
+                mock_wait_for.side_effect = asyncio.TimeoutError()
+
+                result = await run_linter(project_root, timeout=1)
+
+                assert result["success"] is False
+                assert "timed out" in result["error"].lower()
+                mock_process.kill.assert_called_once()
+
+
+class TestRunTypeChecker:
+    """Tests for run_type_checker tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "test.py").write_text("def foo(x: int) -> str:\n    return x\n")
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_type_checker_success(self, project_root: Path) -> None:
+        """Test running type checker successfully."""
+        from devloop.mcp.tools import run_type_checker
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"Success: no issues found\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_type_checker(project_root)
+
+            assert result["success"] is True
+            assert result["returncode"] == 0
+
+    @pytest.mark.asyncio
+    async def test_run_type_checker_with_paths(self, project_root: Path) -> None:
+        """Test running type checker on specific paths."""
+        from devloop.mcp.tools import run_type_checker
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_type_checker(project_root, paths=["src/"])
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "src/" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_type_checker_with_errors(self, project_root: Path) -> None:
+        """Test type checker finding errors."""
+        from devloop.mcp.tools import run_type_checker
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(
+                    b"src/test.py:2: error: Incompatible return value type\n",
+                    b"",
+                )
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_type_checker(project_root)
+
+            assert result["success"] is False
+            assert result["returncode"] == 1
+            assert "Incompatible return value" in result["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_run_type_checker_timeout(self, project_root: Path) -> None:
+        """Test handling type checker timeout."""
+        import asyncio
+        from devloop.mcp.tools import run_type_checker
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.kill = MagicMock()
+            mock_exec.return_value = mock_process
+
+            # Patch wait_for to raise TimeoutError
+            with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
+                mock_wait_for.side_effect = asyncio.TimeoutError()
+
+                result = await run_type_checker(project_root, timeout=1)
+
+                assert result["success"] is False
+                assert "timed out" in result["error"].lower()
+                mock_process.kill.assert_called_once()
+
+
+class TestRunTests:
+    """Tests for run_tests tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root."""
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_example.py").write_text(
+            "def test_pass():\n    assert True\n"
+        )
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_tests_success(self, project_root: Path) -> None:
+        """Test running tests successfully."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"===== 1 passed =====\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root)
+
+            assert result["success"] is True
+            assert result["returncode"] == 0
+            assert "passed" in result["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_run_tests_with_path(self, project_root: Path) -> None:
+        """Test running tests with a specific path."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"passed\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root, path="tests/test_example.py")
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "tests/test_example.py" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_tests_with_marker(self, project_root: Path) -> None:
+        """Test running tests with a marker filter."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"passed\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root, marker="slow")
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "-m" in call_args[0]
+            assert "slow" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_tests_with_keyword(self, project_root: Path) -> None:
+        """Test running tests with a keyword filter."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"passed\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root, keyword="test_pass")
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "-k" in call_args[0]
+            assert "test_pass" in call_args[0]
+
+    @pytest.mark.asyncio
+    async def test_run_tests_failure(self, project_root: Path) -> None:
+        """Test handling test failures."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(b"===== 1 failed =====\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root)
+
+            assert result["success"] is False
+            assert result["returncode"] == 1
+            assert "failed" in result["stdout"]
+
+    @pytest.mark.asyncio
+    async def test_run_tests_timeout(self, project_root: Path) -> None:
+        """Test handling tests timeout."""
+        import asyncio
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.kill = MagicMock()
+            mock_exec.return_value = mock_process
+
+            # Patch wait_for to raise TimeoutError
+            with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
+                mock_wait_for.side_effect = asyncio.TimeoutError()
+
+                result = await run_tests(project_root, timeout=1)
+
+                assert result["success"] is False
+                assert "timed out" in result["error"].lower()
+                mock_process.kill.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_run_tests_verbose(self, project_root: Path) -> None:
+        """Test running tests with verbose output."""
+        from devloop.mcp.tools import run_tests
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"passed\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_tests(project_root, verbose=True)
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "-v" in call_args[0]

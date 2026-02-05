@@ -19,7 +19,15 @@ from mcp.types import TextContent, Tool
 
 from devloop import __version__
 from devloop.core.context_store import ContextStore
-from devloop.mcp.tools import apply_fix, dismiss_finding, get_findings
+from devloop.mcp.tools import (
+    apply_fix,
+    dismiss_finding,
+    get_findings,
+    run_formatter,
+    run_linter,
+    run_tests,
+    run_type_checker,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +146,12 @@ class MCPServer:
                             },
                             "tier": {
                                 "type": "string",
-                                "enum": ["immediate", "relevant", "background", "auto_fixed"],
+                                "enum": [
+                                    "immediate",
+                                    "relevant",
+                                    "background",
+                                    "auto_fixed",
+                                ],
                                 "description": "Filter by disclosure tier",
                             },
                             "limit": {
@@ -187,12 +200,128 @@ class MCPServer:
                         "required": ["finding_id"],
                     },
                 ),
+                # Verification tools
+                Tool(
+                    name="run_formatter",
+                    description=(
+                        "Run black code formatter on specified files or the entire project. "
+                        "Formats code to ensure consistent style."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "files": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": (
+                                    "List of files to format. "
+                                    "If not specified, formats src/ and tests/ directories."
+                                ),
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "default": 30,
+                                "description": "Timeout in seconds (default: 30)",
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="run_linter",
+                    description=(
+                        "Run ruff linter on specified paths or the entire project. "
+                        "Checks for code quality issues and style violations."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "paths": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": (
+                                    "List of paths to lint. "
+                                    "If not specified, lints src/ and tests/ directories."
+                                ),
+                            },
+                            "fix": {
+                                "type": "boolean",
+                                "default": False,
+                                "description": "Automatically fix fixable issues",
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "default": 30,
+                                "description": "Timeout in seconds (default: 30)",
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="run_type_checker",
+                    description=(
+                        "Run mypy type checker on specified paths or the src/ directory. "
+                        "Checks for type errors and inconsistencies."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "paths": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": (
+                                    "List of paths to check. "
+                                    "If not specified, checks src/ directory."
+                                ),
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "default": 60,
+                                "description": "Timeout in seconds (default: 60)",
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="run_tests",
+                    description=(
+                        "Run pytest tests with optional filters. "
+                        "Supports path, marker, and keyword filtering."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "Specific test path to run",
+                            },
+                            "marker": {
+                                "type": "string",
+                                "description": (
+                                    "Pytest marker to filter tests "
+                                    "(e.g., 'slow', 'integration', 'unit')"
+                                ),
+                            },
+                            "keyword": {
+                                "type": "string",
+                                "description": "Keyword expression to filter tests",
+                            },
+                            "verbose": {
+                                "type": "boolean",
+                                "default": False,
+                                "description": "Run with verbose output",
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "default": 300,
+                                "description": "Timeout in seconds (default: 300)",
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.server.call_tool()
-        async def call_tool(
-            name: str, arguments: Dict[str, Any]
-        ) -> List[TextContent]:
+        async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             """Handle tool invocation."""
             try:
                 if name == "get_findings":
@@ -204,27 +333,70 @@ class MCPServer:
                         tier=arguments.get("tier"),
                         limit=arguments.get("limit", 100),
                     )
-                    return [
-                        TextContent(type="text", text=json.dumps(result, indent=2))
-                    ]
+                    return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
                 elif name == "dismiss_finding":
-                    result = await dismiss_finding(
+                    dismiss_result = await dismiss_finding(
                         self.context_store,
                         finding_id=arguments["finding_id"],
                         reason=arguments.get("reason"),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(result, indent=2))
+                        TextContent(type="text", text=json.dumps(dismiss_result, indent=2))
                     ]
 
                 elif name == "apply_fix":
-                    result = await apply_fix(
+                    fix_result = await apply_fix(
                         self.context_store,
                         finding_id=arguments["finding_id"],
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(result, indent=2))
+                        TextContent(type="text", text=json.dumps(fix_result, indent=2))
+                    ]
+
+                # Verification tools
+                elif name == "run_formatter":
+                    formatter_result = await run_formatter(
+                        self.project_root,
+                        files=arguments.get("files"),
+                        timeout=arguments.get("timeout", 30),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(formatter_result, indent=2))
+                    ]
+
+                elif name == "run_linter":
+                    linter_result = await run_linter(
+                        self.project_root,
+                        paths=arguments.get("paths"),
+                        fix=arguments.get("fix", False),
+                        timeout=arguments.get("timeout", 30),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(linter_result, indent=2))
+                    ]
+
+                elif name == "run_type_checker":
+                    type_result = await run_type_checker(
+                        self.project_root,
+                        paths=arguments.get("paths"),
+                        timeout=arguments.get("timeout", 60),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(type_result, indent=2))
+                    ]
+
+                elif name == "run_tests":
+                    test_result = await run_tests(
+                        self.project_root,
+                        path=arguments.get("path"),
+                        marker=arguments.get("marker"),
+                        keyword=arguments.get("keyword"),
+                        verbose=arguments.get("verbose", False),
+                        timeout=arguments.get("timeout", 300),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(test_result, indent=2))
                     ]
 
                 else:
@@ -242,9 +414,7 @@ class MCPServer:
                 return [
                     TextContent(
                         type="text",
-                        text=json.dumps(
-                            {"error": str(e), "tool": name}, indent=2
-                        ),
+                        text=json.dumps({"error": str(e), "tool": name}, indent=2),
                     )
                 ]
 
