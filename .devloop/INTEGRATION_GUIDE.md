@@ -45,9 +45,15 @@ Ask Claude Code to check background agent results:
 - "Show me test results from background agents"
 - "Are there security findings I should address?"
 
-### Integration via Hooks (Optional)
+### Integration via Hooks (Recommended)
 
-Add to your Claude Code settings to automatically check agent results after file edits:
+Run the install script to register all hooks automatically:
+
+```bash
+.agents/hooks/install-claude-hooks
+```
+
+Or add to your Claude Code settings manually:
 
 ```json
 {
@@ -58,7 +64,7 @@ Add to your Claude Code settings to automatically check agent results after file
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
+            "command": ".agents/hooks/claude-post-tool-use"
           }
         ]
       }

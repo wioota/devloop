@@ -35,7 +35,13 @@ This project uses background agents that enhance all AI coding agents' capabilit
 
 ### Hooks Configuration (Claude Code)
 
-Add these hooks to your Claude Code settings for automatic integration:
+Run the install script to register all hooks automatically:
+
+```bash
+.agents/hooks/install-claude-hooks
+```
+
+Or add these hooks manually to your Claude Code settings:
 
 ```json
 {
@@ -46,7 +52,7 @@ Add these hooks to your Claude Code settings for automatic integration:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
+            "command": ".agents/hooks/claude-post-tool-use"
           }
         ]
       }

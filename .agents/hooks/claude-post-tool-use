@@ -1,0 +1,160 @@
+#!/bin/bash
+# PostToolUse hook: Show relevant findings after file modifications
+#
+# Runs after Edit/Write tools complete. Shows existing findings
+# for the modified file. devloop watch handles background re-analysis.
+#
+# Output format (only when findings exist):
+#   ⚠️ 2 issues in auth.py:
+#     • Line 45: Missing return type annotation [mypy]
+#
+# Silent (no output) when:
+#   - No findings for the edited file
+#   - Tool is not Edit/Write
+#   - Context store doesn't exist
+
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+# Read stdin to temp file (JSON input from Claude Code)
+INPUT_FILE=$(mktemp)
+cat > "$INPUT_FILE"
+
+# Export for Python
+export INPUT_FILE
+export PROJECT_DIR
+
+# Python handles JSON parsing and context store query
+python3 << 'PYTHON_EOF'
+import json
+import os
+import sys
+from pathlib import Path
+
+def get_findings_for_file(file_path: str, context_dir: Path) -> list:
+    """Query immediate and relevant tiers for file-specific findings."""
+    findings = []
+
+    # Normalize the target file path
+    try:
+        target_path = Path(file_path).resolve()
+    except (OSError, ValueError):
+        return []
+
+    for tier in ["immediate", "relevant"]:
+        tier_file = context_dir / f"{tier}.json"
+        if not tier_file.exists():
+            continue
+
+        try:
+            data = json.loads(tier_file.read_text())
+            for finding in data.get("findings", []):
+                finding_file = finding.get("file", "")
+                if not finding_file:
+                    continue
+
+                # Match by resolved path
+                try:
+                    if Path(finding_file).resolve() == target_path:
+                        findings.append(finding)
+                except (OSError, ValueError):
+                    continue
+        except (json.JSONDecodeError, OSError):
+            continue
+
+    # Sort by severity (errors first), then by line number
+    severity_order = {"error": 0, "warning": 1, "info": 2, "style": 3}
+    return sorted(findings, key=lambda f: (
+        severity_order.get(f.get("severity", "info"), 2),
+        f.get("line") or 9999
+    ))
+
+def format_output(findings: list, file_path: str) -> str:
+    """Format findings for display."""
+    if not findings:
+        return ""
+
+    file_name = Path(file_path).name
+    count = len(findings)
+
+    lines = [f"⚠️ {count} issue{'s' if count != 1 else ''} in {file_name}:"]
+
+    # Show top finding
+    top = findings[0]
+    line_num = top.get("line")
+    message = top.get("message", "Unknown issue")
+    agent = top.get("agent", "")
+
+    location = f"Line {line_num}: " if line_num else ""
+    source = f" [{agent}]" if agent else ""
+    lines.append(f"  • {location}{message}{source}")
+
+    # If more than 2 findings, show count of remaining
+    if count > 2:
+        lines.append(f"  ... and {count - 1} more")
+    elif count == 2:
+        # Show second finding too
+        second = findings[1]
+        line_num = second.get("line")
+        message = second.get("message", "Unknown issue")
+        agent = second.get("agent", "")
+        location = f"Line {line_num}: " if line_num else ""
+        source = f" [{agent}]" if agent else ""
+        lines.append(f"  • {location}{message}{source}")
+
+    return "\n".join(lines)
+
+def main():
+    input_file = os.environ.get("INPUT_FILE", "")
+    project_dir = Path(os.environ.get("PROJECT_DIR", "."))
+
+    if not input_file:
+        sys.exit(0)
+
+    # Read and parse input
+    try:
+        with open(input_file) as f:
+            input_data = f.read()
+
+        if not input_data.strip():
+            sys.exit(0)
+
+        hook_input = json.loads(input_data)
+    except (json.JSONDecodeError, OSError):
+        sys.exit(0)
+
+    # Only process Edit/Write tools
+    tool_name = hook_input.get("tool_name", "")
+    if tool_name not in ["Edit", "Write"]:
+        sys.exit(0)
+
+    # Extract file path from tool input
+    tool_input = hook_input.get("tool_input", {})
+    if not isinstance(tool_input, dict):
+        sys.exit(0)
+
+    # Handle both 'file_path' and 'path' keys (Edit uses file_path, Write might use path)
+    file_path = tool_input.get("file_path") or tool_input.get("path", "")
+    if not file_path:
+        sys.exit(0)
+
+    # Query context store
+    context_dir = project_dir / ".devloop" / "context"
+    if not context_dir.exists():
+        sys.exit(0)
+
+    findings = get_findings_for_file(file_path, context_dir)
+
+    # Output if findings exist (silent otherwise)
+    if findings:
+        output = format_output(findings, file_path)
+        if output:
+            print(output)
+
+if __name__ == "__main__":
+    main()
+PYTHON_EOF
+
+# Clean up
+rm -f "$INPUT_FILE"
+exit 0
