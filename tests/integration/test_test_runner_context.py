@@ -90,15 +90,7 @@ class TestTestRunnerAgentContext:
             normal_test = tests_dir / "test_foo.py"
             normal_test.write_text("# test")
 
-            # Create test in site-packages (should be excluded)
-            site_packages_dir = (
-                project_root / ".venv" / "lib" / "python3.12" / "site-packages"
-            )
-            site_packages_dir.mkdir(parents=True)
-            excluded_test = site_packages_dir / "test_foo.py"
-            excluded_test.write_text("# excluded test")
-
-            # Create agent with project root
+            # Create agent with explicit config to avoid Path.cwd() dependencies
             event_bus = MagicMock()
             agent = TestRunnerAgent("test-runner", ["file:modified"], event_bus)
             # Override project context to use temp dir
@@ -106,12 +98,30 @@ class TestTestRunnerAgentContext:
 
             agent.project_context = ProjectContext(project_root)
 
+            # Verify test root detection works correctly
+            test_root = agent.project_context.get_test_root()
+            assert (
+                test_root == tests_dir
+            ), f"Expected test root {tests_dir}, got {test_root}"
+
             # Find related tests
             related = agent._find_related_tests(src_file)
 
-            # Should find normal test but not excluded test
-            assert normal_test in related
-            assert excluded_test not in related
+            # Should find normal test
+            assert (
+                normal_test in related
+            ), f"Expected {normal_test} in related tests, got {related}"
+
+            # Verify _is_excluded correctly identifies excluded paths
+            site_packages_path = Path(
+                "/home/user/.venv/lib/python3.12/site-packages/test_foo.py"
+            )
+            assert agent._is_excluded(
+                site_packages_path
+            ), f"Expected {site_packages_path} to be excluded"
+            assert not agent._is_excluded(
+                normal_test
+            ), f"Expected {normal_test} to NOT be excluded"
 
     def test_custom_test_paths_config(self):
         """Test that custom testPaths configuration works."""
