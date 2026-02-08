@@ -1093,6 +1093,111 @@ fi
 
 exit 0
 """,
+        "claude-post-tool-use": """#!/bin/bash
+#
+# PostToolUse hook: Show relevant findings after file modifications
+#
+# Shows existing findings for the edited file after Edit/Write completes.
+# Silent when no findings exist.
+#
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+cd "$PROJECT_DIR" || exit 0
+
+INPUT_FILE=$(mktemp)
+cat > "$INPUT_FILE"
+export INPUT_FILE PROJECT_DIR
+
+python3 << 'PYTHON_EOF'
+import json
+import os
+import sys
+from pathlib import Path
+
+def get_findings_for_file(file_path, context_dir):
+    findings = []
+    try:
+        target_path = Path(file_path).resolve()
+    except (OSError, ValueError):
+        return []
+    for tier in ["immediate", "relevant"]:
+        tier_file = context_dir / f"{tier}.json"
+        if not tier_file.exists():
+            continue
+        try:
+            data = json.loads(tier_file.read_text())
+            for finding in data.get("findings", []):
+                finding_file = finding.get("file", "")
+                if not finding_file:
+                    continue
+                try:
+                    if Path(finding_file).resolve() == target_path:
+                        findings.append(finding)
+                except (OSError, ValueError):
+                    continue
+        except (json.JSONDecodeError, OSError):
+            continue
+    severity_order = {"error": 0, "warning": 1, "info": 2, "style": 3}
+    return sorted(findings, key=lambda f: (severity_order.get(f.get("severity", "info"), 2), f.get("line") or 9999))
+
+def format_output(findings, file_path):
+    if not findings:
+        return ""
+    file_name = Path(file_path).name
+    count = len(findings)
+    lines = [f"\\u26a0\\ufe0f {count} issue{'s' if count != 1 else ''} in {file_name}:"]
+    top = findings[0]
+    line_num = top.get("line")
+    message = top.get("message", "Unknown issue")
+    agent = top.get("agent", "")
+    location = f"Line {line_num}: " if line_num else ""
+    source = f" [{agent}]" if agent else ""
+    lines.append(f"  \\u2022 {location}{message}{source}")
+    if count > 2:
+        lines.append(f"  ... and {count - 1} more")
+    elif count == 2:
+        second = findings[1]
+        line_num = second.get("line")
+        message = second.get("message", "Unknown issue")
+        agent = second.get("agent", "")
+        location = f"Line {line_num}: " if line_num else ""
+        source = f" [{agent}]" if agent else ""
+        lines.append(f"  \\u2022 {location}{message}{source}")
+    return "\\n".join(lines)
+
+input_file = os.environ.get("INPUT_FILE", "")
+project_dir = Path(os.environ.get("PROJECT_DIR", "."))
+if not input_file:
+    sys.exit(0)
+try:
+    with open(input_file) as f:
+        input_data = f.read()
+    if not input_data.strip():
+        sys.exit(0)
+    hook_input = json.loads(input_data)
+except (json.JSONDecodeError, OSError):
+    sys.exit(0)
+tool_name = hook_input.get("tool_name", "")
+if tool_name not in ["Edit", "Write"]:
+    sys.exit(0)
+tool_input = hook_input.get("tool_input", {})
+if not isinstance(tool_input, dict):
+    sys.exit(0)
+file_path = tool_input.get("file_path") or tool_input.get("path", "")
+if not file_path:
+    sys.exit(0)
+context_dir = project_dir / ".devloop" / "context"
+if not context_dir.exists():
+    sys.exit(0)
+findings = get_findings_for_file(file_path, context_dir)
+if findings:
+    output = format_output(findings, file_path)
+    if output:
+        print(output)
+PYTHON_EOF
+
+rm -f "$INPUT_FILE"
+exit 0
+""",
     }
 
     hooks_created = []
@@ -1158,6 +1263,17 @@ def _create_claude_settings_json(path: Path) -> bool:
                     },
                 ]
             },
+            "PostToolUse": [
+                {
+                    "matcher": "Edit|Write",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": ".agents/hooks/claude-post-tool-use",
+                        }
+                    ],
+                }
+            ],
         }
     }
 

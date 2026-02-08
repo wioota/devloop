@@ -643,6 +643,257 @@ class TestHooksWithEdgeCases:
         ), "Hook should handle nonexistent directory gracefully"
 
 
+class TestPostToolUseHook:
+    """Test claude-post-tool-use hook."""
+
+    def test_hook_exists(self, hook_tester):
+        """PostToolUse hook should exist and be executable."""
+        hook_path = hook_tester.hooks_dir / "claude-post-tool-use"
+        assert hook_path.exists(), "claude-post-tool-use hook not found"
+        assert hook_path.stat().st_mode & 0o111, "Hook is not executable"
+
+    def test_shows_findings_for_edited_file(self, hook_tester):
+        """Hook should show findings when they exist for the edited file."""
+        # Setup: Create mock findings in .devloop/context/immediate.json
+        context_dir = hook_tester.project_root / ".devloop" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
+
+        findings_data = {
+            "tier": "immediate",
+            "count": 2,
+            "findings": [
+                {
+                    "id": "test-1",
+                    "agent": "linter",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "file": str(hook_tester.project_root / "src" / "auth.py"),
+                    "line": 45,
+                    "severity": "error",
+                    "message": "Missing return type annotation",
+                },
+                {
+                    "id": "test-2",
+                    "agent": "ruff",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "file": str(hook_tester.project_root / "src" / "auth.py"),
+                    "line": 67,
+                    "severity": "warning",
+                    "message": "Unused import 'os'",
+                },
+            ],
+        }
+        (context_dir / "immediate.json").write_text(json.dumps(findings_data))
+
+        # Create the target file so path resolution works
+        src_dir = hook_tester.project_root / "src"
+        src_dir.mkdir(parents=True, exist_ok=True)
+        (src_dir / "auth.py").write_text("# placeholder")
+
+        # Input: Edit tool completed on auth.py
+        input_data = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(src_dir / "auth.py")},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, f"Hook failed: {stderr}"
+        assert "issues in auth.py" in stdout, f"Expected findings output, got: {stdout}"
+        assert "Line 45" in stdout, "Should show line number"
+
+    def test_silent_when_no_findings(self, hook_tester):
+        """Hook should produce no output when no findings exist."""
+        # Setup: Create empty context
+        context_dir = hook_tester.project_root / ".devloop" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
+        (context_dir / "immediate.json").write_text(
+            json.dumps({"tier": "immediate", "count": 0, "findings": []})
+        )
+
+        # Create target file
+        src_dir = hook_tester.project_root / "src"
+        src_dir.mkdir(parents=True, exist_ok=True)
+        (src_dir / "main.py").write_text("# placeholder")
+
+        input_data = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(src_dir / "main.py")},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, f"Hook failed: {stderr}"
+        assert stdout.strip() == "", f"Expected no output, got: {stdout}"
+
+    def test_silent_when_findings_for_different_file(self, hook_tester):
+        """Hook should be silent when findings exist for a different file."""
+        # Setup: Create findings for other.py
+        context_dir = hook_tester.project_root / ".devloop" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
+
+        findings_data = {
+            "tier": "immediate",
+            "count": 1,
+            "findings": [
+                {
+                    "id": "test-1",
+                    "agent": "linter",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "file": str(hook_tester.project_root / "src" / "other.py"),
+                    "line": 10,
+                    "severity": "error",
+                    "message": "Some error",
+                },
+            ],
+        }
+        (context_dir / "immediate.json").write_text(json.dumps(findings_data))
+
+        # Create both files
+        src_dir = hook_tester.project_root / "src"
+        src_dir.mkdir(parents=True, exist_ok=True)
+        (src_dir / "main.py").write_text("# placeholder")
+        (src_dir / "other.py").write_text("# placeholder")
+
+        # Edit main.py (not other.py)
+        input_data = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(src_dir / "main.py")},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, f"Hook failed: {stderr}"
+        assert (
+            stdout.strip() == ""
+        ), f"Expected no output for unrelated file, got: {stdout}"
+
+    def test_ignores_non_edit_tools(self, hook_tester):
+        """Hook should ignore Read, Bash, and other non-Edit/Write tools."""
+        input_data = {
+            "tool_name": "Read",
+            "tool_input": {"file_path": "src/main.py"},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, "Hook should exit cleanly"
+        assert stdout.strip() == "", "Hook should produce no output for Read tool"
+
+    def test_handles_write_tool(self, hook_tester):
+        """Hook should process Write tool same as Edit."""
+        # Setup: Create findings
+        context_dir = hook_tester.project_root / ".devloop" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
+
+        findings_data = {
+            "tier": "immediate",
+            "count": 1,
+            "findings": [
+                {
+                    "id": "test-1",
+                    "agent": "linter",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "file": str(hook_tester.project_root / "new_file.py"),
+                    "line": 1,
+                    "severity": "warning",
+                    "message": "Missing module docstring",
+                },
+            ],
+        }
+        (context_dir / "immediate.json").write_text(json.dumps(findings_data))
+
+        # Create target file
+        (hook_tester.project_root / "new_file.py").write_text("# placeholder")
+
+        input_data = {
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(hook_tester.project_root / "new_file.py")},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, f"Hook failed: {stderr}"
+        assert "new_file.py" in stdout, "Should show findings for Write tool"
+
+    def test_handles_missing_context_dir(self, hook_tester):
+        """Hook should exit cleanly if .devloop/context doesn't exist."""
+        # Don't create context dir
+        input_data = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": "src/main.py"},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, "Hook should exit cleanly without context dir"
+        assert stdout.strip() == "", "Hook should be silent without context dir"
+
+    def test_handles_malformed_input(self, hook_tester):
+        """Hook should handle invalid JSON input gracefully."""
+        hook_path = hook_tester.hooks_dir / "claude-post-tool-use"
+
+        result = subprocess.run(
+            [str(hook_path)],
+            input="not valid json {",
+            capture_output=True,
+            text=True,
+            env={"CLAUDE_PROJECT_DIR": str(hook_tester.project_root)},
+            cwd=hook_tester.project_root,
+        )
+
+        assert result.returncode == 0, "Hook should handle malformed JSON gracefully"
+
+    def test_handles_empty_input(self, hook_tester):
+        """Hook should handle empty input gracefully."""
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=None
+        )
+        assert code == 0, "Hook should handle empty input gracefully"
+
+    def test_shows_multiple_findings(self, hook_tester):
+        """Hook should show count and preview for multiple findings."""
+        context_dir = hook_tester.project_root / ".devloop" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
+
+        findings_data = {
+            "tier": "immediate",
+            "count": 5,
+            "findings": [
+                {
+                    "id": f"test-{i}",
+                    "agent": "linter",
+                    "timestamp": "2025-01-01T00:00:00Z",
+                    "file": str(hook_tester.project_root / "big_file.py"),
+                    "line": i * 10,
+                    "severity": "warning",
+                    "message": f"Issue number {i}",
+                }
+                for i in range(1, 6)
+            ],
+        }
+        (context_dir / "immediate.json").write_text(json.dumps(findings_data))
+
+        (hook_tester.project_root / "big_file.py").write_text("# placeholder")
+
+        input_data = {
+            "tool_name": "Edit",
+            "tool_input": {"file_path": str(hook_tester.project_root / "big_file.py")},
+        }
+        code, stdout, stderr = hook_tester.run_hook(
+            "claude-post-tool-use", input_data=input_data
+        )
+
+        assert code == 0, f"Hook failed: {stderr}"
+        assert "5 issues" in stdout, "Should show count"
+        assert "and 4 more" in stdout, "Should indicate more findings"
+
+
 class TestHooksDocumentation:
     """Test that hook documentation is accurate."""
 

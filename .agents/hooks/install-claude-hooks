@@ -24,6 +24,7 @@ REQUIRED_HOOKS=(
     "claude-session-start"
     "claude-stop"
     "claude-file-protection"
+    "claude-post-tool-use"
 )
 
 for hook in "${REQUIRED_HOOKS[@]}"; do
@@ -89,6 +90,16 @@ if "PreToolUse" not in settings["hooks"]:
             "command": str(hooks_dir / "claude-file-protection")
         }]
     }
+
+# PostToolUse hook (show findings after Edit/Write)
+if "PostToolUse" not in settings["hooks"]:
+    settings["hooks"]["PostToolUse"] = [{
+        "matcher": "Edit|Write",
+        "hooks": [{
+            "type": "command",
+            "command": str(hooks_dir / "claude-post-tool-use")
+        }]
+    }]
 
 # Write updated settings
 with open(settings_path, "w") as f:

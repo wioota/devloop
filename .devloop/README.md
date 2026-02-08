@@ -72,7 +72,13 @@ Claude Code reads `CLAUDE.md` and can use hooks and skills to integrate with bac
 
 ### Hook Configuration
 
-Add to your Claude Code settings:
+Run the install script to register all Claude Code hooks:
+
+```bash
+.agents/hooks/install-claude-hooks
+```
+
+Or add to your Claude Code settings manually:
 
 ```json
 {
@@ -83,7 +89,7 @@ Add to your Claude Code settings:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .devloop/integration/claude-code-adapter.py check_results"
+            "command": ".agents/hooks/claude-post-tool-use"
           }
         ]
       }
