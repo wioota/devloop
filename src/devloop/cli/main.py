@@ -1190,6 +1190,35 @@ def _create_claude_settings_json(path: Path) -> bool:
     return False
 
 
+def _setup_mcp_server(path: Path) -> None:
+    """Register MCP server with Claude Code if settings exist.
+
+    This auto-registers the devloop MCP server in ~/.claude/settings.json
+    so that Claude Code can use devloop's MCP tools.
+
+    Args:
+        path: Project root directory (unused, but kept for consistency)
+    """
+    from devloop.cli.commands.mcp_server import (
+        get_claude_settings_path,
+        install_mcp_server,
+    )
+
+    settings_path = get_claude_settings_path()
+
+    # Only register if Claude Code settings directory exists
+    if not settings_path.parent.exists():
+        return
+
+    try:
+        install_mcp_server()
+        console.print(
+            "[green]✓[/green] MCP server registered for Claude Code integration"
+        )
+    except Exception as e:
+        console.print(f"[yellow]Warning:[/yellow] Could not register MCP server: {e}")
+
+
 def _setup_claude_hooks(
     path: Path, agents_hooks_dir: Path, non_interactive: bool
 ) -> None:
@@ -1271,6 +1300,9 @@ def init(
     agents_hooks_dir = path / ".agents" / "hooks"
     agents_hooks_dir.mkdir(parents=True, exist_ok=True)
     _setup_claude_hooks(path, agents_hooks_dir, non_interactive)
+
+    # Register MCP server with Claude Code
+    _setup_mcp_server(path)
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
