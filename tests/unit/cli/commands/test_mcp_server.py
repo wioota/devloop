@@ -1,6 +1,7 @@
 """Tests for MCP server CLI command."""
 
 import json
+import re
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -11,6 +12,11 @@ from devloop.cli.commands.mcp_server import (
     install_mcp_server,
     uninstall_mcp_server,
 )
+
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 @pytest.fixture
@@ -41,11 +47,12 @@ class TestMCPServerHelp:
     def test_help_shows_options(self, cli_runner):
         """Test that help shows all options."""
         result = cli_runner.invoke(app, ["--help"])
+        output = strip_ansi(result.stdout)
 
         assert result.exit_code == 0
-        assert "--check" in result.stdout
-        assert "--install" in result.stdout
-        assert "--uninstall" in result.stdout
+        assert "--check" in output
+        assert "--install" in output
+        assert "--uninstall" in output
 
 
 class TestMCPServerCheck:
