@@ -48,6 +48,7 @@ from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
 from .commands import insights as insights_cmd
 from .commands import marketplace as marketplace_cmd
+from .commands import mcp_server as mcp_server_cmd
 from .commands import metrics as metrics_cmd
 from .commands import release as release_cmd
 from .commands import summary as summary_cmd
@@ -64,6 +65,7 @@ _typer_app.add_typer(custom_agents_cmd.app, name="custom")
 _typer_app.add_typer(feedback_cmd.app, name="feedback")
 _typer_app.add_typer(insights_cmd.app, name="insights")
 _typer_app.add_typer(marketplace_cmd.app, name="agent")
+_typer_app.add_typer(mcp_server_cmd.app, name="mcp-server")
 _typer_app.add_typer(metrics_cmd.app, name="metrics")
 _typer_app.add_typer(release_cmd.app, name="release")
 _typer_app.add_typer(telemetry_cmd.app, name="telemetry")
