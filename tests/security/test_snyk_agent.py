@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.devloop.agents.snyk import SnykAgent
-from src.devloop.core.event import Event, EventBus
+from devloop.agents.snyk import SnykAgent
+from devloop.core.event import Event, EventBus
 
 
 @pytest.fixture

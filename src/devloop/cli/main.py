@@ -48,6 +48,7 @@ from .commands import custom_agents as custom_agents_cmd
 from .commands import feedback as feedback_cmd
 from .commands import insights as insights_cmd
 from .commands import marketplace as marketplace_cmd
+from .commands import mcp_server as mcp_server_cmd
 from .commands import metrics as metrics_cmd
 from .commands import release as release_cmd
 from .commands import summary as summary_cmd
@@ -64,6 +65,7 @@ _typer_app.add_typer(custom_agents_cmd.app, name="custom")
 _typer_app.add_typer(feedback_cmd.app, name="feedback")
 _typer_app.add_typer(insights_cmd.app, name="insights")
 _typer_app.add_typer(marketplace_cmd.app, name="agent")
+_typer_app.add_typer(mcp_server_cmd.app, name="mcp-server")
 _typer_app.add_typer(metrics_cmd.app, name="metrics")
 _typer_app.add_typer(release_cmd.app, name="release")
 _typer_app.add_typer(telemetry_cmd.app, name="telemetry")
@@ -1304,6 +1306,35 @@ def _create_claude_settings_json(path: Path) -> bool:
     return False
 
 
+def _setup_mcp_server(path: Path) -> None:
+    """Register MCP server with Claude Code if settings exist.
+
+    This auto-registers the devloop MCP server in ~/.claude/settings.json
+    so that Claude Code can use devloop's MCP tools.
+
+    Args:
+        path: Project root directory (unused, but kept for consistency)
+    """
+    from devloop.cli.commands.mcp_server import (
+        get_claude_settings_path,
+        install_mcp_server,
+    )
+
+    settings_path = get_claude_settings_path()
+
+    # Only register if Claude Code settings directory exists
+    if not settings_path.parent.exists():
+        return
+
+    try:
+        install_mcp_server()
+        console.print(
+            "[green]✓[/green] MCP server registered for Claude Code integration"
+        )
+    except Exception as e:
+        console.print(f"[yellow]Warning:[/yellow] Could not register MCP server: {e}")
+
+
 def _setup_claude_hooks(
     path: Path, agents_hooks_dir: Path, non_interactive: bool
 ) -> None:
@@ -1385,6 +1416,9 @@ def init(
     agents_hooks_dir = path / ".agents" / "hooks"
     agents_hooks_dir.mkdir(parents=True, exist_ok=True)
     _setup_claude_hooks(path, agents_hooks_dir, non_interactive)
+
+    # Register MCP server with Claude Code
+    _setup_mcp_server(path)
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")

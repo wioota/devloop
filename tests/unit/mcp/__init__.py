@@ -1,1 +1,1 @@
-"""MCP server unit tests."""
+"""Unit tests for DevLoop MCP server."""

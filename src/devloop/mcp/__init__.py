@@ -1,10 +1,5 @@
-"""DevLoop MCP Server module.
+"""DevLoop Model Context Protocol (MCP) server implementation."""
 
-Provides Model Context Protocol (MCP) server functionality for DevLoop,
-enabling Claude Code and other MCP clients to access DevLoop findings
-and context.
-"""
+from devloop.mcp.server import MCPServer
 
-from devloop.mcp.server import DevLoopMCPServer
-
-__all__ = ["DevLoopMCPServer"]
+__all__ = ["MCPServer"]

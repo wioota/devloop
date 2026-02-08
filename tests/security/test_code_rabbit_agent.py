@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.devloop.agents.code_rabbit import CodeRabbitAgent
-from src.devloop.core.event import Event, EventBus
+from devloop.agents.code_rabbit import CodeRabbitAgent
+from devloop.core.event import Event, EventBus
 
 
 @pytest.fixture

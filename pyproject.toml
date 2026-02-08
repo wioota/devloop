@@ -97,7 +97,7 @@ markers = [
     "security: marks tests as security tests",
     "benchmark: marks tests as benchmarks",
 ]
-addopts = "--cov=src/devloop --cov-report=term-missing --cov-report=html --cov-report=xml"
+addopts = "--import-mode=importlib --cov=src/devloop --cov-report=term-missing --cov-report=html --cov-report=xml"
 
 [tool.coverage.run]
 source = ["src/devloop"]
