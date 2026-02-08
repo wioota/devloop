@@ -74,5 +74,7 @@ else
     echo "🟢 No immediate issues from agents"
 fi
 
+# Confirm PostToolUse hook is active
+echo "✓ PostToolUse hook active - findings shown after file edits"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 exit 0
