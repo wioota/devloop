@@ -23,7 +23,9 @@ from devloop.mcp.tools import (
     apply_fix,
     dismiss_finding,
     get_agent_status,
+    get_config,
     get_findings,
+    get_status,
     run_agent,
     run_all_agents,
     run_formatter,
@@ -382,6 +384,30 @@ class MCPServer:
                         },
                     },
                 ),
+                # Configuration tools
+                Tool(
+                    name="get_config",
+                    description=(
+                        "Get DevLoop configuration for the project. "
+                        "Returns enabled agents, global settings, and resource limits."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                    },
+                ),
+                Tool(
+                    name="get_status",
+                    description=(
+                        "Get overall DevLoop status for the project. "
+                        "Shows if watch daemon is running, last update time, "
+                        "and finding counts by severity."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                    },
+                ),
             ]
 
         @self.server.call_tool()
@@ -406,7 +432,9 @@ class MCPServer:
                         reason=arguments.get("reason"),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(dismiss_result, indent=2))
+                        TextContent(
+                            type="text", text=json.dumps(dismiss_result, indent=2)
+                        )
                     ]
 
                 elif name == "apply_fix":
@@ -426,7 +454,9 @@ class MCPServer:
                         timeout=arguments.get("timeout", 30),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(formatter_result, indent=2))
+                        TextContent(
+                            type="text", text=json.dumps(formatter_result, indent=2)
+                        )
                     ]
 
                 elif name == "run_linter":
@@ -437,7 +467,9 @@ class MCPServer:
                         timeout=arguments.get("timeout", 30),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(linter_result, indent=2))
+                        TextContent(
+                            type="text", text=json.dumps(linter_result, indent=2)
+                        )
                     ]
 
                 elif name == "run_type_checker":
@@ -471,7 +503,9 @@ class MCPServer:
                         timeout=arguments.get("timeout", 60),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(agent_result, indent=2))
+                        TextContent(
+                            type="text", text=json.dumps(agent_result, indent=2)
+                        )
                     ]
 
                 elif name == "run_all_agents":
@@ -492,7 +526,27 @@ class MCPServer:
                         limit=arguments.get("limit", 10),
                     )
                     return [
-                        TextContent(type="text", text=json.dumps(status_result, indent=2))
+                        TextContent(
+                            type="text", text=json.dumps(status_result, indent=2)
+                        )
+                    ]
+
+                # Configuration tools
+                elif name == "get_config":
+                    config_result = await get_config(self.project_root)
+                    return [
+                        TextContent(
+                            type="text", text=json.dumps(config_result, indent=2)
+                        )
+                    ]
+
+                elif name == "get_status":
+                    devloop_status_result = await get_status(self.project_root)
+                    return [
+                        TextContent(
+                            type="text",
+                            text=json.dumps(devloop_status_result, indent=2),
+                        )
                     ]
 
                 else:

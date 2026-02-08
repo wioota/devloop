@@ -665,7 +665,9 @@ async def run_all_agents(
         if not result["success"]:
             all_success = False
             if stop_on_failure:
-                logger.info(f"Stopping after {agent_name} failure (stop_on_failure=True)")
+                logger.info(
+                    f"Stopping after {agent_name} failure (stop_on_failure=True)"
+                )
                 break
 
     return {
@@ -673,6 +675,170 @@ async def run_all_agents(
         "agents_run": [r["agent"] for r in results],
         "results": results,
         "skipped_invalid": invalid_agents if invalid_agents else None,
+    }
+
+
+# ============================================================================
+# Configuration and Status Tools
+# ============================================================================
+
+
+async def get_config(
+    project_root: Path,
+) -> Dict[str, Any]:
+    """Get DevLoop configuration.
+
+    This tool retrieves the current DevLoop configuration for the project,
+    including enabled agents, global settings, and resource limits.
+
+    Args:
+        project_root: Path to the project root directory
+
+    Returns:
+        Dict with configuration information including:
+        - project_root: Path to the project
+        - config: The full configuration dictionary
+        - enabled_agents: List of enabled agent names
+        - global_settings: Summary of global configuration
+
+    Example:
+        >>> config = await get_config(Path("/project"))
+        >>> print(f"Mode: {config['global_settings']['mode']}")
+        >>> print(f"Enabled agents: {config['enabled_agents']}")
+    """
+    from devloop.core.config import Config
+
+    try:
+        config_path = project_root / ".devloop" / "agents.json"
+        config_manager = Config(str(config_path))
+        config_data = config_manager.load(validate=False, migrate=False)
+
+        # Extract enabled agents
+        agents = config_data.get("agents", {})
+        enabled_agents = [
+            name for name, settings in agents.items() if settings.get("enabled", False)
+        ]
+
+        # Extract global settings summary
+        global_config = config_data.get("global", {})
+        global_settings = {
+            "mode": global_config.get("mode", "report-only"),
+            "max_concurrent_agents": global_config.get("maxConcurrentAgents", 5),
+            "notification_level": global_config.get("notificationLevel", "summary"),
+            "context_store_enabled": global_config.get("contextStore", {}).get(
+                "enabled", True
+            ),
+            "autonomous_fixes_enabled": global_config.get("autonomousFixes", {}).get(
+                "enabled", False
+            ),
+        }
+
+        return {
+            "success": True,
+            "project_root": str(project_root),
+            "config": config_data,
+            "enabled_agents": enabled_agents,
+            "global_settings": global_settings,
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting config: {e}")
+        return {
+            "success": False,
+            "project_root": str(project_root),
+            "error": str(e),
+        }
+
+
+async def get_status(
+    project_root: Path,
+) -> Dict[str, Any]:
+    """Get DevLoop status.
+
+    This tool retrieves the overall status of DevLoop for the project,
+    including whether the watch daemon is running, last update time,
+    and finding counts by severity.
+
+    Args:
+        project_root: Path to the project root directory
+
+    Returns:
+        Dict with status information including:
+        - project_root: Path to the project
+        - initialized: Whether DevLoop is initialized (has .devloop dir)
+        - watch_running: Whether the watch daemon is running
+        - last_update: Timestamp of last context update (or None)
+        - finding_counts: Dict of finding counts by severity
+
+    Example:
+        >>> status = await get_status(Path("/project"))
+        >>> if status["watch_running"]:
+        ...     print("DevLoop is watching for changes")
+        >>> print(f"Errors: {status['finding_counts'].get('error', 0)}")
+    """
+    devloop_dir = project_root / ".devloop"
+
+    # Check if DevLoop is initialized
+    initialized = devloop_dir.exists()
+
+    if not initialized:
+        return {
+            "success": True,
+            "project_root": str(project_root),
+            "initialized": False,
+            "watch_running": False,
+            "last_update": None,
+            "finding_counts": {},
+        }
+
+    # Check if watch daemon is running
+    pid_file = devloop_dir / "watch.pid"
+    watch_running = pid_file.exists()
+
+    # Get last update time
+    last_update_file = devloop_dir / "context" / ".last_update"
+    last_update: Optional[float] = None
+    if last_update_file.exists():
+        last_update = last_update_file.stat().st_mtime
+
+    # Get finding counts by reading tier JSON files directly
+    # (ContextStore keeps findings in memory, so we read from disk for status)
+    finding_counts: Dict[str, int] = {}
+    try:
+        import json as json_module
+
+        context_dir = devloop_dir / "context"
+        if context_dir.exists():
+            # Read from all tier files
+            tier_files = [
+                "immediate.json",
+                "relevant.json",
+                "background.json",
+                "auto_fixed.json",
+            ]
+            for tier_file in tier_files:
+                tier_path = context_dir / tier_file
+                if tier_path.exists():
+                    try:
+                        tier_data = json_module.loads(tier_path.read_text())
+                        for finding_data in tier_data.get("findings", []):
+                            severity_name = finding_data.get("severity", "unknown")
+                            finding_counts[severity_name] = (
+                                finding_counts.get(severity_name, 0) + 1
+                            )
+                    except (json_module.JSONDecodeError, OSError) as e:
+                        logger.warning(f"Error reading {tier_file}: {e}")
+
+    except Exception as e:
+        logger.warning(f"Error getting finding counts: {e}")
+
+    return {
+        "success": True,
+        "project_root": str(project_root),
+        "initialized": initialized,
+        "watch_running": watch_running,
+        "last_update": last_update,
+        "finding_counts": finding_counts,
     }
 
 

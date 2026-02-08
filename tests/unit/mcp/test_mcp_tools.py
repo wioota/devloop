@@ -964,7 +964,9 @@ class TestRunAgent:
         result = await run_agent(project_root, agent_name="invalid-agent")
 
         assert result["success"] is False
-        assert "unknown" in result["error"].lower() or "invalid" in result["error"].lower()
+        assert (
+            "unknown" in result["error"].lower() or "invalid" in result["error"].lower()
+        )
 
     @pytest.mark.asyncio
     async def test_run_agent_failure(self, project_root: Path) -> None:
@@ -998,7 +1000,9 @@ class TestRunAgent:
             with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
                 mock_wait_for.side_effect = asyncio.TimeoutError()
 
-                result = await run_agent(project_root, agent_name="formatter", timeout=1)
+                result = await run_agent(
+                    project_root, agent_name="formatter", timeout=1
+                )
 
                 assert result["success"] is False
                 assert "timed out" in result["error"].lower()
@@ -1038,7 +1042,9 @@ class TestRunAllAgents:
             assert len(result["agents_run"]) > 0
 
     @pytest.mark.asyncio
-    async def test_run_all_agents_with_specific_agents(self, project_root: Path) -> None:
+    async def test_run_all_agents_with_specific_agents(
+        self, project_root: Path
+    ) -> None:
         """Test running specific agents only."""
         from devloop.mcp.tools import run_all_agents
 
@@ -1048,9 +1054,7 @@ class TestRunAllAgents:
             mock_process.communicate = AsyncMock(return_value=(b"Success\n", b""))
             mock_exec.return_value = mock_process
 
-            result = await run_all_agents(
-                project_root, agents=["formatter", "linter"]
-            )
+            result = await run_all_agents(project_root, agents=["formatter", "linter"])
 
             assert result["success"] is True
             assert len(result["agents_run"]) == 2
@@ -1203,3 +1207,254 @@ class TestGetAgentStatus:
 
         # Should have summary information
         assert "agents" in result or "summary" in result
+
+
+# ============================================================================
+# Config Tools Tests
+# ============================================================================
+
+
+class TestGetConfig:
+    """Tests for get_config tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .devloop directory."""
+        devloop_dir = tmp_path / ".devloop"
+        devloop_dir.mkdir()
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_get_config_default(self, project_root: Path) -> None:
+        """Test getting default configuration when no config file exists."""
+        from devloop.mcp.tools import get_config
+
+        result = await get_config(project_root)
+
+        assert result["success"] is True
+        assert result["project_root"] == str(project_root)
+        assert "config" in result
+        assert "agents" in result["config"]
+        assert "global" in result["config"]
+
+    @pytest.mark.asyncio
+    async def test_get_config_with_file(self, project_root: Path) -> None:
+        """Test getting configuration from an existing config file."""
+        from devloop.mcp.tools import get_config
+        import json
+
+        # Create a custom config file
+        config_data = {
+            "version": "1.0",
+            "enabled": True,
+            "agents": {
+                "formatter": {"enabled": True},
+                "linter": {"enabled": False},
+            },
+            "global": {
+                "mode": "active",
+                "maxConcurrentAgents": 10,
+            },
+        }
+        config_path = project_root / ".devloop" / "agents.json"
+        config_path.write_text(json.dumps(config_data))
+
+        result = await get_config(project_root)
+
+        assert result["success"] is True
+        assert result["project_root"] == str(project_root)
+        assert result["config"]["global"]["mode"] == "active"
+        assert result["config"]["global"]["maxConcurrentAgents"] == 10
+
+    @pytest.mark.asyncio
+    async def test_get_config_includes_enabled_agents(self, project_root: Path) -> None:
+        """Test that config includes list of enabled agents."""
+        from devloop.mcp.tools import get_config
+        import json
+
+        config_data = {
+            "version": "1.0",
+            "enabled": True,
+            "agents": {
+                "formatter": {"enabled": True},
+                "linter": {"enabled": True},
+                "test-runner": {"enabled": False},
+            },
+            "global": {"mode": "report-only"},
+        }
+        config_path = project_root / ".devloop" / "agents.json"
+        config_path.write_text(json.dumps(config_data))
+
+        result = await get_config(project_root)
+
+        assert result["success"] is True
+        assert "enabled_agents" in result
+        assert "formatter" in result["enabled_agents"]
+        assert "linter" in result["enabled_agents"]
+        assert "test-runner" not in result["enabled_agents"]
+
+    @pytest.mark.asyncio
+    async def test_get_config_global_settings(self, project_root: Path) -> None:
+        """Test that config includes global settings."""
+        from devloop.mcp.tools import get_config
+
+        result = await get_config(project_root)
+
+        assert result["success"] is True
+        # Should have global config summary
+        assert "global_settings" in result
+        assert "mode" in result["global_settings"]
+
+    @pytest.mark.asyncio
+    async def test_get_config_error_handling(self, project_root: Path) -> None:
+        """Test handling invalid configuration file."""
+        from devloop.mcp.tools import get_config
+
+        # Create an invalid JSON config file
+        config_path = project_root / ".devloop" / "agents.json"
+        config_path.write_text("{ invalid json }")
+
+        result = await get_config(project_root)
+
+        # Should still succeed but return default config
+        assert result["success"] is True
+        assert "config" in result
+
+
+class TestGetStatus:
+    """Tests for get_status tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .devloop directory."""
+        devloop_dir = tmp_path / ".devloop"
+        devloop_dir.mkdir()
+        context_dir = devloop_dir / "context"
+        context_dir.mkdir()
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_get_status_basic(self, project_root: Path) -> None:
+        """Test getting basic status."""
+        from devloop.mcp.tools import get_status
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert "project_root" in result
+        assert "watch_running" in result
+        assert "last_update" in result
+
+    @pytest.mark.asyncio
+    async def test_get_status_watch_not_running(self, project_root: Path) -> None:
+        """Test status when watch daemon is not running."""
+        from devloop.mcp.tools import get_status
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert result["watch_running"] is False
+
+    @pytest.mark.asyncio
+    async def test_get_status_watch_running(self, project_root: Path) -> None:
+        """Test status when watch daemon is running."""
+        from devloop.mcp.tools import get_status
+        import os
+
+        # Create a PID file to simulate running daemon
+        pid_file = project_root / ".devloop" / "watch.pid"
+        pid_file.write_text(str(os.getpid()))
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert result["watch_running"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_status_last_update(self, project_root: Path) -> None:
+        """Test status includes last update time."""
+        from devloop.mcp.tools import get_status
+        import time
+
+        # Create last update file
+        last_update_file = project_root / ".devloop" / "context" / ".last_update"
+        last_update_file.write_text("")
+        # Touch the file to set modification time
+        current_time = time.time()
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert result["last_update"] is not None
+        # Last update should be recent (within a few seconds)
+        assert abs(result["last_update"] - current_time) < 5
+
+    @pytest.mark.asyncio
+    async def test_get_status_no_last_update(self, project_root: Path) -> None:
+        """Test status when no last update file exists."""
+        from devloop.mcp.tools import get_status
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert result["last_update"] is None
+
+    @pytest.mark.asyncio
+    async def test_get_status_finding_counts(self, project_root: Path) -> None:
+        """Test status includes finding counts."""
+        from devloop.mcp.tools import get_status
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert "finding_counts" in result
+        # Should have counts by severity
+        assert isinstance(result["finding_counts"], dict)
+
+    @pytest.mark.asyncio
+    async def test_get_status_with_findings(self, project_root: Path) -> None:
+        """Test status with actual findings in context store."""
+        from devloop.mcp.tools import get_status
+        from devloop.core.context_store import ContextStore
+
+        # Create context store and add some findings
+        context_dir = project_root / ".devloop" / "context"
+        store = ContextStore(context_dir=context_dir, enable_path_validation=False)
+        await store.initialize()
+
+        # Add some test findings
+        finding1 = create_test_finding(id="s1", severity=Severity.ERROR)
+        finding2 = create_test_finding(id="s2", severity=Severity.WARNING)
+        finding3 = create_test_finding(id="s3", severity=Severity.ERROR)
+        await store.add_finding(finding1)
+        await store.add_finding(finding2)
+        await store.add_finding(finding3)
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert "finding_counts" in result
+        assert result["finding_counts"].get("error", 0) == 2
+        assert result["finding_counts"].get("warning", 0) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_status_devloop_initialized(self, project_root: Path) -> None:
+        """Test status shows if devloop is properly initialized."""
+        from devloop.mcp.tools import get_status
+
+        result = await get_status(project_root)
+
+        assert result["success"] is True
+        assert "initialized" in result
+        assert result["initialized"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_status_not_initialized(self, tmp_path: Path) -> None:
+        """Test status when devloop is not initialized."""
+        from devloop.mcp.tools import get_status
+
+        # Use a directory without .devloop
+        result = await get_status(tmp_path)
+
+        assert result["success"] is True
+        assert result["initialized"] is False
