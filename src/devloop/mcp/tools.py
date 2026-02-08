@@ -60,6 +60,37 @@ def _finding_to_dict(finding: Finding) -> Dict[str, Any]:
     return data
 
 
+def _validate_paths(project_root: Path, paths: List[str]) -> List[str]:
+    """Validate that all paths are within the project root.
+
+    This prevents path traversal attacks by ensuring all provided paths
+    resolve to locations within the project directory.
+
+    Args:
+        project_root: The project root directory
+        paths: List of paths to validate
+
+    Returns:
+        List of validated paths (invalid paths are filtered out with warnings)
+    """
+    validated = []
+    project_root_resolved = project_root.resolve()
+
+    for p in paths:
+        # Resolve the path relative to project root
+        try:
+            resolved = (project_root / p).resolve()
+            # Check if resolved path is within project root
+            if str(resolved).startswith(str(project_root_resolved)):
+                validated.append(p)
+            else:
+                logger.warning(f"Path outside project root rejected: {p}")
+        except (ValueError, OSError) as e:
+            logger.warning(f"Invalid path rejected: {p} ({e})")
+
+    return validated
+
+
 async def get_findings(
     context_store: ContextStore,
     file: Optional[str] = None,
@@ -267,7 +298,13 @@ async def run_formatter(
     """
     cmd = ["black"]
     if files:
-        cmd.extend(files)
+        validated_files = _validate_paths(project_root, files)
+        if not validated_files:
+            return {
+                "success": False,
+                "error": "No valid files to format (all paths were outside project root)",
+            }
+        cmd.extend(validated_files)
     else:
         cmd.extend(["src/", "tests/"])
 
@@ -338,7 +375,13 @@ async def run_linter(
         cmd.append("--fix")
 
     if paths:
-        cmd.extend(paths)
+        validated_paths = _validate_paths(project_root, paths)
+        if not validated_paths:
+            return {
+                "success": False,
+                "error": "No valid paths to lint (all paths were outside project root)",
+            }
+        cmd.extend(validated_paths)
     else:
         cmd.extend(["src/", "tests/"])
 
@@ -404,7 +447,13 @@ async def run_type_checker(
     cmd = ["mypy"]
 
     if paths:
-        cmd.extend(paths)
+        validated_paths = _validate_paths(project_root, paths)
+        if not validated_paths:
+            return {
+                "success": False,
+                "error": "No valid paths to check (all paths were outside project root)",
+            }
+        cmd.extend(validated_paths)
     else:
         cmd.append("src/")
 
@@ -486,7 +535,13 @@ async def run_tests(
         cmd.extend(["-k", keyword])
 
     if path:
-        cmd.append(path)
+        validated_paths = _validate_paths(project_root, [path])
+        if not validated_paths:
+            return {
+                "success": False,
+                "error": f"Invalid test path (outside project root): {path}",
+            }
+        cmd.append(validated_paths[0])
 
     try:
         process = await asyncio.create_subprocess_exec(

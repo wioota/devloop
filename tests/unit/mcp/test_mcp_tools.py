@@ -508,6 +508,82 @@ class TestRunFormatter:
                 assert "timed out" in result["error"].lower()
                 mock_process.kill.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_run_formatter_rejects_path_traversal(
+        self, project_root: Path
+    ) -> None:
+        """Test that formatter rejects paths outside project root."""
+        from devloop.mcp.tools import run_formatter
+
+        # Try to format files outside project root
+        result = await run_formatter(project_root, files=["../../../etc/passwd"])
+
+        assert result["success"] is False
+        assert "outside project root" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_run_formatter_validates_relative_paths(
+        self, project_root: Path
+    ) -> None:
+        """Test that formatter validates paths resolve within project."""
+        from devloop.mcp.tools import run_formatter
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Done\n", b""))
+            mock_exec.return_value = mock_process
+
+            # Valid relative path within project
+            result = await run_formatter(project_root, files=["src/test.py"])
+
+            assert result["success"] is True
+            call_args = mock_exec.call_args
+            assert "src/test.py" in call_args[0]
+
+
+class TestPathValidation:
+    """Tests for _validate_paths helper function."""
+
+    def test_validate_paths_allows_valid_paths(self, tmp_path: Path) -> None:
+        """Test that valid paths within project root are allowed."""
+        from devloop.mcp.tools import _validate_paths
+
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "file.py").touch()
+
+        result = _validate_paths(tmp_path, ["src/file.py", "src/"])
+
+        assert result == ["src/file.py", "src/"]
+
+    def test_validate_paths_rejects_parent_traversal(self, tmp_path: Path) -> None:
+        """Test that parent directory traversal is rejected."""
+        from devloop.mcp.tools import _validate_paths
+
+        result = _validate_paths(tmp_path, ["../../../etc/passwd", "src/ok.py"])
+
+        # Only the valid path should remain
+        assert "../../../etc/passwd" not in result
+        assert "src/ok.py" in result
+
+    def test_validate_paths_rejects_absolute_outside_paths(
+        self, tmp_path: Path
+    ) -> None:
+        """Test that absolute paths outside project are rejected."""
+        from devloop.mcp.tools import _validate_paths
+
+        result = _validate_paths(tmp_path, ["/etc/passwd"])
+
+        assert result == []
+
+    def test_validate_paths_empty_input(self, tmp_path: Path) -> None:
+        """Test that empty input returns empty output."""
+        from devloop.mcp.tools import _validate_paths
+
+        result = _validate_paths(tmp_path, [])
+
+        assert result == []
+
 
 class TestRunLinter:
     """Tests for run_linter tool."""
