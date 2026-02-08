@@ -522,3 +522,297 @@ async def run_tests(
             "success": False,
             "error": str(e),
         }
+
+
+# ============================================================================
+# Agent Control Tools
+# ============================================================================
+
+# Valid agent names and their corresponding commands
+AGENT_COMMANDS: Dict[str, List[str]] = {
+    "formatter": ["black", "src/", "tests/"],
+    "linter": ["ruff", "check", "src/", "tests/"],
+    "type-checker": ["mypy", "src/"],
+    "security-scanner": ["bandit", "-r", "src/", "-f", "json"],
+    "test-runner": ["pytest", "-v"],
+}
+
+
+async def run_agent(
+    project_root: Path,
+    agent_name: str,
+    timeout: int = 120,
+) -> Dict[str, Any]:
+    """Run a specific DevLoop agent.
+
+    This tool triggers a specific agent to run on the project. Available agents:
+    - formatter: Run black code formatter
+    - linter: Run ruff linter
+    - type-checker: Run mypy type checker
+    - security-scanner: Run bandit security scanner
+    - test-runner: Run pytest tests
+
+    Args:
+        project_root: Path to the project root directory
+        agent_name: Name of the agent to run (formatter, linter, type-checker,
+                   security-scanner, test-runner)
+        timeout: Timeout in seconds (default: 120)
+
+    Returns:
+        Dict with success status, agent name, stdout, stderr, and returncode
+
+    Example:
+        >>> result = await run_agent(Path("/project"), "formatter")
+        >>> if result["success"]:
+        ...     print("Formatter completed successfully")
+    """
+    # Validate agent name
+    if agent_name not in AGENT_COMMANDS:
+        valid_agents = ", ".join(AGENT_COMMANDS.keys())
+        logger.warning(f"Unknown agent: {agent_name}. Valid agents: {valid_agents}")
+        return {
+            "success": False,
+            "agent": agent_name,
+            "error": f"Unknown agent: {agent_name}. Valid agents: {valid_agents}",
+        }
+
+    cmd = AGENT_COMMANDS[agent_name]
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            logger.warning(f"Agent {agent_name} timed out after {timeout}s")
+            return {
+                "success": False,
+                "agent": agent_name,
+                "error": f"Agent timed out after {timeout} seconds",
+            }
+
+        return {
+            "success": process.returncode == 0,
+            "agent": agent_name,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+            "returncode": process.returncode,
+        }
+
+    except Exception as e:
+        logger.error(f"Error running agent {agent_name}: {e}")
+        return {
+            "success": False,
+            "agent": agent_name,
+            "error": str(e),
+        }
+
+
+async def run_all_agents(
+    project_root: Path,
+    agents: Optional[List[str]] = None,
+    stop_on_failure: bool = False,
+    timeout: int = 300,
+) -> Dict[str, Any]:
+    """Run multiple DevLoop agents in sequence.
+
+    This tool runs a full agent sweep on the project. By default, it runs
+    formatter, linter, and type-checker. Optionally, you can specify which
+    agents to run and whether to stop on first failure.
+
+    Args:
+        project_root: Path to the project root directory
+        agents: Optional list of agent names to run. Defaults to
+               ["formatter", "linter", "type-checker"]
+        stop_on_failure: If True, stop running agents after first failure
+        timeout: Timeout per agent in seconds (default: 300)
+
+    Returns:
+        Dict with overall success status, list of agents run, and individual results
+
+    Example:
+        >>> result = await run_all_agents(Path("/project"))
+        >>> if result["success"]:
+        ...     print("All agents completed successfully")
+    """
+    # Default agents to run
+    if agents is None:
+        agents = ["formatter", "linter", "type-checker"]
+
+    # Filter to valid agents only
+    valid_agents = [a for a in agents if a in AGENT_COMMANDS]
+    invalid_agents = [a for a in agents if a not in AGENT_COMMANDS]
+
+    if invalid_agents:
+        logger.warning(f"Skipping unknown agents: {invalid_agents}")
+
+    results: List[Dict[str, Any]] = []
+    all_success = True
+
+    for agent_name in valid_agents:
+        result = await run_agent(project_root, agent_name, timeout=timeout)
+        results.append(result)
+
+        if not result["success"]:
+            all_success = False
+            if stop_on_failure:
+                logger.info(f"Stopping after {agent_name} failure (stop_on_failure=True)")
+                break
+
+    return {
+        "success": all_success,
+        "agents_run": [r["agent"] for r in results],
+        "results": results,
+        "skipped_invalid": invalid_agents if invalid_agents else None,
+    }
+
+
+async def get_agent_status(
+    project_root: Path,
+    agent_name: Optional[str] = None,
+    limit: int = 10,
+) -> Dict[str, Any]:
+    """Get agent run history and status.
+
+    This tool retrieves the run history for DevLoop agents. It reads from
+    the event store to show recent agent executions, their success/failure
+    status, duration, and any errors.
+
+    Args:
+        project_root: Path to the project root directory
+        agent_name: Optional specific agent name to filter by
+        limit: Maximum number of history entries per agent (default: 10)
+
+    Returns:
+        Dict with agent status information including run history
+
+    Example:
+        >>> status = await get_agent_status(Path("/project"))
+        >>> for agent, info in status["agents"].items():
+        ...     print(f"{agent}: {info['last_run_status']}")
+    """
+    from devloop.core.event_store import EventStore
+
+    # Initialize event store
+    db_path = project_root / ".devloop" / "events.db"
+
+    if not db_path.exists():
+        return {
+            "success": True,
+            "agents": {},
+            "message": "No agent history found. Run agents first.",
+        }
+
+    event_store = EventStore(db_path)
+
+    try:
+        await event_store.initialize()
+
+        # Query for agent completion events
+        if agent_name:
+            event_type = f"agent:{agent_name}:completed"
+        else:
+            event_type = None  # Will get all events
+
+        events = await event_store.get_events(
+            event_type=event_type,
+            source=agent_name,
+            limit=limit * 10 if not agent_name else limit,  # Get more if filtering
+        )
+
+        # Group events by agent
+        agents_status: Dict[str, Dict[str, Any]] = {}
+
+        for event in events:
+            # Only process agent completion events
+            if not event.type.startswith("agent:") or not event.type.endswith(
+                ":completed"
+            ):
+                continue
+
+            payload = event.payload
+            event_agent_name = payload.get("agent_name", "unknown")
+
+            # Skip if filtering by agent and doesn't match
+            if agent_name and event_agent_name != agent_name:
+                continue
+
+            if event_agent_name not in agents_status:
+                agents_status[event_agent_name] = {
+                    "agent": event_agent_name,
+                    "last_run": None,
+                    "last_run_status": None,
+                    "total_runs": 0,
+                    "success_count": 0,
+                    "failure_count": 0,
+                    "average_duration": 0.0,
+                    "history": [],
+                }
+
+            agent_info = agents_status[event_agent_name]
+            agent_info["total_runs"] += 1
+
+            if payload.get("success"):
+                agent_info["success_count"] += 1
+            else:
+                agent_info["failure_count"] += 1
+
+            # Update last run if this is more recent
+            if (
+                agent_info["last_run"] is None
+                or event.timestamp > agent_info["last_run"]
+            ):
+                agent_info["last_run"] = event.timestamp
+                agent_info["last_run_status"] = (
+                    "success" if payload.get("success") else "failure"
+                )
+
+            # Add to history (limited)
+            if len(agent_info["history"]) < limit:
+                agent_info["history"].append(
+                    {
+                        "timestamp": event.timestamp,
+                        "success": payload.get("success", False),
+                        "duration": payload.get("duration", 0),
+                        "message": payload.get("message", ""),
+                        "error": payload.get("error"),
+                    }
+                )
+
+        # Calculate average durations
+        for agent_info in agents_status.values():
+            if agent_info["history"]:
+                total_duration = sum(h["duration"] for h in agent_info["history"])
+                agent_info["average_duration"] = total_duration / len(
+                    agent_info["history"]
+                )
+
+        await event_store.close()
+
+        return {
+            "success": True,
+            "agents": agents_status,
+            "summary": {
+                "total_agents": len(agents_status),
+                "agents_with_failures": sum(
+                    1 for a in agents_status.values() if a["failure_count"] > 0
+                ),
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting agent status: {e}")
+        return {
+            "success": False,
+            "agents": {},
+            "error": str(e),
+        }

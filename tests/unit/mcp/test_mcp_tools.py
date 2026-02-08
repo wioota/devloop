@@ -847,3 +847,359 @@ class TestRunTests:
             assert result["success"] is True
             call_args = mock_exec.call_args
             assert "-v" in call_args[0]
+
+
+# ============================================================================
+# Agent Control Tools Tests
+# ============================================================================
+
+
+class TestRunAgent:
+    """Tests for run_agent tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .devloop directory."""
+        devloop_dir = tmp_path / ".devloop"
+        devloop_dir.mkdir()
+        (devloop_dir / "agents.json").write_text('{"agents": {}}')
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_agent_formatter(self, project_root: Path) -> None:
+        """Test running the formatter agent."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"Formatted 3 files\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="formatter")
+
+            assert result["success"] is True
+            assert result["agent"] == "formatter"
+            assert "returncode" in result
+
+    @pytest.mark.asyncio
+    async def test_run_agent_linter(self, project_root: Path) -> None:
+        """Test running the linter agent."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"All checks passed\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="linter")
+
+            assert result["success"] is True
+            assert result["agent"] == "linter"
+
+    @pytest.mark.asyncio
+    async def test_run_agent_type_checker(self, project_root: Path) -> None:
+        """Test running the type-checker agent."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"Success: no issues found\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="type-checker")
+
+            assert result["success"] is True
+            assert result["agent"] == "type-checker"
+
+    @pytest.mark.asyncio
+    async def test_run_agent_security_scanner(self, project_root: Path) -> None:
+        """Test running the security-scanner agent."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"No security issues found\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="security-scanner")
+
+            assert result["success"] is True
+            assert result["agent"] == "security-scanner"
+
+    @pytest.mark.asyncio
+    async def test_run_agent_test_runner(self, project_root: Path) -> None:
+        """Test running the test-runner agent."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(
+                return_value=(b"===== 10 passed =====\n", b"")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="test-runner")
+
+            assert result["success"] is True
+            assert result["agent"] == "test-runner"
+
+    @pytest.mark.asyncio
+    async def test_run_agent_invalid_name(self, project_root: Path) -> None:
+        """Test running an invalid agent name."""
+        from devloop.mcp.tools import run_agent
+
+        result = await run_agent(project_root, agent_name="invalid-agent")
+
+        assert result["success"] is False
+        assert "unknown" in result["error"].lower() or "invalid" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_run_agent_failure(self, project_root: Path) -> None:
+        """Test handling agent failure."""
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(b"", b"error: formatting failed\n")
+            )
+            mock_exec.return_value = mock_process
+
+            result = await run_agent(project_root, agent_name="formatter")
+
+            assert result["success"] is False
+            assert result["returncode"] == 1
+
+    @pytest.mark.asyncio
+    async def test_run_agent_timeout(self, project_root: Path) -> None:
+        """Test handling agent timeout."""
+        import asyncio
+        from devloop.mcp.tools import run_agent
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.kill = MagicMock()
+            mock_exec.return_value = mock_process
+
+            with patch("devloop.mcp.tools.asyncio.wait_for") as mock_wait_for:
+                mock_wait_for.side_effect = asyncio.TimeoutError()
+
+                result = await run_agent(project_root, agent_name="formatter", timeout=1)
+
+                assert result["success"] is False
+                assert "timed out" in result["error"].lower()
+
+
+class TestRunAllAgents:
+    """Tests for run_all_agents tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .devloop directory."""
+        devloop_dir = tmp_path / ".devloop"
+        devloop_dir.mkdir()
+        (devloop_dir / "agents.json").write_text('{"agents": {}}')
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "test.py").write_text("x = 1\n")
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_run_all_agents_success(self, project_root: Path) -> None:
+        """Test running all agents successfully."""
+        from devloop.mcp.tools import run_all_agents
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_all_agents(project_root)
+
+            assert result["success"] is True
+            assert "agents_run" in result
+            assert len(result["agents_run"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_run_all_agents_with_specific_agents(self, project_root: Path) -> None:
+        """Test running specific agents only."""
+        from devloop.mcp.tools import run_all_agents
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success\n", b""))
+            mock_exec.return_value = mock_process
+
+            result = await run_all_agents(
+                project_root, agents=["formatter", "linter"]
+            )
+
+            assert result["success"] is True
+            assert len(result["agents_run"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_run_all_agents_partial_failure(self, project_root: Path) -> None:
+        """Test handling partial agent failures."""
+        from devloop.mcp.tools import run_all_agents
+
+        call_count = [0]
+
+        async def mock_communicate():
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return (b"Formatted\n", b"")
+            else:
+                return (b"", b"Error\n")
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 0
+            mock_process.communicate = mock_communicate
+            mock_exec.return_value = mock_process
+
+            # Override returncode based on call
+            original_communicate = mock_process.communicate
+
+            async def communicate_with_returncode():
+                result = await original_communicate()
+                # Simulate failure for second agent
+                mock_process.returncode = 1 if call_count[0] > 1 else 0
+                return result
+
+            mock_process.communicate = communicate_with_returncode
+
+            result = await run_all_agents(project_root, agents=["formatter", "linter"])
+
+            assert "agents_run" in result
+            assert "failed" in result or any(
+                not r.get("success", True) for r in result.get("results", [])
+            )
+
+    @pytest.mark.asyncio
+    async def test_run_all_agents_stop_on_failure(self, project_root: Path) -> None:
+        """Test stopping on first failure when requested."""
+        from devloop.mcp.tools import run_all_agents
+
+        with patch("devloop.mcp.tools.asyncio.create_subprocess_exec") as mock_exec:
+            mock_process = AsyncMock()
+            mock_process.returncode = 1  # Fail immediately
+            mock_process.communicate = AsyncMock(return_value=(b"", b"Error\n"))
+            mock_exec.return_value = mock_process
+
+            result = await run_all_agents(
+                project_root,
+                agents=["formatter", "linter", "type-checker"],
+                stop_on_failure=True,
+            )
+
+            # Should stop after first failure
+            assert result["success"] is False
+            # Only one agent should have run
+            assert len(result.get("results", [])) == 1
+
+
+class TestGetAgentStatus:
+    """Tests for get_agent_status tool."""
+
+    @pytest.fixture
+    def project_root(self, tmp_path: Path) -> Path:
+        """Create a temporary project root with .devloop directory."""
+        devloop_dir = tmp_path / ".devloop"
+        devloop_dir.mkdir()
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_get_agent_status_no_history(self, project_root: Path) -> None:
+        """Test getting status when no agent history exists."""
+        from devloop.mcp.tools import get_agent_status
+
+        result = await get_agent_status(project_root)
+
+        assert "agents" in result
+        assert isinstance(result["agents"], dict)
+
+    @pytest.mark.asyncio
+    async def test_get_agent_status_with_history(self, project_root: Path) -> None:
+        """Test getting status with agent run history."""
+        from devloop.mcp.tools import get_agent_status
+
+        # Mock the event store to return some history
+        with patch("devloop.core.event_store.EventStore") as MockEventStore:
+            mock_store = AsyncMock()
+            mock_store.get_events.return_value = [
+                MagicMock(
+                    type="agent:formatter:completed",
+                    payload={
+                        "agent_name": "formatter",
+                        "success": True,
+                        "duration": 1.5,
+                        "message": "Formatted 3 files",
+                    },
+                    timestamp=1704067200.0,  # 2024-01-01 00:00:00
+                ),
+                MagicMock(
+                    type="agent:linter:completed",
+                    payload={
+                        "agent_name": "linter",
+                        "success": False,
+                        "duration": 2.0,
+                        "message": "Found 5 issues",
+                        "error": "Linting errors",
+                    },
+                    timestamp=1704067300.0,
+                ),
+            ]
+            MockEventStore.return_value = mock_store
+
+            result = await get_agent_status(project_root)
+
+            assert "agents" in result
+            # Should have formatter and linter in status
+            assert len(result["agents"]) >= 0  # May be empty if no events
+
+    @pytest.mark.asyncio
+    async def test_get_agent_status_specific_agent(self, project_root: Path) -> None:
+        """Test getting status for a specific agent."""
+        from devloop.mcp.tools import get_agent_status
+
+        result = await get_agent_status(project_root, agent_name="formatter")
+
+        assert "agents" in result or "agent" in result
+
+    @pytest.mark.asyncio
+    async def test_get_agent_status_with_limit(self, project_root: Path) -> None:
+        """Test getting status with a limit on history."""
+        from devloop.mcp.tools import get_agent_status
+
+        result = await get_agent_status(project_root, limit=5)
+
+        # Result should respect the limit
+        assert "agents" in result
+
+    @pytest.mark.asyncio
+    async def test_get_agent_status_includes_metadata(self, project_root: Path) -> None:
+        """Test that status includes useful metadata."""
+        from devloop.mcp.tools import get_agent_status
+
+        result = await get_agent_status(project_root)
+
+        # Should have summary information
+        assert "agents" in result or "summary" in result

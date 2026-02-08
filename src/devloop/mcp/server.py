@@ -22,7 +22,10 @@ from devloop.core.context_store import ContextStore
 from devloop.mcp.tools import (
     apply_fix,
     dismiss_finding,
+    get_agent_status,
     get_findings,
+    run_agent,
+    run_all_agents,
     run_formatter,
     run_linter,
     run_tests,
@@ -318,6 +321,67 @@ class MCPServer:
                         },
                     },
                 ),
+                Tool(
+                    name="run_agent",
+                    description=(
+                        "Run a specific DevLoop agent. "
+                        "Available agents: formatter, linter, type_checker, "
+                        "security_scanner, performance_profiler."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "agent_name": {
+                                "type": "string",
+                                "description": "Name of the agent to run",
+                            },
+                            "timeout": {
+                                "type": "integer",
+                                "default": 60,
+                                "description": "Timeout in seconds (default: 60)",
+                            },
+                        },
+                        "required": ["agent_name"],
+                    },
+                ),
+                Tool(
+                    name="run_all_agents",
+                    description=(
+                        "Run all DevLoop agents for a full project sweep. "
+                        "Runs formatter, linter, type checker, and other agents."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "timeout": {
+                                "type": "integer",
+                                "default": 300,
+                                "description": "Timeout in seconds (default: 300)",
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="get_agent_status",
+                    description=(
+                        "Get the status and run history of DevLoop agents. "
+                        "Shows recent agent runs and their results."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "agent_name": {
+                                "type": "string",
+                                "description": "Filter by specific agent name",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "default": 10,
+                                "description": "Maximum number of history entries",
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.server.call_tool()
@@ -397,6 +461,38 @@ class MCPServer:
                     )
                     return [
                         TextContent(type="text", text=json.dumps(test_result, indent=2))
+                    ]
+
+                # Agent control tools
+                elif name == "run_agent":
+                    agent_result = await run_agent(
+                        self.project_root,
+                        agent_name=arguments["agent_name"],
+                        timeout=arguments.get("timeout", 60),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(agent_result, indent=2))
+                    ]
+
+                elif name == "run_all_agents":
+                    all_agents_result = await run_all_agents(
+                        self.project_root,
+                        timeout=arguments.get("timeout", 300),
+                    )
+                    return [
+                        TextContent(
+                            type="text", text=json.dumps(all_agents_result, indent=2)
+                        )
+                    ]
+
+                elif name == "get_agent_status":
+                    status_result = await get_agent_status(
+                        self.project_root,
+                        agent_name=arguments.get("agent_name"),
+                        limit=arguments.get("limit", 10),
+                    )
+                    return [
+                        TextContent(type="text", text=json.dumps(status_result, indent=2))
                     ]
 
                 else:
