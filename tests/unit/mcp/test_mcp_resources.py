@@ -159,9 +159,7 @@ class TestGetSummaryResource:
         return store
 
     @pytest.mark.asyncio
-    async def test_get_summary_with_findings(
-        self, context_store: ContextStore
-    ) -> None:
+    async def test_get_summary_with_findings(self, context_store: ContextStore) -> None:
         """Test summary resource with findings."""
         from devloop.mcp.resources import get_summary_resource
 
