@@ -15,10 +15,11 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import TextContent, Tool
+from mcp.types import Resource, TextContent, Tool
 
 from devloop import __version__
 from devloop.core.context_store import ContextStore
+from devloop.mcp.resources import list_resources, read_resource
 from devloop.mcp.tools import (
     apply_fix,
     dismiss_finding,
@@ -92,8 +93,9 @@ class MCPServer:
             context_dir=context_dir, enable_path_validation=False
         )
 
-        # Register tool handlers
+        # Register tool and resource handlers
         self._register_tools()
+        self._register_resources()
 
         logger.info(f"MCPServer initialized with project root: {self.project_root}")
 
@@ -567,6 +569,19 @@ class MCPServer:
                         text=json.dumps({"error": str(e), "tool": name}, indent=2),
                     )
                 ]
+
+    def _register_resources(self) -> None:
+        """Register MCP resource handlers."""
+
+        @self.server.list_resources()
+        async def handle_list_resources() -> List[Resource]:
+            """List all available DevLoop resources."""
+            return list_resources()
+
+        @self.server.read_resource()
+        async def handle_read_resource(uri: str) -> str:
+            """Read a resource by URI."""
+            return await read_resource(uri, self.project_root)
 
     async def run(self) -> None:
         """Run the MCP server using stdio transport.
