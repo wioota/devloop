@@ -29,6 +29,7 @@ python3 << 'PYTHON_EOF'
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 def get_findings_for_file(file_path: str, context_dir: Path) -> list:
@@ -104,6 +105,39 @@ def format_output(findings: list, file_path: str) -> str:
 
     return "\n".join(lines)
 
+def get_shown_state(state_file: Path) -> dict:
+    """Load previously shown findings state."""
+    if not state_file.exists():
+        return {}
+    try:
+        return json.loads(state_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+def save_shown_state(state_file: Path, state: dict) -> None:
+    """Save shown findings state, pruning entries older than 1 hour."""
+    cutoff = time.time() - 3600
+    pruned = {k: v for k, v in state.items() if v > cutoff}
+    try:
+        state_file.write_text(json.dumps(pruned))
+    except OSError:
+        pass
+
+def make_finding_key(finding: dict) -> str:
+    """Create content-based key for dedup."""
+    return f"{finding.get('agent','')}:{finding.get('file','')}:{finding.get('line','')}:{finding.get('message','')}"
+
+def filter_unseen(findings: list, state: dict, debounce_seconds: int = 300) -> list:
+    """Filter out findings shown within debounce window."""
+    now = time.time()
+    unseen = []
+    for f in findings:
+        key = make_finding_key(f)
+        last_shown = state.get(key, 0)
+        if now - last_shown > debounce_seconds:
+            unseen.append(f)
+    return unseen
+
 def main():
     input_file = os.environ.get("INPUT_FILE", "")
     project_dir = Path(os.environ.get("PROJECT_DIR", "."))
@@ -145,11 +179,21 @@ def main():
 
     findings = get_findings_for_file(file_path, context_dir)
 
+    # Deduplicate: filter out findings shown within the last 5 minutes
+    state_file = project_dir / ".devloop" / ".hook-shown-findings"
+    state = get_shown_state(state_file)
+    findings = filter_unseen(findings, state)
+
     # Output if findings exist (silent otherwise)
     if findings:
         output = format_output(findings, file_path)
         if output:
             print(output)
+            # Mark displayed findings as shown
+            now = time.time()
+            for f in findings:
+                state[make_finding_key(f)] = now
+            save_shown_state(state_file, state)
 
 if __name__ == "__main__":
     main()

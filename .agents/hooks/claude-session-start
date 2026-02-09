@@ -32,9 +32,28 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 if [[ "$WATCH_RUNNING" != "true" ]]; then
-    echo "⚠️  DevLoop watch not running"
-    echo "   Start with: devloop watch ."
-    echo "   Agent findings won't be collected until started."
+    echo "Starting devloop watch..."
+    mkdir -p "$PROJECT_DIR/.devloop"
+    nohup devloop watch "$PROJECT_DIR" > "$PROJECT_DIR/.devloop/devloop.log" 2>&1 &
+
+    # Wait for PID file (up to 3 seconds)
+    for i in 1 2 3; do
+        sleep 1
+        if [[ -f "$PID_FILE" ]]; then
+            WATCH_PID=$(cat "$PID_FILE" 2>/dev/null)
+            if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
+                WATCH_RUNNING=true
+                echo "✓ Started devloop watch (PID: $WATCH_PID)"
+                break
+            fi
+        fi
+    done
+
+    if [[ "$WATCH_RUNNING" != "true" ]]; then
+        echo "⚠️  Could not start devloop watch"
+        echo "   Start manually: devloop watch ."
+        echo "   Check logs: .devloop/devloop.log"
+    fi
     echo ""
 fi
 
