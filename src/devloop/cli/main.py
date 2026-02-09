@@ -1232,37 +1232,41 @@ def _create_claude_settings_json(path: Path) -> bool:
     # Hook configuration using relative paths from project root
     hooks_config = {
         "hooks": {
-            "SessionStart": {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "matcher": "startup",
-                        "command": ".agents/hooks/claude-session-start",
-                    }
-                ]
-            },
-            "Stop": {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": ".agents/hooks/claude-stop",
-                    }
-                ]
-            },
-            "PreToolUse": {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "matcher": "Write|Edit",
-                        "command": ".agents/hooks/claude-file-protection",
-                    },
-                    {
-                        "type": "command",
-                        "matcher": "Write|Edit",
-                        "command": ".agents/hooks/check-devloop-context",
-                    },
-                ]
-            },
+            "SessionStart": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": ".agents/hooks/claude-session-start",
+                        }
+                    ],
+                }
+            ],
+            "Stop": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": ".agents/hooks/claude-stop",
+                        }
+                    ],
+                }
+            ],
+            "PreToolUse": [
+                {
+                    "matcher": "Write|Edit",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": ".agents/hooks/claude-file-protection",
+                        },
+                        {
+                            "type": "command",
+                            "command": ".agents/hooks/check-devloop-context",
+                        },
+                    ],
+                }
+            ],
             "PostToolUse": [
                 {
                     "matcher": "Edit|Write",

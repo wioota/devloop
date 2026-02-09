@@ -64,32 +64,31 @@ if "hooks" not in settings:
 
 # SessionStart hook
 if "SessionStart" not in settings["hooks"]:
-    settings["hooks"]["SessionStart"] = {
+    settings["hooks"]["SessionStart"] = [{
         "hooks": [{
             "type": "command",
-            "matcher": "startup",
             "command": str(hooks_dir / "claude-session-start")
         }]
-    }
+    }]
 
 # Stop hook
 if "Stop" not in settings["hooks"]:
-    settings["hooks"]["Stop"] = {
+    settings["hooks"]["Stop"] = [{
         "hooks": [{
             "type": "command",
             "command": str(hooks_dir / "claude-stop")
         }]
-    }
+    }]
 
 # PreToolUse hook (Write/Edit protection)
 if "PreToolUse" not in settings["hooks"]:
-    settings["hooks"]["PreToolUse"] = {
+    settings["hooks"]["PreToolUse"] = [{
+        "matcher": "Write|Edit",
         "hooks": [{
             "type": "command",
-            "matcher": "Write|Edit",
             "command": str(hooks_dir / "claude-file-protection")
         }]
-    }
+    }]
 
 # PostToolUse hook (show findings after Edit/Write)
 if "PostToolUse" not in settings["hooks"]:
