@@ -102,7 +102,10 @@ def _validate_claude_hooks_format(settings: dict) -> list[str]:
                         )
                     if handler.get("type") == "command" and "command" not in handler:
                         errors.append(f"{hprefix}: command hook missing 'command' key")
-                    if handler.get("type") in ("prompt", "agent") and "prompt" not in handler:
+                    if (
+                        handler.get("type") in ("prompt", "agent")
+                        and "prompt" not in handler
+                    ):
                         errors.append(
                             f"{hprefix}: {handler['type']} hook missing 'prompt' key"
                         )
@@ -131,7 +134,9 @@ class TestClaudeSettingsFormat:
 
         settings = json.loads(settings_file.read_text())
         errors = _validate_claude_hooks_format(settings)
-        assert errors == [], "Invalid Claude Code settings format:\n" + "\n".join(errors)
+        assert errors == [], "Invalid Claude Code settings format:\n" + "\n".join(
+            errors
+        )
 
     def test_all_hook_types_are_arrays(self, tmp_path):
         """Every hook type value must be an array, not an object."""
@@ -167,9 +172,9 @@ class TestClaudeSettingsFormat:
 
         settings = json.loads(settings_file.read_text())
         errors = _validate_claude_hooks_format(settings)
-        assert errors == [], (
-            "Committed .claude/settings.json has invalid format:\n" + "\n".join(errors)
-        )
+        assert (
+            errors == []
+        ), "Committed .claude/settings.json has invalid format:\n" + "\n".join(errors)
 
     def test_does_not_overwrite_existing_hooks(self, tmp_path):
         """Existing hooks in settings.json should not be overwritten."""
@@ -243,9 +248,9 @@ class TestClaudeSettingsViaCLI:
             timeout=30,
         )
         combined = result.stdout + result.stderr
-        assert "Settings Error" not in combined, (
-            f"Claude Code reported settings errors for generated config:\n{combined}"
-        )
-        assert "Expected array, but received object" not in combined, (
-            f"Claude Code rejected hooks format:\n{combined}"
-        )
+        assert (
+            "Settings Error" not in combined
+        ), f"Claude Code reported settings errors for generated config:\n{combined}"
+        assert (
+            "Expected array, but received object" not in combined
+        ), f"Claude Code rejected hooks format:\n{combined}"
