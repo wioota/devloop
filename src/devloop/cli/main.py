@@ -705,127 +705,140 @@ def _setup_config(claude_dir: Path, skip_config: bool, non_interactive: bool) ->
     console.print(f"\n[green]✓[/green] Created: {config_file}")
 
 
-def _check_missing_devloop_sections(content: str) -> list:
-    """Check for missing DevLoop sections in AGENTS.md."""
-    missing_sections = []
+def _parse_template_sections(template_content: str) -> dict[str, tuple[str, str]]:
+    """Parse the DevLoop template into sections by ## headings.
 
-    checks = [
-        ("Task Management with Beads", "Beads task management"),
-        ("NO MARKDOWN FILES FOR PLANNING", "No markdown files rule"),
-        ("Development Discipline", "Development discipline"),
-        ("Pre-Flight Development Checklist", "Pre-flight checklist"),
-        ("Documentation Practices", "Documentation practices"),
+    Returns a dict mapping check-string identifiers to (heading_line, section_content)
+    tuples. The section_content includes everything from the heading line up to (but not
+    including) the next ## heading or end of file.
+    """
+    # Maps a substring found in the heading to the check-string used by
+    # _check_missing_devloop_sections().
+    heading_to_check: dict[str, str] = {
+        "NO MARKDOWN FILES": "NO MARKDOWN FILES FOR PLANNING",
+        "BEADS FOR ALL TASK MANAGEMENT": "Task Management with Beads",
+        "COMMIT & PUSH AFTER EVERY TASK": "Development Discipline",
+        "PRE-FLIGHT CHECKLIST": "Pre-Flight Development Checklist",
+        "CI VERIFICATION": "CI Verification",
+        "ESSENTIAL COMMANDS": "Release Process",
+        "TOKEN SECURITY": "Secrets Management & Token Security",
+        "DOCUMENTATION PRACTICES": "Documentation Practices",
+    }
+
+    sections: dict[str, tuple[str, str]] = {}
+    lines = template_content.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith("## "):
+            heading_line = line
+            # Collect all lines until the next ## heading or EOF
+            section_lines = [line]
+            i += 1
+            while i < len(lines) and not lines[i].startswith("## "):
+                section_lines.append(lines[i])
+                i += 1
+            section_content = "\n".join(section_lines)
+            # Match this heading to a check-string
+            for substr, check_str in heading_to_check.items():
+                if substr in heading_line.upper():
+                    sections[check_str] = (heading_line, section_content)
+                    break
+        else:
+            i += 1
+    return sections
+
+
+def _check_missing_devloop_sections(content: str) -> list[tuple[str, str]]:
+    """Check for missing DevLoop sections in AGENTS.md.
+
+    Returns a list of (check_string, display_name) tuples for each missing section.
+    """
+    missing_sections: list[tuple[str, str]] = []
+
+    # Each entry: (check_string, alt_check_strings, display_name)
+    # The check_string is the canonical key used in _parse_template_sections.
+    # alt_check_strings are additional strings that indicate the section is present
+    # (e.g. from older template versions or hand-written AGENTS.md files).
+    checks: list[tuple[str, list[str], str]] = [
         (
-            "Publishing & Security Considerations",
-            "Publishing & security considerations",
+            "NO MARKDOWN FILES FOR PLANNING",
+            ["NO MARKDOWN FILES"],
+            "No markdown files rule",
         ),
-        ("Release Process", "Release process"),
-        ("Configuration", "Configuration (logging, agents)"),
-        ("Security & Privacy", "Security & privacy"),
-        ("Success Metrics", "Success metrics"),
-        ("Future Considerations", "Future considerations"),
+        (
+            "Task Management with Beads",
+            ["BEADS FOR ALL TASK MANAGEMENT"],
+            "Beads task management",
+        ),
+        (
+            "Development Discipline",
+            ["COMMIT & PUSH AFTER EVERY TASK"],
+            "Development discipline",
+        ),
+        (
+            "Pre-Flight Development Checklist",
+            ["PRE-FLIGHT CHECKLIST"],
+            "Pre-flight checklist",
+        ),
+        (
+            "Documentation Practices",
+            ["DOCUMENTATION PRACTICES"],
+            "Documentation practices",
+        ),
+        ("Release Process", ["ESSENTIAL COMMANDS"], "Release process"),
     ]
 
-    for check_str, display_name in checks:
-        if check_str not in content:
-            missing_sections.append(display_name)
+    for check_str, alt_strs, display_name in checks:
+        if check_str not in content and not any(s in content for s in alt_strs):
+            missing_sections.append((check_str, display_name))
 
-    # Special case for token security (two variants)
+    # Special case for token security (multiple variants)
     if (
         "Secrets Management & Token Security" not in content
         and "Secrets Management" not in content
+        and "TOKEN SECURITY" not in content
     ):
-        if "Token security" not in missing_sections:
-            missing_sections.append("Token security")
+        missing_sections.append(
+            ("Secrets Management & Token Security", "Token security")
+        )
 
-    # Special case for CI verification (two variants)
-    if "CI Verification" not in content and "Pre-Push Hook" not in content:
-        if "CI verification (pre-push hook)" not in missing_sections:
-            missing_sections.append("CI verification (pre-push hook)")
+    # Special case for CI verification (multiple variants)
+    if (
+        "CI Verification" not in content
+        and "Pre-Push Hook" not in content
+        and "CI VERIFICATION" not in content
+    ):
+        missing_sections.append(("CI Verification", "CI verification (pre-push hook)"))
 
     return missing_sections
 
 
-def _inject_devloop_instructions(
+def _merge_template_sections(
     agents_md: Path,
-    claude_dir: Path,
     content: str,
-    missing_sections: list,
-    devloop_template: Path,
+    missing_sections: list[tuple[str, str]],
+    template_sections: dict[str, tuple[str, str]],
 ) -> None:
-    """Inject DevLoop setup instructions into existing AGENTS.md."""
-    import shutil
+    """Merge missing DevLoop template sections into existing AGENTS.md."""
+    merged_any = False
+    new_content = content.rstrip("\n")
 
-    devloop_template_copy = claude_dir / "devloop_agents_template.md"
-    if devloop_template.exists():
-        shutil.copy(devloop_template, devloop_template_copy)
+    for check_str, display_name in missing_sections:
+        if check_str not in template_sections:
+            continue
+        _heading, section_content = template_sections[check_str]
+        # Strip trailing whitespace from section, ensure separator
+        section_text = section_content.rstrip("\n")
+        new_content += "\n\n---\n\n" + section_text
+        console.print(f"  [green]✓[/green] Merged: {display_name}")
+        merged_any = True
 
-        instruction_section = f"""
-
----
-
-## 🔧 DevLoop Setup Required
-
-**⚠️ ACTION FOR AI ASSISTANT (Claude/Copilot):** This AGENTS.md is missing critical DevLoop sections.
-
-### Missing Sections:
-{chr(10).join(f'- {section}' for section in missing_sections)}
-
-### Instructions:
-
-Please complete this setup automatically:
-
-1. **Read the template**: `.devloop/devloop_agents_template.md`
-2. **Merge missing sections** into this AGENTS.md file
-3. **Follow merge guidelines** (see below)
-4. **Delete this entire section** (🔧 DevLoop Setup Required) after merging
-
-### Merge Guidelines:
-
-- ✅ **Do NOT duplicate** existing content - only add missing sections
-- ✅ **Preserve** all existing project-specific content
-- ✅ **Maintain** the existing document structure and headings
-- ✅ **Merge intelligently** - if a section partially exists, enhance it
-- ✅ **Respect** document flow - place sections in logical order
-
-### Required Sections:
-
-- ⚠️ Task Management with Beads (at the top, after title)
-- ⛔️ NO MARKDOWN FILES FOR PLANNING (absolute rules)
-- Development Discipline (commit/push requirements)
-- Secrets Management & Token Security
-- Absolute Rules for AI Agents
-
-**Template location:** `.devloop/devloop_agents_template.md`
-
-**Delete this section after successful merge.**
-
----
-
-"""
-        # Insert at the beginning of the file (after title if present)
-        lines = content.split("\n")
-        insert_pos = 0
-
-        for i, line in enumerate(lines):
-            if line.startswith("# "):
-                insert_pos = i + 1
-                break
-
-        new_content = (
-            "\n".join(lines[:insert_pos])
-            + instruction_section
-            + "\n".join(lines[insert_pos:])
-        )
+    if merged_any:
+        new_content += "\n"
         agents_md.write_text(new_content)
-
         console.print(
-            "\n[green]✓[/green] Injected DevLoop setup instructions into AGENTS.md"
-        )
-        console.print(f"[cyan]→[/cyan] Template copied to: {devloop_template_copy}")
-        console.print("\n[cyan]Next step:[/cyan]")
-        console.print(
-            "  • Open this project in Claude Code/Amp - it will automatically merge the template!"
+            "\n[green]✓[/green] Updated AGENTS.md with missing DevLoop sections"
         )
 
 
@@ -844,8 +857,10 @@ def _setup_agents_md(path: Path, claude_dir: Path) -> None:
         missing_sections = _check_missing_devloop_sections(content)
 
         if missing_sections:
-            _inject_devloop_instructions(
-                agents_md, claude_dir, content, missing_sections, devloop_template
+            template_content = devloop_template.read_text()
+            template_sections = _parse_template_sections(template_content)
+            _merge_template_sections(
+                agents_md, content, missing_sections, template_sections
             )
     else:
         # Create new AGENTS.md from template
