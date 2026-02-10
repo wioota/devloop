@@ -10,6 +10,9 @@ import pytest
 from typer.testing import CliRunner
 
 from devloop.cli.main import (
+    _check_missing_devloop_sections,
+    _merge_template_sections,
+    _parse_template_sections,
     app,
 )
 
@@ -427,3 +430,133 @@ class TestCLIIntegration:
                     assert status_result.exit_code == 0
         finally:
             os.chdir(original_cwd)
+
+
+class TestAgentsMdMerge:
+    """Tests for the AGENTS.md template merge functions."""
+
+    @pytest.fixture
+    def template_content(self):
+        """Load the actual DevLoop template."""
+        template_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "src"
+            / "devloop"
+            / "cli"
+            / "templates"
+            / "devloop_agents_template.md"
+        )
+        return template_path.read_text()
+
+    def test_parse_template_sections(self, template_content):
+        """Verify template parsing returns expected keys."""
+        sections = _parse_template_sections(template_content)
+
+        expected_keys = [
+            "NO MARKDOWN FILES FOR PLANNING",
+            "Task Management with Beads",
+            "Development Discipline",
+            "Pre-Flight Development Checklist",
+            "CI Verification",
+            "Release Process",
+            "Secrets Management & Token Security",
+            "Documentation Practices",
+        ]
+        for key in expected_keys:
+            assert key in sections, f"Missing key: {key}"
+
+        # Each value should be a (heading, content) tuple
+        for key, (heading, content) in sections.items():
+            assert heading.startswith("## ")
+            assert len(content) > len(heading)
+
+    def test_check_missing_sections_returns_tuples(self):
+        """Verify new return type is list of (check_string, display_name) tuples."""
+        result = _check_missing_devloop_sections("Some content with nothing relevant")
+
+        assert isinstance(result, list)
+        assert len(result) > 0
+        for item in result:
+            assert isinstance(item, tuple)
+            assert len(item) == 2
+            check_str, display_name = item
+            assert isinstance(check_str, str)
+            assert isinstance(display_name, str)
+
+    def test_check_missing_sections_all_present(self, template_content):
+        """Verify empty list when all sections are present."""
+        # The template itself should satisfy all checks (via alt strings)
+        result = _check_missing_devloop_sections(template_content)
+        assert result == []
+
+    def test_merge_appends_missing_sections(self, template_content, tmp_path):
+        """Verify sections are appended to AGENTS.md."""
+        agents_md = tmp_path / "AGENTS.md"
+        original = "# My Project\n\nExisting content here.\n"
+        agents_md.write_text(original)
+
+        missing = [
+            ("Secrets Management & Token Security", "Token security"),
+            ("Documentation Practices", "Documentation practices"),
+        ]
+        template_sections = _parse_template_sections(template_content)
+
+        _merge_template_sections(agents_md, original, missing, template_sections)
+
+        result = agents_md.read_text()
+        assert "Existing content here." in result
+        assert "TOKEN SECURITY" in result
+        assert "DOCUMENTATION PRACTICES" in result
+
+    def test_merge_preserves_existing_content(self, template_content, tmp_path):
+        """Verify original content is untouched."""
+        agents_md = tmp_path / "AGENTS.md"
+        original = "# My Project\n\nCustom section about my project.\n\n## My Custom Section\n\nDetails here.\n"
+        agents_md.write_text(original)
+
+        missing = [("CI Verification", "CI verification (pre-push hook)")]
+        template_sections = _parse_template_sections(template_content)
+
+        _merge_template_sections(agents_md, original, missing, template_sections)
+
+        result = agents_md.read_text()
+        assert result.startswith("# My Project\n\nCustom section about my project.")
+        assert "## My Custom Section\n\nDetails here." in result
+
+    def test_no_scaffold_injection(self, template_content, tmp_path):
+        """Verify scaffold text never appears."""
+        agents_md = tmp_path / "AGENTS.md"
+        original = "# My Project\n"
+        agents_md.write_text(original)
+
+        missing = _check_missing_devloop_sections(original)
+        template_sections = _parse_template_sections(template_content)
+
+        _merge_template_sections(agents_md, original, missing, template_sections)
+
+        result = agents_md.read_text()
+        assert "DevLoop Setup Required" not in result
+        assert "ACTION FOR AI ASSISTANT" not in result
+        assert "devloop_agents_template.md" not in result
+
+    def test_merge_idempotent(self, template_content, tmp_path):
+        """Running merge twice doesn't duplicate sections."""
+        agents_md = tmp_path / "AGENTS.md"
+        original = "# My Project\n"
+        agents_md.write_text(original)
+
+        missing = _check_missing_devloop_sections(original)
+        template_sections = _parse_template_sections(template_content)
+
+        # First merge
+        _merge_template_sections(agents_md, original, missing, template_sections)
+        after_first = agents_md.read_text()
+
+        # Second merge — re-check missing sections on the merged content
+        missing_after = _check_missing_devloop_sections(after_first)
+        _merge_template_sections(
+            agents_md, after_first, missing_after, template_sections
+        )
+        after_second = agents_md.read_text()
+
+        assert after_first == after_second
