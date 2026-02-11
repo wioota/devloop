@@ -11,8 +11,8 @@ from typer.testing import CliRunner
 
 from devloop.cli.main import (
     _check_missing_devloop_sections,
-    _merge_template_sections,
-    _parse_template_sections,
+    _merge_agents_md,
+    _setup_agents_md,
     app,
 )
 
@@ -432,12 +432,33 @@ class TestCLIIntegration:
             os.chdir(original_cwd)
 
 
-class TestAgentsMdMerge:
-    """Tests for the AGENTS.md template merge functions."""
+class TestSetupAgentsMdMerge:
+    """Tests for _setup_agents_md direct merge behavior."""
 
-    @pytest.fixture
-    def template_content(self):
-        """Load the actual DevLoop template."""
+    def test_merges_missing_sections_directly(self, temp_project_dir):
+        """Test that _setup_agents_md merges missing sections without scaffold."""
+        agents_md = temp_project_dir / "AGENTS.md"
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir(parents=True, exist_ok=True)
+
+        agents_md.write_text("# My Project\n\nSome existing content.\n")
+
+        _setup_agents_md(temp_project_dir, claude_dir)
+
+        result = agents_md.read_text()
+
+        assert "DevLoop Setup Required" not in result
+        assert "ACTION FOR AI ASSISTANT" not in result
+        assert "NO MARKDOWN FILES" in result
+        assert "My Project" in result
+        assert "existing content" in result
+
+    def test_no_merge_when_all_sections_present(self, temp_project_dir):
+        """Test that _setup_agents_md skips merge when all sections present."""
+        agents_md = temp_project_dir / "AGENTS.md"
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir(parents=True, exist_ok=True)
+
         template_path = (
             Path(__file__).parent.parent.parent.parent
             / "src"
@@ -446,32 +467,15 @@ class TestAgentsMdMerge:
             / "templates"
             / "devloop_agents_template.md"
         )
-        return template_path.read_text()
+        original_content = template_path.read_text()
+        agents_md.write_text(original_content)
 
-    def test_parse_template_sections(self, template_content):
-        """Verify template parsing returns expected keys."""
-        sections = _parse_template_sections(template_content)
+        _setup_agents_md(temp_project_dir, claude_dir)
 
-        expected_keys = [
-            "NO MARKDOWN FILES FOR PLANNING",
-            "Task Management with Beads",
-            "Development Discipline",
-            "Pre-Flight Development Checklist",
-            "CI Verification",
-            "Release Process",
-            "Secrets Management & Token Security",
-            "Documentation Practices",
-        ]
-        for key in expected_keys:
-            assert key in sections, f"Missing key: {key}"
+        assert agents_md.read_text() == original_content
 
-        # Each value should be a (heading, content) tuple
-        for key, (heading, content) in sections.items():
-            assert heading.startswith("## ")
-            assert len(content) > len(heading)
-
-    def test_check_missing_sections_returns_tuples(self):
-        """Verify new return type is list of (check_string, display_name) tuples."""
+    def test_check_missing_devloop_sections_returns_tuples(self):
+        """Verify return type is list of (check_string, display_name) tuples."""
         result = _check_missing_devloop_sections("Some content with nothing relevant")
 
         assert isinstance(result, list)
@@ -479,84 +483,86 @@ class TestAgentsMdMerge:
         for item in result:
             assert isinstance(item, tuple)
             assert len(item) == 2
-            check_str, display_name = item
-            assert isinstance(check_str, str)
-            assert isinstance(display_name, str)
 
-    def test_check_missing_sections_all_present(self, template_content):
-        """Verify empty list when all sections are present."""
-        # The template itself should satisfy all checks (via alt strings)
-        result = _check_missing_devloop_sections(template_content)
-        assert result == []
-
-    def test_merge_appends_missing_sections(self, template_content, tmp_path):
-        """Verify sections are appended to AGENTS.md."""
-        agents_md = tmp_path / "AGENTS.md"
-        original = "# My Project\n\nExisting content here.\n"
-        agents_md.write_text(original)
-
-        missing = [
-            ("Secrets Management & Token Security", "Token security"),
-            ("Documentation Practices", "Documentation practices"),
-        ]
-        template_sections = _parse_template_sections(template_content)
-
-        _merge_template_sections(agents_md, original, missing, template_sections)
-
-        result = agents_md.read_text()
-        assert "Existing content here." in result
-        assert "TOKEN SECURITY" in result
-        assert "DOCUMENTATION PRACTICES" in result
-
-    def test_merge_preserves_existing_content(self, template_content, tmp_path):
-        """Verify original content is untouched."""
-        agents_md = tmp_path / "AGENTS.md"
-        original = "# My Project\n\nCustom section about my project.\n\n## My Custom Section\n\nDetails here.\n"
-        agents_md.write_text(original)
-
-        missing = [("CI Verification", "CI verification (pre-push hook)")]
-        template_sections = _parse_template_sections(template_content)
-
-        _merge_template_sections(agents_md, original, missing, template_sections)
-
-        result = agents_md.read_text()
-        assert result.startswith("# My Project\n\nCustom section about my project.")
-        assert "## My Custom Section\n\nDetails here." in result
-
-    def test_no_scaffold_injection(self, template_content, tmp_path):
-        """Verify scaffold text never appears."""
-        agents_md = tmp_path / "AGENTS.md"
-        original = "# My Project\n"
-        agents_md.write_text(original)
-
-        missing = _check_missing_devloop_sections(original)
-        template_sections = _parse_template_sections(template_content)
-
-        _merge_template_sections(agents_md, original, missing, template_sections)
-
-        result = agents_md.read_text()
-        assert "DevLoop Setup Required" not in result
-        assert "ACTION FOR AI ASSISTANT" not in result
-        assert "devloop_agents_template.md" not in result
-
-    def test_merge_idempotent(self, template_content, tmp_path):
-        """Running merge twice doesn't duplicate sections."""
-        agents_md = tmp_path / "AGENTS.md"
-        original = "# My Project\n"
-        agents_md.write_text(original)
-
-        missing = _check_missing_devloop_sections(original)
-        template_sections = _parse_template_sections(template_content)
-
-        # First merge
-        _merge_template_sections(agents_md, original, missing, template_sections)
-        after_first = agents_md.read_text()
-
-        # Second merge — re-check missing sections on the merged content
-        missing_after = _check_missing_devloop_sections(after_first)
-        _merge_template_sections(
-            agents_md, after_first, missing_after, template_sections
+    def test_check_missing_devloop_sections_all_present(self):
+        """Verify empty list when all sections are present in the template."""
+        template_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "src"
+            / "devloop"
+            / "cli"
+            / "templates"
+            / "devloop_agents_template.md"
         )
-        after_second = agents_md.read_text()
+        content = template_path.read_text()
+        assert _check_missing_devloop_sections(content) == []
 
-        assert after_first == after_second
+
+class TestMergeAgentsMd:
+    """Tests for _merge_agents_md section-level dedup merge."""
+
+    def test_adds_missing_sections(self):
+        """New sections from template are appended."""
+        existing = "# Project\n\n## Intro\n\nHello.\n"
+        template = "# Template\n\n## Intro\n\nWorld.\n\n## New Section\n\nContent.\n"
+
+        merged = _merge_agents_md(existing, template)
+
+        assert "## Intro" in merged
+        assert "Hello." in merged
+        assert "## New Section" in merged
+        assert "Content." in merged
+
+    def test_does_not_duplicate_existing_sections(self):
+        """Sections already present are not added again."""
+        existing = "# Project\n\n## Alpha\n\nOne.\n\n## Beta\n\nTwo.\n"
+        template = "# T\n\n## Alpha\n\nTemplate alpha.\n\n## Beta\n\nTemplate beta.\n"
+
+        merged = _merge_agents_md(existing, template)
+
+        assert merged.count("## Alpha") == 1
+        assert merged.count("## Beta") == 1
+        assert "One." in merged
+
+    def test_idempotent_on_repeated_merge(self):
+        """Running merge twice produces the same output."""
+        existing = "# Project\n\n## Existing\n\nKeep me.\n"
+        template = "# Template\n\n## Existing\n\nIgnored.\n\n## Added\n\nNew stuff.\n"
+
+        first = _merge_agents_md(existing, template)
+        second = _merge_agents_md(first, template)
+
+        assert first == second
+
+    def test_emoji_headings_matched(self):
+        """Headings that differ only by leading emoji are treated as the same."""
+        existing = "# P\n\n## ABSOLUTE RULE 1\n\nBody.\n"
+        template = "# T\n\n## ⛔️ ABSOLUTE RULE 1\n\nTemplate body.\n"
+
+        merged = _merge_agents_md(existing, template)
+
+        assert merged.count("ABSOLUTE RULE 1") == 1
+
+    def test_returns_existing_when_no_new_sections(self):
+        """If every template section already exists, return existing verbatim."""
+        existing = "# P\n\n## Foo\n\nBar.\n"
+        template = "# T\n\n## Foo\n\nBaz.\n"
+
+        merged = _merge_agents_md(existing, template)
+
+        assert merged == existing
+
+    def test_preserves_existing_content(self):
+        """Verify original content is untouched after merge."""
+        existing = (
+            "# My Project\n\nCustom intro.\n\n## My Custom Section\n\nDetails here.\n"
+        )
+        template = (
+            "# T\n\n## My Custom Section\n\nTemplate.\n\n## New Section\n\nNew.\n"
+        )
+
+        merged = _merge_agents_md(existing, template)
+
+        assert merged.startswith("# My Project\n\nCustom intro.")
+        assert "## My Custom Section\n\nDetails here." in merged
+        assert "## New Section" in merged

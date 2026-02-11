@@ -705,48 +705,72 @@ def _setup_config(claude_dir: Path, skip_config: bool, non_interactive: bool) ->
     console.print(f"\n[green]✓[/green] Created: {config_file}")
 
 
-def _parse_template_sections(template_content: str) -> dict[str, tuple[str, str]]:
-    """Parse the DevLoop template into sections by ## headings.
+def _normalize_section_title(title: str) -> str:
+    """Normalize a section title for comparison (lowercase, strip emoji/punctuation)."""
+    import re
 
-    Returns a dict mapping check-string identifiers to (heading_line, section_content)
-    tuples. The section_content includes everything from the heading line up to (but not
-    including) the next ## heading or end of file.
+    title = title.lower().strip()
+    # Strip leading emoji sequences and special chars like ⛔️, 🔧, etc.
+    title = re.sub(r"^[\U0001f300-\U0001faff\u2600-\u27bf\ufe0f\s️]+", "", title)
+    # Strip leading punctuation and whitespace
+    title = re.sub(r"^[\W_]+", "", title)
+    return title
+
+
+def _merge_agents_md(existing_content: str, template_content: str) -> str:
+    """Merge template sections into existing AGENTS.md without duplicating.
+
+    Appends only sections from the template that don't already exist in the
+    existing content (matched by normalized heading).  Existing content is
+    preserved verbatim at the top so project-specific customizations are kept.
     """
-    # Maps a substring found in the heading to the check-string used by
-    # _check_missing_devloop_sections().
-    heading_to_check: dict[str, str] = {
-        "NO MARKDOWN FILES": "NO MARKDOWN FILES FOR PLANNING",
-        "BEADS FOR ALL TASK MANAGEMENT": "Task Management with Beads",
-        "COMMIT & PUSH AFTER EVERY TASK": "Development Discipline",
-        "PRE-FLIGHT CHECKLIST": "Pre-Flight Development Checklist",
-        "CI VERIFICATION": "CI Verification",
-        "ESSENTIAL COMMANDS": "Release Process",
-        "TOKEN SECURITY": "Secrets Management & Token Security",
-        "DOCUMENTATION PRACTICES": "Documentation Practices",
-    }
+    import re
 
-    sections: dict[str, tuple[str, str]] = {}
-    lines = template_content.split("\n")
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if line.startswith("## "):
-            heading_line = line
-            # Collect all lines until the next ## heading or EOF
-            section_lines = [line]
-            i += 1
-            while i < len(lines) and not lines[i].startswith("## "):
-                section_lines.append(lines[i])
-                i += 1
-            section_content = "\n".join(section_lines)
-            # Match this heading to a check-string
-            for substr, check_str in heading_to_check.items():
-                if substr in heading_line.upper():
-                    sections[check_str] = (heading_line, section_content)
-                    break
-        else:
-            i += 1
-    return sections
+    heading_re = re.compile(r"^(##)\s+(.+)$", re.MULTILINE)
+
+    def _split_sections(text: str) -> list[tuple[str, str, str]]:
+        """Split markdown into (raw_heading, normalized_title, body) tuples.
+
+        The first tuple may have an empty heading (preamble before any heading).
+        """
+        parts: list[tuple[str, str, str]] = []
+        matches = list(heading_re.finditer(text))
+        if not matches:
+            return [("", "", text)]
+
+        # Preamble before first heading
+        if matches[0].start() > 0:
+            parts.append(("", "", text[: matches[0].start()]))
+
+        for i, m in enumerate(matches):
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            raw_heading = m.group(0)
+            title = m.group(2)
+            body = text[m.end() : end]
+            parts.append((raw_heading, _normalize_section_title(title), body))
+
+        return parts
+
+    existing_sections = _split_sections(existing_content)
+    template_sections = _split_sections(template_content)
+
+    existing_titles = {norm for _, norm, _ in existing_sections if norm}
+
+    new_sections = [
+        (heading, body)
+        for heading, norm, body in template_sections
+        if norm and norm not in existing_titles
+    ]
+
+    if not new_sections:
+        return existing_content
+
+    merged = existing_content.rstrip("\n")
+    merged += "\n\n"
+    for heading, body in new_sections:
+        merged += heading + body
+
+    return merged
 
 
 def _check_missing_devloop_sections(content: str) -> list[tuple[str, str]]:
@@ -814,34 +838,6 @@ def _check_missing_devloop_sections(content: str) -> list[tuple[str, str]]:
     return missing_sections
 
 
-def _merge_template_sections(
-    agents_md: Path,
-    content: str,
-    missing_sections: list[tuple[str, str]],
-    template_sections: dict[str, tuple[str, str]],
-) -> None:
-    """Merge missing DevLoop template sections into existing AGENTS.md."""
-    merged_any = False
-    new_content = content.rstrip("\n")
-
-    for check_str, display_name in missing_sections:
-        if check_str not in template_sections:
-            continue
-        _heading, section_content = template_sections[check_str]
-        # Strip trailing whitespace from section, ensure separator
-        section_text = section_content.rstrip("\n")
-        new_content += "\n\n---\n\n" + section_text
-        console.print(f"  [green]✓[/green] Merged: {display_name}")
-        merged_any = True
-
-    if merged_any:
-        new_content += "\n"
-        agents_md.write_text(new_content)
-        console.print(
-            "\n[green]✓[/green] Updated AGENTS.md with missing DevLoop sections"
-        )
-
-
 def _setup_agents_md(path: Path, claude_dir: Path) -> None:
     """Setup AGENTS.md file."""
     import shutil
@@ -858,9 +854,10 @@ def _setup_agents_md(path: Path, claude_dir: Path) -> None:
 
         if missing_sections:
             template_content = devloop_template.read_text()
-            template_sections = _parse_template_sections(template_content)
-            _merge_template_sections(
-                agents_md, content, missing_sections, template_sections
+            merged = _merge_agents_md(content, template_content)
+            agents_md.write_text(merged)
+            console.print(
+                "[green]✓[/green] Merged missing DevLoop sections into AGENTS.md"
             )
     else:
         # Create new AGENTS.md from template
