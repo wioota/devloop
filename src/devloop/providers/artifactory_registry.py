@@ -37,7 +37,7 @@ class ArtifactoryRegistry(PackageRegistry):
             ARTIFACTORY_PASSWORD: Password
             ARTIFACTORY_REPO: Default repository
         """
-        self.base_url = (base_url or os.getenv("ARTIFACTORY_URL", "")).rstrip("/")
+        self.base_url = (base_url or os.getenv("ARTIFACTORY_URL") or "").rstrip("/")
         self.api_token = api_token or os.getenv("ARTIFACTORY_TOKEN")
         self.username = username or os.getenv("ARTIFACTORY_USER")
         self.password = password or os.getenv("ARTIFACTORY_PASSWORD")

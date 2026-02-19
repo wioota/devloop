@@ -1,7 +1,7 @@
 """Prerequisite validation for DevLoop installation."""
 
 import shutil
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from rich.console import Console
 
@@ -104,7 +104,7 @@ class PrerequisiteChecker:
     @classmethod
     def get_installation_instructions(cls, tool_name: str) -> str:
         """Get installation instructions for a specific tool."""
-        tools = {**cls.REQUIRED_TOOLS, **cls.OPTIONAL_TOOLS}
+        tools: Dict[str, Dict[str, Any]] = {**cls.REQUIRED_TOOLS, **cls.OPTIONAL_TOOLS}
         if tool_name not in tools:
             return f"See documentation for {tool_name}"
 

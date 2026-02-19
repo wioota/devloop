@@ -198,7 +198,7 @@ def _parse_markdown_sections(content: str) -> List[Dict[str, str]]:
     """
     sections = []
     current_title = "Preamble"
-    current_content = []
+    current_content: list[str] = []
 
     for line in content.split("\n"):
         if line.startswith("## "):

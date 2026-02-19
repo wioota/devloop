@@ -60,7 +60,7 @@ class JenkinsProvider(CIProvider):
             JENKINS_TOKEN: Jenkins API token
             JENKINS_JOB: Jenkins job name
         """
-        self.base_url = (base_url or os.getenv("JENKINS_URL", "")).rstrip("/")
+        self.base_url = (base_url or os.getenv("JENKINS_URL") or "").rstrip("/")
         self.username = username or os.getenv("JENKINS_USER")
         self.token = token or os.getenv("JENKINS_TOKEN")
         self.job_name = job_name or os.getenv("JENKINS_JOB")

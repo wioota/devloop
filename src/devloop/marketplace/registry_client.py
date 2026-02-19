@@ -32,6 +32,10 @@ class RegistryClient:
         cache_dir = local_registry.config.registry_dir / "cache"
         self.cache = RegistryCache(cache_dir, ttl_hours=cache_ttl_hours)
 
+        # Remote registry caches
+        self._cache_timestamps: Dict[str, datetime] = {}
+        self._remote_cache: Dict[str, List[AgentMetadata]] = {}
+
     def search(
         self,
         query: str,
@@ -45,7 +49,7 @@ class RegistryClient:
 
         Returns dict with 'local' and 'remote' keys containing results.
         """
-        results = {
+        results: Dict[str, List[AgentMetadata]] = {
             "local": [],
             "remote": [],
         }

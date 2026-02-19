@@ -262,7 +262,7 @@ class AgentRegistry:
         agents = list(self._agents.values())
 
         total_downloads = sum(a.downloads for a in agents)
-        avg_rating = 0
+        avg_rating: float = 0.0
         if agents:
             ratings = [a.rating.average for a in agents if a.rating]
             if ratings:

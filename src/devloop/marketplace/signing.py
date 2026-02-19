@@ -180,7 +180,7 @@ class AgentVerifier:
         Returns:
             Tuple of (is_valid, verification_details)
         """
-        details = {
+        details: Dict[str, Any] = {
             "valid": False,
             "agent_dir": str(agent_dir),
             "checks": {},

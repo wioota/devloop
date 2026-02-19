@@ -12,7 +12,7 @@ try:
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
-    psutil = None
+    psutil = None  # type: ignore[assignment]
 
 from devloop.collectors.base import BaseCollector
 

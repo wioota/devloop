@@ -134,7 +134,7 @@ class AgentMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        data = {
+        data: Dict[str, Any] = {
             "name": self.name,
             "version": self.version,
             "description": self.description,

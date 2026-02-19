@@ -121,7 +121,7 @@ class FindingMapper:
         Returns:
             Dictionary mapping file paths to lists of findings
         """
-        grouped = {}
+        grouped: dict[str, List[Finding]] = {}
         for finding in findings:
             if finding.file:
                 if finding.file not in grouped:

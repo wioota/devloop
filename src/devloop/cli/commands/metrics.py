@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta, UTC
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
@@ -102,7 +102,7 @@ def _filter_events_by_period(
     return filtered
 
 
-def _calculate_time_saved(events: list[dict]) -> dict[str, any]:
+def _calculate_time_saved(events: list[dict]) -> dict[str, Any]:
     """Calculate time saved from value events.
 
     Args:
@@ -134,7 +134,7 @@ def _calculate_time_saved(events: list[dict]) -> dict[str, any]:
     }
 
 
-def _calculate_ci_metrics(events: list[dict]) -> dict[str, any]:
+def _calculate_ci_metrics(events: list[dict]) -> dict[str, Any]:
     """Calculate CI-related metrics.
 
     Args:

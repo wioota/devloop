@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -34,7 +34,7 @@ def get_registry_client() -> RegistryClient:
     registry = AgentRegistry(config)
 
     # TODO: Load remote registry URLs from config
-    remote_urls = []
+    remote_urls: List[str] = []
 
     return RegistryClient(registry, remote_urls)
 

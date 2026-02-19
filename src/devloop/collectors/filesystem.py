@@ -31,7 +31,9 @@ class FileSystemCollector(BaseCollector, FileSystemEventHandler):
             ],
         )
         self.observer = Observer()
-        self._loop = None  # Store reference to the event loop
+        self._loop: asyncio.AbstractEventLoop | None = (
+            None  # Store reference to the event loop
+        )
 
         # Initialize path validator with project root
         project_root = Path.cwd().resolve()

@@ -91,7 +91,7 @@ class PyPIRegistry(PackageRegistry):
             data = json.loads(result.stdout)
             releases = data.get("releases", {})
 
-            versions = []
+            versions: list[PackageVersion] = []
             for version, release_files in sorted(
                 releases.items(),
                 reverse=True,

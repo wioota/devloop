@@ -317,7 +317,7 @@ class CircleCIProvider(CIProvider):
             url,
             method=method,
             headers={
-                "Circle-Token": self.token,
+                "Circle-Token": self.token or "",
                 "Accept": "application/json",
             },
         )

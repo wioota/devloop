@@ -147,10 +147,9 @@ class ReleaseManager:
         # Check 3: CI passes
         ci_check = self._check_ci_passes()
         result.checks.append(ci_check)
+        ci_provider = self.get_ci_provider()
         result.ci_provider_name = (
-            self.get_ci_provider().get_provider_name()
-            if self.get_ci_provider()
-            else None
+            ci_provider.get_provider_name() if ci_provider else None
         )
         if not ci_check.passed:
             result.success = False
@@ -424,7 +423,7 @@ class ReleaseManager:
                     check_name="ci_status",
                     passed=False,
                     message=f"CI failed on '{self.config.branch}'",
-                    details=f"Run {run.id}: {run.conclusion.value}",
+                    details=f"Run {run.id}: {run.conclusion.value if run.conclusion else 'unknown'}",
                 )
 
         except Exception as e:

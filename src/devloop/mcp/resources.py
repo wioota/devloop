@@ -15,7 +15,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List
 
-from mcp.types import Resource
+from mcp.types import AnyUrl, Resource
 
 from devloop import __version__
 from devloop.core.context_store import ContextStore, Tier
@@ -31,37 +31,37 @@ def list_resources() -> List[Resource]:
     """
     return [
         Resource(
-            uri="devloop://findings/immediate",
+            uri=AnyUrl("devloop://findings/immediate"),
             name="Immediate Findings",
             description="Blocking issues that require immediate attention",
             mimeType="application/json",
         ),
         Resource(
-            uri="devloop://findings/relevant",
+            uri=AnyUrl("devloop://findings/relevant"),
             name="Relevant Findings",
             description="Issues to mention at task completion",
             mimeType="application/json",
         ),
         Resource(
-            uri="devloop://findings/background",
+            uri=AnyUrl("devloop://findings/background"),
             name="Background Findings",
             description="Low-priority issues shown on request",
             mimeType="application/json",
         ),
         Resource(
-            uri="devloop://findings/summary",
+            uri=AnyUrl("devloop://findings/summary"),
             name="Findings Summary",
             description="Summary of all findings with counts by tier, severity, and category",
             mimeType="application/json",
         ),
         Resource(
-            uri="devloop://status",
+            uri=AnyUrl("devloop://status"),
             name="DevLoop Status",
             description="Overall DevLoop status including watch daemon state and last update",
             mimeType="application/json",
         ),
         Resource(
-            uri="devloop://agents",
+            uri=AnyUrl("devloop://agents"),
             name="Available Agents",
             description="List of available DevLoop agents and their status",
             mimeType="application/json",

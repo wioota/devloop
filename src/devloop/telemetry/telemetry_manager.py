@@ -113,7 +113,7 @@ class TelemetryManager:
         if not self.enable_traces:
             return
 
-        trace_data = {
+        trace_data: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "span_name": span_name,
             "status": status,

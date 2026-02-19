@@ -352,8 +352,10 @@ class RegistryAPI:
                 data={
                     "agent": name,
                     "rating": rating,
-                    "average_rating": agent.rating.average if agent.rating else 0,
-                    "rating_count": agent.rating.count if agent.rating else 0,
+                    "average_rating": (
+                        agent.rating.average if agent and agent.rating else 0
+                    ),
+                    "rating_count": agent.rating.count if agent and agent.rating else 0,
                 }
             )
         except Exception as e:

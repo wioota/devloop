@@ -25,7 +25,7 @@ from lsprotocol.types import (
 from pygls.server import LanguageServer
 
 from devloop.core.auto_fix import apply_fix
-from devloop.core.context_store import ContextStore
+from devloop.core.context_store import ContextStore, Tier
 from devloop.core.event import Event, EventBus
 from devloop.lsp.mapper import FindingMapper
 
@@ -108,7 +108,7 @@ class DevLoopLanguageServer(LanguageServer):
             # Trigger re-scan by publishing file:modified event
             file_path = self._uri_to_path(uri)
             if file_path and self.event_bus:
-                await self.event_bus.publish(
+                await self.event_bus.emit(
                     Event(
                         type="file:modified",
                         payload={"path": str(file_path)},
@@ -271,7 +271,7 @@ class DevLoopLanguageServer(LanguageServer):
 
         try:
             # Get findings for this file
-            all_findings = await self.context_store.get_findings(tier="immediate")
+            all_findings = await self.context_store.get_findings(tier=Tier.IMMEDIATE)
 
             # Filter findings for this file
             file_findings = [f for f in all_findings if f.file == str(file_path)]

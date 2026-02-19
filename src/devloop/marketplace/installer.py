@@ -248,7 +248,7 @@ class AgentInstaller:
             logger.error(f"Failed to install {agent.name}: {e}")
             return False, str(e)
 
-    def _create_backup(self, agent_name: str) -> Path:
+    def _create_backup(self, agent_name: str) -> Optional[Path]:
         """Create backup of installed agent."""
         agent_dir = self._get_agents_dir() / agent_name
         if not agent_dir.exists():

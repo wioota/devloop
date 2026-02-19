@@ -168,6 +168,7 @@ class PyodideSandbox(SandboxExecutor):
         # Execute in Node.js subprocess
         self._start_timer()
 
+        assert self._node_path is not None
         try:
             process = await asyncio.create_subprocess_exec(
                 self._node_path,

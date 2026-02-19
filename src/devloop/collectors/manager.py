@@ -48,7 +48,7 @@ class CollectorManager:
 
         try:
             collector_class = self._collector_classes[name]
-            collector = collector_class(self.event_bus, config)
+            collector = collector_class(self.event_bus, config)  # type: ignore[arg-type]
             self.collectors[name] = collector
             self.logger.info(f"Created collector: {name}")
             return collector

@@ -9,9 +9,9 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 try:
-    from fastapi import FastAPI, HTTPException, Query, Body, Request
-    from fastapi.responses import JSONResponse
-    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi import FastAPI, HTTPException, Query, Body, Request  # type: ignore[import-not-found]
+    from fastapi.responses import JSONResponse  # type: ignore[import-not-found]
+    from fastapi.middleware.cors import CORSMiddleware  # type: ignore[import-not-found]
 
     FASTAPI_AVAILABLE = True
 except ImportError:

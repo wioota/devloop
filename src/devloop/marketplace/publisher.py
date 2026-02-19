@@ -207,7 +207,7 @@ class AgentPublisher:
         Returns:
             Dict with readiness checks
         """
-        result = {
+        result: Dict[str, Any] = {
             "ready": True,
             "checks": {},
             "warnings": [],
