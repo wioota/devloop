@@ -641,6 +641,40 @@ def _setup_devloop_directory(path: Path) -> Path:
     return claude_dir
 
 
+def _read_init_manifest(claude_dir: Path) -> dict:
+    """Read .devloop/.init-manifest.json, returning defaults if missing or invalid."""
+    import json
+
+    manifest_path = claude_dir / ".init-manifest.json"
+    if not manifest_path.exists():
+        return {"version": None, "managed": []}
+    try:
+        return json.loads(manifest_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {"version": None, "managed": []}
+
+
+def _write_init_manifest(claude_dir: Path, managed_files: list[str]) -> None:
+    """Write init manifest with current version and managed file list."""
+    import json
+
+    from devloop import __version__
+
+    manifest_path = claude_dir / ".init-manifest.json"
+    manifest_path.write_text(
+        json.dumps({"version": __version__, "managed": managed_files}, indent=2)
+        + "\n"
+    )
+
+
+def _needs_upgrade(claude_dir: Path) -> bool:
+    """Return True if manifest is missing, has no version, or version differs."""
+    from devloop import __version__
+
+    manifest = _read_init_manifest(claude_dir)
+    return manifest.get("version") != __version__
+
+
 def _setup_config(claude_dir: Path, skip_config: bool, non_interactive: bool) -> None:
     """Create default configuration."""
     if skip_config:
@@ -904,29 +938,48 @@ def _setup_claude_md(path: Path) -> None:
             )
 
 
-def _setup_claude_commands(path: Path) -> None:
-    """Setup Claude Code slash commands."""
+def _setup_claude_commands(path: Path) -> tuple[list[str], int]:
+    """Setup Claude Code slash commands.
+
+    Returns:
+        Tuple of (managed_paths, updated_count) where managed_paths are
+        relative paths like ".claude/commands/verify-work.md" and
+        updated_count is the number of existing files that were overwritten.
+    """
     import shutil
 
     claude_commands_dir = path / ".claude" / "commands"
     template_commands_dir = Path(__file__).parent / "templates" / "claude_commands"
 
     if not template_commands_dir.exists():
-        return
+        return [], 0
 
     claude_commands_dir.mkdir(parents=True, exist_ok=True)
 
-    commands_copied = []
+    managed_paths: list[str] = []
+    updated_count = 0
     for template_file in template_commands_dir.glob("*.md"):
         dest_file = claude_commands_dir / template_file.name
-        if not dest_file.exists():
-            shutil.copy2(template_file, dest_file)
-            commands_copied.append(template_file.stem)
+        if dest_file.exists():
+            # Back up the existing file before overwriting
+            backup_file = dest_file.with_suffix(".md.backup")
+            shutil.copy2(dest_file, backup_file)
+            updated_count += 1
+        shutil.copy2(template_file, dest_file)
+        managed_paths.append(f".claude/commands/{template_file.name}")
 
-    if commands_copied:
-        console.print("\n[green]✓[/green] Created Claude Code slash commands:")
-        for cmd in commands_copied:
-            console.print(f"  • /{cmd}")
+    new_count = len(managed_paths) - updated_count
+    if managed_paths:
+        if updated_count:
+            console.print(
+                f"\n[green]✓[/green] Updated {updated_count} command(s)"
+            )
+        if new_count:
+            console.print(
+                f"\n[green]✓[/green] Created {new_count} command(s)"
+            )
+
+    return managed_paths, updated_count
 
 
 def _setup_git_hooks(path: Path) -> None:
@@ -1212,18 +1265,23 @@ exit 0
 """,
     }
 
-    hooks_created = []
+    managed_paths = []
+    updated_count = 0
     for hook_name, hook_content in hooks.items():
         hook_file = agents_hooks_dir / hook_name
-        if not hook_file.exists():
-            hook_file.write_text(hook_content)
-            hook_file.chmod(0o755)
-            hooks_created.append(hook_name)
+        if hook_file.exists():
+            # Back up the existing file before overwriting
+            backup_file = hook_file.with_suffix(".backup")
+            backup_file.write_text(hook_file.read_text())
+            updated_count += 1
+        hook_file.write_text(hook_content)
+        hook_file.chmod(0o755)
+        managed_paths.append(f".agents/hooks/{hook_name}")
 
-    return hooks_created
+    return managed_paths, updated_count
 
 
-def _create_claude_settings_json(path: Path) -> bool:
+def _create_claude_settings_json(path: Path, upgrade: bool = False) -> str | None:
     """Create project-level .claude/settings.json with hook registrations.
 
     This registers hooks at the project level so they work automatically
@@ -1231,9 +1289,12 @@ def _create_claude_settings_json(path: Path) -> bool:
 
     Args:
         path: Project root directory
+        upgrade: When True, overwrite the entire hooks section with the new
+            template.  When False, only add missing hook event types.
 
     Returns:
-        True if settings.json was created or updated, False if unchanged
+        ".claude/settings.json" if the file was created or updated, None if
+        unchanged.  The string is a relative path suitable for the init manifest.
     """
     import json
 
@@ -1242,55 +1303,53 @@ def _create_claude_settings_json(path: Path) -> bool:
     settings_file = claude_dir / "settings.json"
 
     # Hook configuration using relative paths from project root
-    hooks_config = {
-        "hooks": {
-            "SessionStart": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": ".agents/hooks/claude-session-start",
-                        }
-                    ],
-                }
-            ],
-            "Stop": [
-                {
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": ".agents/hooks/claude-stop",
-                        }
-                    ],
-                }
-            ],
-            "PreToolUse": [
-                {
-                    "matcher": "Write|Edit",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": ".agents/hooks/claude-file-protection",
-                        },
-                        {
-                            "type": "command",
-                            "command": ".agents/hooks/check-devloop-context",
-                        },
-                    ],
-                }
-            ],
-            "PostToolUse": [
-                {
-                    "matcher": "Edit|Write",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": ".agents/hooks/claude-post-tool-use",
-                        }
-                    ],
-                }
-            ],
-        }
+    new_hooks = {
+        "SessionStart": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/claude-session-start",
+                    }
+                ],
+            }
+        ],
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/claude-stop",
+                    }
+                ],
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/claude-file-protection",
+                    },
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/check-devloop-context",
+                    },
+                ],
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".agents/hooks/claude-post-tool-use",
+                    }
+                ],
+            }
+        ],
     }
 
     # Load existing settings if present
@@ -1302,24 +1361,31 @@ def _create_claude_settings_json(path: Path) -> bool:
         except (json.JSONDecodeError, OSError):
             pass
 
-    # Merge hooks into existing settings (don't overwrite other settings)
-    if "hooks" not in existing_settings:
-        existing_settings["hooks"] = {}
-
-    # Only add hooks that don't already exist
     changed = False
-    for hook_name, hook_config in hooks_config["hooks"].items():
-        if hook_name not in existing_settings["hooks"]:
-            existing_settings["hooks"][hook_name] = hook_config
+
+    if upgrade:
+        # On upgrade, replace the entire hooks section with the new template
+        # but preserve all non-hooks settings (e.g. "permissions")
+        if existing_settings.get("hooks") != new_hooks:
+            existing_settings["hooks"] = new_hooks
             changed = True
+    else:
+        # Only add hook event types that don't already exist
+        if "hooks" not in existing_settings:
+            existing_settings["hooks"] = {}
+
+        for hook_name, hook_config in new_hooks.items():
+            if hook_name not in existing_settings["hooks"]:
+                existing_settings["hooks"][hook_name] = hook_config
+                changed = True
 
     if changed:
         with open(settings_file, "w") as f:
             json.dump(existing_settings, f, indent=2)
             f.write("\n")
-        return True
+        return ".claude/settings.json"
 
-    return False
+    return None
 
 
 def _setup_mcp_server(path: Path) -> None:
@@ -1352,15 +1418,31 @@ def _setup_mcp_server(path: Path) -> None:
 
 
 def _setup_claude_hooks(
-    path: Path, agents_hooks_dir: Path, non_interactive: bool
-) -> None:
-    """Setup Claude Code hooks."""
-    hooks_created = _create_claude_hooks(agents_hooks_dir)
+    path: Path, agents_hooks_dir: Path, non_interactive: bool, upgrade: bool = False
+) -> list:
+    """Setup Claude Code hooks.
 
-    if hooks_created:
-        console.print("\n[green]✓[/green] Created Claude Code hooks:")
-        for hook in hooks_created:
-            console.print(f"  • {hook}")
+    Args:
+        path: Project root directory.
+        agents_hooks_dir: Directory for agent hook scripts.
+        non_interactive: Skip interactive prompts.
+        upgrade: When True, overwrite hooks in settings.json with new template.
+
+    Returns:
+        List of relative managed paths (e.g. [".agents/hooks/claude-session-start", ...]).
+    """
+    managed_paths, updated_count = _create_claude_hooks(agents_hooks_dir)
+    new_count = len(managed_paths) - updated_count
+
+    if managed_paths:
+        if updated_count:
+            console.print(
+                f"\n[green]✓[/green] Updated {updated_count} hook script(s)"
+            )
+        if new_count:
+            console.print(
+                f"\n[green]✓[/green] Created {new_count} hook script(s)"
+            )
 
         install_hooks = True
         if not non_interactive:
@@ -1388,15 +1470,15 @@ def _setup_claude_hooks(
                     console.print(f"[yellow]⚠[/yellow] Hook installation error: {e}")
                     console.print("To install manually, run:")
                     console.print(f"  {install_hook_script} {path}")
-    else:
-        console.print("\n[green]✓[/green] Claude Code hooks already exist")
 
     # Create project-level .claude/settings.json with hook registrations
-    settings_created = _create_claude_settings_json(path)
-    if settings_created:
+    settings_path = _create_claude_settings_json(path, upgrade=upgrade)
+    if settings_path:
         console.print(
             "[green]✓[/green] Created .claude/settings.json with hook registrations"
         )
+
+    return managed_paths
 
 
 @app.command()

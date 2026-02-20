@@ -11,8 +11,14 @@ from typer.testing import CliRunner
 
 from devloop.cli.main import (
     _check_missing_devloop_sections,
+    _create_claude_hooks,
+    _create_claude_settings_json,
     _merge_agents_md,
+    _needs_upgrade,
+    _read_init_manifest,
     _setup_agents_md,
+    _setup_claude_commands,
+    _write_init_manifest,
     app,
 )
 
@@ -566,3 +572,327 @@ class TestMergeAgentsMd:
         assert merged.startswith("# My Project\n\nCustom intro.")
         assert "## My Custom Section\n\nDetails here." in merged
         assert "## New Section" in merged
+
+
+class TestInitManifest:
+    """Tests for _read_init_manifest, _write_init_manifest, _needs_upgrade."""
+
+    def test_read_manifest_missing_file(self, temp_project_dir):
+        """Returns default dict when file doesn't exist."""
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+
+        result = _read_init_manifest(claude_dir)
+
+        assert result == {"version": None, "managed": []}
+
+    def test_read_manifest_valid(self, temp_project_dir):
+        """Reads valid JSON correctly."""
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+        manifest = claude_dir / ".init-manifest.json"
+        manifest.write_text(json.dumps({"version": "1.2.3", "managed": ["a.json"]}))
+
+        result = _read_init_manifest(claude_dir)
+
+        assert result == {"version": "1.2.3", "managed": ["a.json"]}
+
+    def test_write_manifest_creates_file(self, temp_project_dir):
+        """Writes correct JSON with version."""
+        from devloop import __version__
+
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+
+        _write_init_manifest(claude_dir, ["hooks.json", "settings.json"])
+
+        manifest = claude_dir / ".init-manifest.json"
+        assert manifest.exists()
+
+        data = json.loads(manifest.read_text())
+        assert data["version"] == __version__
+        assert data["managed"] == ["hooks.json", "settings.json"]
+
+    def test_needs_upgrade_missing_manifest(self, temp_project_dir):
+        """Returns True when no manifest exists."""
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+
+        assert _needs_upgrade(claude_dir) is True
+
+    def test_needs_upgrade_older_version(self, temp_project_dir):
+        """Returns True when manifest has older version."""
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+        manifest = claude_dir / ".init-manifest.json"
+        manifest.write_text(json.dumps({"version": "0.0.1", "managed": []}))
+
+        assert _needs_upgrade(claude_dir) is True
+
+    def test_needs_upgrade_same_version(self, temp_project_dir):
+        """Returns False when versions match."""
+        from devloop import __version__
+
+        claude_dir = temp_project_dir / ".devloop"
+        claude_dir.mkdir()
+        manifest = claude_dir / ".init-manifest.json"
+        manifest.write_text(json.dumps({"version": __version__, "managed": []}))
+
+        assert _needs_upgrade(claude_dir) is False
+
+
+class TestCreateClaudeHooks:
+    """Tests for _create_claude_hooks upgrade behavior."""
+
+    def test_create_claude_hooks_overwrites_existing(self, temp_project_dir):
+        """Create a hook file with old content, call _create_claude_hooks, verify new content."""
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        hooks_dir.mkdir(parents=True)
+
+        # Plant an old hook
+        old_content = "#!/bin/bash\necho old\n"
+        hook_file = hooks_dir / "claude-session-start"
+        hook_file.write_text(old_content)
+
+        managed_paths, updated_count = _create_claude_hooks(hooks_dir)
+
+        new_content = hook_file.read_text()
+        assert new_content != old_content
+        assert "SessionStart hook" in new_content
+        assert updated_count >= 1
+
+    def test_create_claude_hooks_backs_up_existing(self, temp_project_dir):
+        """Create a hook file, call _create_claude_hooks, verify .backup file exists."""
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        hooks_dir.mkdir(parents=True)
+
+        old_content = "#!/bin/bash\necho old\n"
+        hook_file = hooks_dir / "claude-session-start"
+        hook_file.write_text(old_content)
+
+        _create_claude_hooks(hooks_dir)
+
+        backup_file = hook_file.with_suffix(".backup")
+        assert backup_file.exists()
+        assert backup_file.read_text() == old_content
+
+    def test_create_claude_hooks_returns_managed_paths(self, temp_project_dir):
+        """Verify return value contains relative paths and updated count."""
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        hooks_dir.mkdir(parents=True)
+
+        managed_paths, updated_count = _create_claude_hooks(hooks_dir)
+
+        # All paths should be relative, starting with .agents/hooks/
+        assert len(managed_paths) > 0
+        for p in managed_paths:
+            assert p.startswith(".agents/hooks/")
+
+        # No pre-existing files, so updated_count should be 0
+        assert updated_count == 0
+
+    def test_create_claude_hooks_new_files_executable(self, temp_project_dir):
+        """Verify newly created hook files are executable."""
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        hooks_dir.mkdir(parents=True)
+
+        _create_claude_hooks(hooks_dir)
+
+        for hook_file in hooks_dir.iterdir():
+            if hook_file.is_file() and not hook_file.suffix == ".backup":
+                assert hook_file.stat().st_mode & 0o755
+
+
+class TestSetupClaudeCommands:
+    """Tests for _setup_claude_commands upgrade behavior."""
+
+    def test_setup_claude_commands_overwrites_existing(self, temp_project_dir):
+        """Create a command file with old content, call function, verify overwritten."""
+        commands_dir = temp_project_dir / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+
+        # Plant an old command file matching a known template name
+        old_content = "# Old verify-work command\nThis is outdated.\n"
+        cmd_file = commands_dir / "verify-work.md"
+        cmd_file.write_text(old_content)
+
+        managed_paths, updated_count = _setup_claude_commands(temp_project_dir)
+
+        new_content = cmd_file.read_text()
+        assert new_content != old_content
+        assert "verify-work" in new_content.lower() or "verification" in new_content.lower()
+        assert updated_count >= 1
+
+    def test_setup_claude_commands_backs_up_existing(self, temp_project_dir):
+        """Create a command file, call function, verify .md.backup exists with old content."""
+        commands_dir = temp_project_dir / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+
+        old_content = "# Old verify-work command\nThis is outdated.\n"
+        cmd_file = commands_dir / "verify-work.md"
+        cmd_file.write_text(old_content)
+
+        _setup_claude_commands(temp_project_dir)
+
+        backup_file = cmd_file.with_suffix(".md.backup")
+        assert backup_file.exists()
+        assert backup_file.read_text() == old_content
+
+    def test_setup_claude_commands_returns_managed_paths(self, temp_project_dir):
+        """Verify return contains relative paths starting with '.claude/commands/'."""
+        managed_paths, updated_count = _setup_claude_commands(temp_project_dir)
+
+        # Should have created command files
+        assert len(managed_paths) > 0
+        for p in managed_paths:
+            assert p.startswith(".claude/commands/")
+
+        # No pre-existing files, so updated_count should be 0
+        assert updated_count == 0
+
+
+class TestCreateClaudeSettingsJson:
+    """Tests for _create_claude_settings_json upgrade behavior."""
+
+    def test_settings_json_overwrites_hooks_on_upgrade(self, temp_project_dir):
+        """Create settings.json with old hooks, call with upgrade=True, verify hooks replaced."""
+        claude_dir = temp_project_dir / ".claude"
+        claude_dir.mkdir(parents=True)
+        settings_file = claude_dir / "settings.json"
+
+        # Write old hooks config that differs from the current template
+        old_settings = {
+            "hooks": {
+                "SessionStart": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": ".agents/hooks/old-session-start",
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+        settings_file.write_text(json.dumps(old_settings, indent=2))
+
+        result = _create_claude_settings_json(temp_project_dir, upgrade=True)
+
+        # Should return the managed path string
+        assert result == ".claude/settings.json"
+
+        # Re-read and verify hooks were fully replaced
+        new_settings = json.loads(settings_file.read_text())
+        hooks = new_settings["hooks"]
+
+        # The old "old-session-start" command should be gone
+        session_start_cmds = [
+            h["command"]
+            for entry in hooks.get("SessionStart", [])
+            for h in entry.get("hooks", [])
+        ]
+        assert ".agents/hooks/old-session-start" not in session_start_cmds
+        assert ".agents/hooks/claude-session-start" in session_start_cmds
+
+        # All four event types should be present
+        assert "SessionStart" in hooks
+        assert "Stop" in hooks
+        assert "PreToolUse" in hooks
+        assert "PostToolUse" in hooks
+
+    def test_settings_json_preserves_non_hook_settings(self, temp_project_dir):
+        """Create settings.json with hooks + permissions, call with upgrade=True, verify permissions kept."""
+        claude_dir = temp_project_dir / ".claude"
+        claude_dir.mkdir(parents=True)
+        settings_file = claude_dir / "settings.json"
+
+        old_settings = {
+            "permissions": {
+                "allow": ["Bash(git *)"],
+                "deny": ["Bash(rm -rf /*)"],
+            },
+            "hooks": {
+                "SessionStart": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": ".agents/hooks/old-hook",
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+        settings_file.write_text(json.dumps(old_settings, indent=2))
+
+        result = _create_claude_settings_json(temp_project_dir, upgrade=True)
+
+        assert result == ".claude/settings.json"
+
+        new_settings = json.loads(settings_file.read_text())
+
+        # Permissions must be preserved exactly
+        assert new_settings["permissions"] == {
+            "allow": ["Bash(git *)"],
+            "deny": ["Bash(rm -rf /*)"],
+        }
+
+        # Hooks must be the new template (old hook gone)
+        session_start_cmds = [
+            h["command"]
+            for entry in new_settings["hooks"].get("SessionStart", [])
+            for h in entry.get("hooks", [])
+        ]
+        assert ".agents/hooks/old-hook" not in session_start_cmds
+        assert ".agents/hooks/claude-session-start" in session_start_cmds
+
+    def test_settings_json_no_upgrade_skips_existing_hooks(self, temp_project_dir):
+        """Without upgrade, existing hook event types are not overwritten."""
+        claude_dir = temp_project_dir / ".claude"
+        claude_dir.mkdir(parents=True)
+        settings_file = claude_dir / "settings.json"
+
+        old_settings = {
+            "hooks": {
+                "SessionStart": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": ".agents/hooks/old-session-start",
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+        settings_file.write_text(json.dumps(old_settings, indent=2))
+
+        result = _create_claude_settings_json(temp_project_dir, upgrade=False)
+
+        new_settings = json.loads(settings_file.read_text())
+
+        # SessionStart should still have old content (not overwritten)
+        session_start_cmds = [
+            h["command"]
+            for entry in new_settings["hooks"].get("SessionStart", [])
+            for h in entry.get("hooks", [])
+        ]
+        assert ".agents/hooks/old-session-start" in session_start_cmds
+
+        # But missing event types should be added
+        assert "Stop" in new_settings["hooks"]
+        assert "PreToolUse" in new_settings["hooks"]
+        assert "PostToolUse" in new_settings["hooks"]
+
+    def test_settings_json_returns_none_when_unchanged(self, temp_project_dir):
+        """When upgrade=False and all hooks exist, return None (no change)."""
+        # First call to create the full settings
+        _create_claude_settings_json(temp_project_dir, upgrade=False)
+
+        # Second call should find nothing to change
+        result = _create_claude_settings_json(temp_project_dir, upgrade=False)
+
+        assert result is None
