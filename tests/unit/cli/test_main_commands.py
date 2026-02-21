@@ -720,7 +720,10 @@ class TestSetupClaudeCommands:
 
         new_content = cmd_file.read_text()
         assert new_content != old_content
-        assert "verify-work" in new_content.lower() or "verification" in new_content.lower()
+        assert (
+            "verify-work" in new_content.lower()
+            or "verification" in new_content.lower()
+        )
         assert updated_count >= 1
 
     def test_setup_claude_commands_backs_up_existing(self, temp_project_dir):
@@ -896,3 +899,86 @@ class TestCreateClaudeSettingsJson:
         result = _create_claude_settings_json(temp_project_dir, upgrade=False)
 
         assert result is None
+
+
+class TestInitManifestIntegration:
+    """Integration tests for init() with manifest and stale file cleanup."""
+
+    def test_init_creates_manifest_on_fresh_init(self, cli_runner, temp_project_dir):
+        """Run init on a fresh temp dir, verify manifest exists with correct data."""
+        from devloop import __version__
+
+        result = cli_runner.invoke(
+            app,
+            ["init", str(temp_project_dir), "--non-interactive", "--skip-config"],
+        )
+
+        assert result.exit_code == 0
+
+        manifest_path = temp_project_dir / ".devloop" / ".init-manifest.json"
+        assert manifest_path.exists(), "Manifest file should be created by init"
+
+        data = json.loads(manifest_path.read_text())
+        assert data["version"] == __version__
+        assert isinstance(data["managed"], list)
+        assert len(data["managed"]) > 0
+
+        # Should contain paths from commands and hooks
+        has_commands = any(p.startswith(".claude/commands/") for p in data["managed"])
+        has_hooks = any(p.startswith(".agents/hooks/") for p in data["managed"])
+        assert has_commands, f"Expected .claude/commands/ in managed: {data['managed']}"
+        assert has_hooks, f"Expected .agents/hooks/ in managed: {data['managed']}"
+
+    def test_init_removes_stale_files_on_upgrade(self, cli_runner, temp_project_dir):
+        """Stale files from old manifest are removed and backed up on re-init."""
+        # 1. Set up a fake old manifest with a stale managed file
+        devloop_dir = temp_project_dir / ".devloop"
+        devloop_dir.mkdir(parents=True, exist_ok=True)
+
+        stale_rel = ".agents/hooks/obsolete-hook"
+        stale_file = temp_project_dir / stale_rel
+        stale_file.parent.mkdir(parents=True, exist_ok=True)
+        stale_file.write_text("#!/bin/bash\necho obsolete\n")
+
+        old_manifest = {"version": "0.0.1", "managed": [stale_rel]}
+        (devloop_dir / ".init-manifest.json").write_text(json.dumps(old_manifest))
+
+        # 2. Run init which will create a new manifest without the stale file
+        result = cli_runner.invoke(
+            app,
+            ["init", str(temp_project_dir), "--non-interactive", "--skip-config"],
+        )
+
+        assert result.exit_code == 0
+
+        # 3. The stale file should be removed
+        assert not stale_file.exists(), "Stale file should have been removed"
+
+        # 4. A backup should exist
+        backup_file = stale_file.with_suffix(".backup")
+        assert backup_file.exists(), "Backup of stale file should exist"
+        assert backup_file.read_text() == "#!/bin/bash\necho obsolete\n"
+
+        # 5. Output should mention the removal
+        assert "Removed stale" in result.stdout
+
+    def test_init_preserves_user_files_not_in_manifest(
+        self, cli_runner, temp_project_dir
+    ):
+        """Custom user files not tracked in manifest are left untouched."""
+        # Create the custom file before init
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        hooks_dir.mkdir(parents=True, exist_ok=True)
+        custom_hook = hooks_dir / "my-custom-hook"
+        custom_hook.write_text("#!/bin/bash\necho custom\n")
+
+        result = cli_runner.invoke(
+            app,
+            ["init", str(temp_project_dir), "--non-interactive", "--skip-config"],
+        )
+
+        assert result.exit_code == 0
+
+        # Custom file should still be there, untouched
+        assert custom_hook.exists(), "Custom hook should not be removed"
+        assert custom_hook.read_text() == "#!/bin/bash\necho custom\n"

@@ -662,8 +662,7 @@ def _write_init_manifest(claude_dir: Path, managed_files: list[str]) -> None:
 
     manifest_path = claude_dir / ".init-manifest.json"
     manifest_path.write_text(
-        json.dumps({"version": __version__, "managed": managed_files}, indent=2)
-        + "\n"
+        json.dumps({"version": __version__, "managed": managed_files}, indent=2) + "\n"
     )
 
 
@@ -971,13 +970,9 @@ def _setup_claude_commands(path: Path) -> tuple[list[str], int]:
     new_count = len(managed_paths) - updated_count
     if managed_paths:
         if updated_count:
-            console.print(
-                f"\n[green]✓[/green] Updated {updated_count} command(s)"
-            )
+            console.print(f"\n[green]✓[/green] Updated {updated_count} command(s)")
         if new_count:
-            console.print(
-                f"\n[green]✓[/green] Created {new_count} command(s)"
-            )
+            console.print(f"\n[green]✓[/green] Created {new_count} command(s)")
 
     return managed_paths, updated_count
 
@@ -1436,13 +1431,9 @@ def _setup_claude_hooks(
 
     if managed_paths:
         if updated_count:
-            console.print(
-                f"\n[green]✓[/green] Updated {updated_count} hook script(s)"
-            )
+            console.print(f"\n[green]✓[/green] Updated {updated_count} hook script(s)")
         if new_count:
-            console.print(
-                f"\n[green]✓[/green] Created {new_count} hook script(s)"
-            )
+            console.print(f"\n[green]✓[/green] Created {new_count} hook script(s)")
 
         install_hooks = True
         if not non_interactive:
@@ -1474,6 +1465,7 @@ def _setup_claude_hooks(
     # Create project-level .claude/settings.json with hook registrations
     settings_path = _create_claude_settings_json(path, upgrade=upgrade)
     if settings_path:
+        managed_paths.append(settings_path)
         console.print(
             "[green]✓[/green] Created .claude/settings.json with hook registrations"
         )
@@ -1492,8 +1484,14 @@ def init(
     ),
 ):
     """Initialize devloop in a project."""
+    import shutil
+
     # Setup .devloop directory
     claude_dir = _setup_devloop_directory(path)
+
+    # Read old manifest and check if upgrade is needed
+    old_manifest = _read_init_manifest(claude_dir)
+    upgrade = _needs_upgrade(claude_dir)
 
     # Create default configuration
     _setup_config(claude_dir, skip_config, non_interactive)
@@ -1504,19 +1502,43 @@ def init(
     # Setup CLAUDE.md symlink
     _setup_claude_md(path)
 
-    # Setup Claude Code slash commands
-    _setup_claude_commands(path)
+    # Setup Claude Code slash commands — collect managed paths
+    managed_files: list[str] = []
+    cmd_paths, _cmd_updated = _setup_claude_commands(path)
+    managed_files.extend(cmd_paths)
 
-    # Setup git hooks
+    # Setup git hooks (managed separately by update-hooks, not tracked in manifest)
     _setup_git_hooks(path)
 
-    # Setup Claude Code hooks
+    # Setup Claude Code hooks — collect managed paths
     agents_hooks_dir = path / ".agents" / "hooks"
     agents_hooks_dir.mkdir(parents=True, exist_ok=True)
-    _setup_claude_hooks(path, agents_hooks_dir, non_interactive)
+    hook_paths = _setup_claude_hooks(
+        path, agents_hooks_dir, non_interactive, upgrade=upgrade
+    )
+    managed_files.extend(hook_paths)
 
     # Register MCP server with Claude Code
     _setup_mcp_server(path)
+
+    # Clean up stale files from previous init
+    stale = set(old_manifest.get("managed", [])) - set(managed_files)
+    for stale_rel in sorted(stale):
+        stale_path = path / stale_rel
+        if stale_path.exists():
+            backup_path = stale_path.with_suffix(".backup")
+            shutil.copy2(stale_path, backup_path)
+            stale_path.unlink()
+            console.print(f"Removed stale: {stale_rel}")
+
+    # Write new manifest
+    _write_init_manifest(claude_dir, managed_files)
+
+    # Print upgrade summary if applicable
+    if upgrade and old_manifest.get("version"):
+        from devloop import __version__
+
+        console.print(f"\nUpdated from v{old_manifest['version']} → v{__version__}")
 
     console.print("\n[green]✓[/green] Initialized!")
     console.print("\nNext steps:")
