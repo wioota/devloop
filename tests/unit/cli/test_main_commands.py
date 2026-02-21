@@ -1008,32 +1008,32 @@ class TestInitManifestIntegration:
 
         # Manifest should be identical between runs
         manifest_after_second = manifest_path.read_text()
-        assert manifest_after_first == manifest_after_second, (
-            "Manifest should be unchanged on same-version re-init"
-        )
+        assert (
+            manifest_after_first == manifest_after_second
+        ), "Manifest should be unchanged on same-version re-init"
 
         # No .backup files should have been created in .agents/hooks/
         hooks_dir = temp_project_dir / ".agents" / "hooks"
         if hooks_dir.exists():
             backup_hooks = list(hooks_dir.glob("*.backup"))
-            assert backup_hooks == [], (
-                f"No backup hooks expected on same-version re-init, found: {backup_hooks}"
-            )
+            assert (
+                backup_hooks == []
+            ), f"No backup hooks expected on same-version re-init, found: {backup_hooks}"
 
         # No .backup files should have been created in .claude/commands/
         commands_dir = temp_project_dir / ".claude" / "commands"
         if commands_dir.exists():
             backup_commands = list(commands_dir.glob("*.backup"))
-            assert backup_commands == [], (
-                f"No backup commands expected on same-version re-init, found: {backup_commands}"
-            )
+            assert (
+                backup_commands == []
+            ), f"No backup commands expected on same-version re-init, found: {backup_commands}"
 
         # No "Removed stale" messages in second run output
-        assert "Removed stale" not in result2.stdout, (
-            "No stale file removal expected on same-version re-init"
-        )
+        assert (
+            "Removed stale" not in result2.stdout
+        ), "No stale file removal expected on same-version re-init"
 
         # No "Updated from" messages in second run output
-        assert "Updated from" not in result2.stdout, (
-            "No upgrade message expected on same-version re-init"
-        )
+        assert (
+            "Updated from" not in result2.stdout
+        ), "No upgrade message expected on same-version re-init"
