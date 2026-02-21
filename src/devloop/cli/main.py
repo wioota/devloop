@@ -960,6 +960,12 @@ def _setup_claude_commands(path: Path) -> tuple[list[str], int]:
     for template_file in template_commands_dir.glob("*.md"):
         dest_file = claude_commands_dir / template_file.name
         if dest_file.exists():
+            existing_content = dest_file.read_text()
+            template_content = template_file.read_text()
+            if existing_content == template_content:
+                # Content is identical, skip backup and overwrite
+                managed_paths.append(f".claude/commands/{template_file.name}")
+                continue
             # Back up the existing file before overwriting
             backup_file = dest_file.with_suffix(".md.backup")
             shutil.copy2(dest_file, backup_file)
@@ -1265,9 +1271,14 @@ exit 0
     for hook_name, hook_content in hooks.items():
         hook_file = agents_hooks_dir / hook_name
         if hook_file.exists():
+            existing_content = hook_file.read_text()
+            if existing_content == hook_content:
+                # Content is identical, skip backup and overwrite
+                managed_paths.append(f".agents/hooks/{hook_name}")
+                continue
             # Back up the existing file before overwriting
             backup_file = hook_file.with_suffix(".backup")
-            backup_file.write_text(hook_file.read_text())
+            backup_file.write_text(existing_content)
             updated_count += 1
         hook_file.write_text(hook_content)
         hook_file.chmod(0o755)
@@ -1469,6 +1480,9 @@ def _setup_claude_hooks(
         console.print(
             "[green]✓[/green] Created .claude/settings.json with hook registrations"
         )
+    elif (path / ".claude" / "settings.json").exists():
+        # File exists but was unchanged -- still track it in the manifest
+        managed_paths.append(".claude/settings.json")
 
     return managed_paths
 

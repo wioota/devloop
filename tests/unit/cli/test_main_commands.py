@@ -982,3 +982,58 @@ class TestInitManifestIntegration:
         # Custom file should still be there, untouched
         assert custom_hook.exists(), "Custom hook should not be removed"
         assert custom_hook.read_text() == "#!/bin/bash\necho custom\n"
+
+    def test_init_idempotent(self, cli_runner, temp_project_dir):
+        """Running init twice with same devloop version produces no backups or upgrade messages."""
+        runner = CliRunner()
+
+        # First init: set up everything
+        result1 = runner.invoke(
+            app,
+            ["init", str(temp_project_dir), "--non-interactive", "--skip-config"],
+        )
+        assert result1.exit_code == 0
+
+        # Snapshot manifest after first init
+        manifest_path = temp_project_dir / ".devloop" / ".init-manifest.json"
+        assert manifest_path.exists()
+        manifest_after_first = manifest_path.read_text()
+
+        # Second init: same version, nothing should change
+        result2 = runner.invoke(
+            app,
+            ["init", str(temp_project_dir), "--non-interactive", "--skip-config"],
+        )
+        assert result2.exit_code == 0
+
+        # Manifest should be identical between runs
+        manifest_after_second = manifest_path.read_text()
+        assert manifest_after_first == manifest_after_second, (
+            "Manifest should be unchanged on same-version re-init"
+        )
+
+        # No .backup files should have been created in .agents/hooks/
+        hooks_dir = temp_project_dir / ".agents" / "hooks"
+        if hooks_dir.exists():
+            backup_hooks = list(hooks_dir.glob("*.backup"))
+            assert backup_hooks == [], (
+                f"No backup hooks expected on same-version re-init, found: {backup_hooks}"
+            )
+
+        # No .backup files should have been created in .claude/commands/
+        commands_dir = temp_project_dir / ".claude" / "commands"
+        if commands_dir.exists():
+            backup_commands = list(commands_dir.glob("*.backup"))
+            assert backup_commands == [], (
+                f"No backup commands expected on same-version re-init, found: {backup_commands}"
+            )
+
+        # No "Removed stale" messages in second run output
+        assert "Removed stale" not in result2.stdout, (
+            "No stale file removal expected on same-version re-init"
+        )
+
+        # No "Updated from" messages in second run output
+        assert "Updated from" not in result2.stdout, (
+            "No upgrade message expected on same-version re-init"
+        )
