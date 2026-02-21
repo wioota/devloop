@@ -1,0 +1,20 @@
+{
+  "name": "devloop-test-runner",
+  "version": "0.9.0",
+  "description": "Runs tests on file changes with smart related-test detection. Auto-detects pytest, unittest, jest, and mocha. Supports run-on-save and project context awareness.",
+  "author": "DevLoop",
+  "license": "MIT",
+  "repository": "https://github.com/wioota/devloop",
+  "keywords": ["testing", "pytest", "jest", "test-runner", "auto-test"],
+  "categories": ["testing", "code-quality"],
+  "python_version": ">=3.11",
+  "devloop_version": ">=0.9.0",
+  "dependencies": [
+    {
+      "name": "devloop-linter",
+      "version": ">=0.9.0",
+      "optional": false,
+      "description": "Lint before testing to catch syntax errors early"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "devloop-formatter",
+  "version": "0.9.0",
+  "description": "Auto-formats code on save using Black (Python), Prettier (JS/TS/JSON/MD). Supports format-on-save and report-only modes with configurable file patterns.",
+  "author": "DevLoop",
+  "license": "MIT",
+  "repository": "https://github.com/wioota/devloop",
+  "keywords": ["formatting", "black", "prettier", "auto-format", "code-style"],
+  "categories": ["formatting", "code-quality"],
+  "python_version": ">=3.11",
+  "devloop_version": ">=0.9.0"
+}

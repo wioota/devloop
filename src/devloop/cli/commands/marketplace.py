@@ -379,6 +379,46 @@ def list_installed() -> None:
 
 
 @app.command()
+def publish(
+    agent_dir: Path = typer.Argument(
+        ..., help="Directory containing the agent package"
+    ),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing version"),
+) -> None:
+    """Publish an agent to the local marketplace registry."""
+    from devloop.marketplace.publisher import AgentPackage, AgentPublisher
+
+    if not agent_dir.exists():
+        console.print(f"[red]Directory not found: {agent_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Validate first
+    try:
+        package = AgentPackage(agent_dir)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+
+    is_valid, errors = package.validate()
+    if not is_valid:
+        console.print("[red]Package validation failed:[/red]")
+        for err in errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+
+    # Publish
+    client = get_registry_client()
+    publisher = AgentPublisher(client)
+    success, message = publisher.publish_agent(agent_dir, force=force)
+
+    if success:
+        console.print(f"[green]{message}[/green]")
+    else:
+        console.print(f"[red]{message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
 def review(
     name: str = typer.Argument(..., help="Agent name to review"),
     rating: float = typer.Argument(..., help="Rating (1-5 stars)"),

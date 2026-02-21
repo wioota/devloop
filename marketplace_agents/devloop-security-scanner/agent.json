@@ -1,0 +1,12 @@
+{
+  "name": "devloop-security-scanner",
+  "version": "0.9.0",
+  "description": "Detects security vulnerabilities in code using Bandit, Safety, and Trivy. Configurable severity and confidence thresholds with detailed findings.",
+  "author": "DevLoop",
+  "license": "MIT",
+  "repository": "https://github.com/wioota/devloop",
+  "keywords": ["security", "vulnerability", "bandit", "safety", "trivy", "scanning"],
+  "categories": ["security", "code-quality"],
+  "python_version": ">=3.11",
+  "devloop_version": ">=0.9.0"
+}
