@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
@@ -641,7 +641,7 @@ def _setup_devloop_directory(path: Path) -> Path:
     return claude_dir
 
 
-def _read_init_manifest(claude_dir: Path) -> dict:
+def _read_init_manifest(claude_dir: Path) -> dict[str, Any]:
     """Read .devloop/.init-manifest.json, returning defaults if missing or invalid."""
     import json
 
@@ -649,7 +649,8 @@ def _read_init_manifest(claude_dir: Path) -> dict:
     if not manifest_path.exists():
         return {"version": None, "managed": []}
     try:
-        return json.loads(manifest_path.read_text())
+        result: dict[str, Any] = json.loads(manifest_path.read_text())
+        return result
     except (json.JSONDecodeError, OSError):
         return {"version": None, "managed": []}
 
@@ -1027,7 +1028,7 @@ def _setup_git_hooks(path: Path) -> None:
         checker.show_installation_guide(missing)
 
 
-def _create_claude_hooks(agents_hooks_dir: Path) -> list:
+def _create_claude_hooks(agents_hooks_dir: Path) -> tuple[list[str], int]:
     """Create Claude Code hook scripts."""
     hooks = {
         "claude-session-start": """#!/bin/bash
@@ -1425,7 +1426,7 @@ def _setup_mcp_server(path: Path) -> None:
 
 def _setup_claude_hooks(
     path: Path, agents_hooks_dir: Path, non_interactive: bool, upgrade: bool = False
-) -> list:
+) -> list[str]:
     """Setup Claude Code hooks.
 
     Args:
