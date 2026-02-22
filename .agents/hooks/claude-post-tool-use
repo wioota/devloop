@@ -1,60 +1,39 @@
 #!/bin/bash
+#
 # PostToolUse hook: Show relevant findings after file modifications
 #
-# Runs after Edit/Write tools complete. Shows existing findings
-# for the modified file. devloop watch handles background re-analysis.
+# Shows existing findings for the edited file after Edit/Write completes.
+# Silent when no findings exist.
 #
-# Output format (only when findings exist):
-#   ⚠️ 2 issues in auth.py:
-#     • Line 45: Missing return type annotation [mypy]
-#
-# Silent (no output) when:
-#   - No findings for the edited file
-#   - Tool is not Edit/Write
-#   - Context store doesn't exist
-
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 0
 
-# Read stdin to temp file (JSON input from Claude Code)
 INPUT_FILE=$(mktemp)
 cat > "$INPUT_FILE"
+export INPUT_FILE PROJECT_DIR
 
-# Export for Python
-export INPUT_FILE
-export PROJECT_DIR
-
-# Python handles JSON parsing and context store query
 python3 << 'PYTHON_EOF'
 import json
 import os
 import sys
-import time
 from pathlib import Path
 
-def get_findings_for_file(file_path: str, context_dir: Path) -> list:
-    """Query immediate and relevant tiers for file-specific findings."""
+def get_findings_for_file(file_path, context_dir):
     findings = []
-
-    # Normalize the target file path
     try:
         target_path = Path(file_path).resolve()
     except (OSError, ValueError):
         return []
-
     for tier in ["immediate", "relevant"]:
         tier_file = context_dir / f"{tier}.json"
         if not tier_file.exists():
             continue
-
         try:
             data = json.loads(tier_file.read_text())
             for finding in data.get("findings", []):
                 finding_file = finding.get("file", "")
                 if not finding_file:
                     continue
-
-                # Match by resolved path
                 try:
                     if Path(finding_file).resolve() == target_path:
                         findings.append(finding)
@@ -62,143 +41,64 @@ def get_findings_for_file(file_path: str, context_dir: Path) -> list:
                     continue
         except (json.JSONDecodeError, OSError):
             continue
-
-    # Sort by severity (errors first), then by line number
     severity_order = {"error": 0, "warning": 1, "info": 2, "style": 3}
-    return sorted(findings, key=lambda f: (
-        severity_order.get(f.get("severity", "info"), 2),
-        f.get("line") or 9999
-    ))
+    return sorted(findings, key=lambda f: (severity_order.get(f.get("severity", "info"), 2), f.get("line") or 9999))
 
-def format_output(findings: list, file_path: str) -> str:
-    """Format findings for display."""
+def format_output(findings, file_path):
     if not findings:
         return ""
-
     file_name = Path(file_path).name
     count = len(findings)
-
-    lines = [f"⚠️ {count} issue{'s' if count != 1 else ''} in {file_name}:"]
-
-    # Show top finding
+    lines = [f"\u26a0\ufe0f {count} issue{'s' if count != 1 else ''} in {file_name}:"]
     top = findings[0]
     line_num = top.get("line")
     message = top.get("message", "Unknown issue")
     agent = top.get("agent", "")
-
     location = f"Line {line_num}: " if line_num else ""
     source = f" [{agent}]" if agent else ""
-    lines.append(f"  • {location}{message}{source}")
-
-    # If more than 2 findings, show count of remaining
+    lines.append(f"  \u2022 {location}{message}{source}")
     if count > 2:
         lines.append(f"  ... and {count - 1} more")
     elif count == 2:
-        # Show second finding too
         second = findings[1]
         line_num = second.get("line")
         message = second.get("message", "Unknown issue")
         agent = second.get("agent", "")
         location = f"Line {line_num}: " if line_num else ""
         source = f" [{agent}]" if agent else ""
-        lines.append(f"  • {location}{message}{source}")
-
+        lines.append(f"  \u2022 {location}{message}{source}")
     return "\n".join(lines)
 
-def get_shown_state(state_file: Path) -> dict:
-    """Load previously shown findings state."""
-    if not state_file.exists():
-        return {}
-    try:
-        return json.loads(state_file.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-def save_shown_state(state_file: Path, state: dict) -> None:
-    """Save shown findings state, pruning entries older than 1 hour."""
-    cutoff = time.time() - 3600
-    pruned = {k: v for k, v in state.items() if v > cutoff}
-    try:
-        state_file.write_text(json.dumps(pruned))
-    except OSError:
-        pass
-
-def make_finding_key(finding: dict) -> str:
-    """Create content-based key for dedup."""
-    return f"{finding.get('agent','')}:{finding.get('file','')}:{finding.get('line','')}:{finding.get('message','')}"
-
-def filter_unseen(findings: list, state: dict, debounce_seconds: int = 300) -> list:
-    """Filter out findings shown within debounce window."""
-    now = time.time()
-    unseen = []
-    for f in findings:
-        key = make_finding_key(f)
-        last_shown = state.get(key, 0)
-        if now - last_shown > debounce_seconds:
-            unseen.append(f)
-    return unseen
-
-def main():
-    input_file = os.environ.get("INPUT_FILE", "")
-    project_dir = Path(os.environ.get("PROJECT_DIR", "."))
-
-    if not input_file:
+input_file = os.environ.get("INPUT_FILE", "")
+project_dir = Path(os.environ.get("PROJECT_DIR", "."))
+if not input_file:
+    sys.exit(0)
+try:
+    with open(input_file) as f:
+        input_data = f.read()
+    if not input_data.strip():
         sys.exit(0)
-
-    # Read and parse input
-    try:
-        with open(input_file) as f:
-            input_data = f.read()
-
-        if not input_data.strip():
-            sys.exit(0)
-
-        hook_input = json.loads(input_data)
-    except (json.JSONDecodeError, OSError):
-        sys.exit(0)
-
-    # Only process Edit/Write tools
-    tool_name = hook_input.get("tool_name", "")
-    if tool_name not in ["Edit", "Write"]:
-        sys.exit(0)
-
-    # Extract file path from tool input
-    tool_input = hook_input.get("tool_input", {})
-    if not isinstance(tool_input, dict):
-        sys.exit(0)
-
-    # Handle both 'file_path' and 'path' keys (Edit uses file_path, Write might use path)
-    file_path = tool_input.get("file_path") or tool_input.get("path", "")
-    if not file_path:
-        sys.exit(0)
-
-    # Query context store
-    context_dir = project_dir / ".devloop" / "context"
-    if not context_dir.exists():
-        sys.exit(0)
-
-    findings = get_findings_for_file(file_path, context_dir)
-
-    # Deduplicate: filter out findings shown within the last 5 minutes
-    state_file = project_dir / ".devloop" / ".hook-shown-findings"
-    state = get_shown_state(state_file)
-    findings = filter_unseen(findings, state)
-
-    # Output if findings exist (silent otherwise)
-    if findings:
-        output = format_output(findings, file_path)
-        if output:
-            print(output)
-            # Mark displayed findings as shown
-            now = time.time()
-            for f in findings:
-                state[make_finding_key(f)] = now
-            save_shown_state(state_file, state)
-
-if __name__ == "__main__":
-    main()
+    hook_input = json.loads(input_data)
+except (json.JSONDecodeError, OSError):
+    sys.exit(0)
+tool_name = hook_input.get("tool_name", "")
+if tool_name not in ["Edit", "Write"]:
+    sys.exit(0)
+tool_input = hook_input.get("tool_input", {})
+if not isinstance(tool_input, dict):
+    sys.exit(0)
+file_path = tool_input.get("file_path") or tool_input.get("path", "")
+if not file_path:
+    sys.exit(0)
+context_dir = project_dir / ".devloop" / "context"
+if not context_dir.exists():
+    sys.exit(0)
+findings = get_findings_for_file(file_path, context_dir)
+if findings:
+    output = format_output(findings, file_path)
+    if output:
+        print(output)
 PYTHON_EOF
 
-# Clean up
 rm -f "$INPUT_FILE"
 exit 0

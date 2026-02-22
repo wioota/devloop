@@ -38,13 +38,42 @@ Generate an intelligent summary of recent dev-agent findings with operational he
 
 ---
 
-### `/devloop-findings`
+### `/verify-work`
+
+Run code quality verification and extract findings (equivalent to Amp's post-task enforcement).
+
+**Usage:**
+```
+/verify-work
+```
+
+**What it does:**
+1. Runs unified code quality verification:
+   - Black formatting check
+   - Ruff linting
+   - mypy type checking
+   - pytest test suite
+2. Extracts DevLoop findings and creates Beads issues
+3. Shows blocking issues and warnings
+4. Lists created Beads issue IDs
+
+**Output:**
+- ✅ All checks passed or ❌ issues found
+- List of blocking issues (must fix)
+- List of warnings (non-blocking)
+- Number of Beads issues created
+
+**Similar to:** Amp's post-task hook for consistent enforcement across Claude Code and Amp
+
+---
+
+### `/extract-findings`
 
 Extract DevLoop findings and automatically create Beads issues for tracking.
 
 **Usage:**
 ```
-/devloop-findings
+/extract-findings
 ```
 
 **What it does:**
@@ -54,10 +83,17 @@ Extract DevLoop findings and automatically create Beads issues for tracking.
    - Formatter violations (P1) - can break CI
    - Linter errors (P1) - need fixing
    - Performance issues (P2) - nice to have
+   - Security findings (P0-P1) - urgent
 4. Links issues to current work automatically
 
 **After running:**
 Use `bd ready` to see newly created actionable issues.
+
+---
+
+### `/devloop-findings` (Deprecated)
+
+Use `/extract-findings` instead - same functionality with better naming.
 
 ---
 

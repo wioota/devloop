@@ -1,99 +1,11 @@
 #!/bin/bash
-# SessionStart hook: Load DevLoop findings when Claude Code starts
 #
-# This makes DevLoop findings available in Claude's context at session start.
-# Provides clear warnings if DevLoop is not properly configured.
-
+# SessionStart hook: Pre-load DevLoop findings when Claude Code starts
+#
 set -e
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 0
-
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "DevLoop Context Check"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Check if devloop is available
-if ! command -v devloop &>/dev/null; then
-    echo "⚠️  DevLoop not installed"
-    echo "   Install with: pip install devloop"
-    echo "   Agent findings will not be available."
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    exit 0
+if command -v devloop &>/dev/null; then
+    devloop amp_context 2>/dev/null || exit 0
 fi
-
-# Check if devloop watch is running (via PID file)
-PID_FILE="$PROJECT_DIR/.devloop/devloop.pid"
-WATCH_RUNNING=false
-if [[ -f "$PID_FILE" ]]; then
-    WATCH_PID=$(cat "$PID_FILE" 2>/dev/null)
-    if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
-        WATCH_RUNNING=true
-    fi
-fi
-
-if [[ "$WATCH_RUNNING" != "true" ]]; then
-    echo "Starting devloop watch..."
-    mkdir -p "$PROJECT_DIR/.devloop"
-    nohup devloop watch "$PROJECT_DIR" > "$PROJECT_DIR/.devloop/devloop.log" 2>&1 &
-
-    # Wait for PID file (up to 3 seconds)
-    for i in 1 2 3; do
-        sleep 1
-        if [[ -f "$PID_FILE" ]]; then
-            WATCH_PID=$(cat "$PID_FILE" 2>/dev/null)
-            if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
-                WATCH_RUNNING=true
-                echo "✓ Started devloop watch (PID: $WATCH_PID)"
-                break
-            fi
-        fi
-    done
-
-    if [[ "$WATCH_RUNNING" != "true" ]]; then
-        echo "⚠️  Could not start devloop watch"
-        echo "   Start manually: devloop watch ."
-        echo "   Check logs: .devloop/devloop.log"
-    fi
-    echo ""
-fi
-
-# Check context freshness
-CONTEXT_INDEX="$PROJECT_DIR/.devloop/context/index.json"
-if [[ -f "$CONTEXT_INDEX" ]]; then
-    # Get age of context file
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        LAST_UPDATED=$(stat -f %m "$CONTEXT_INDEX" 2>/dev/null || echo "0")
-    else
-        LAST_UPDATED=$(stat -c %Y "$CONTEXT_INDEX" 2>/dev/null || echo "0")
-    fi
-    NOW=$(date +%s)
-    if [[ "$LAST_UPDATED" -gt 0 ]]; then
-        AGE_MINUTES=$(( (NOW - LAST_UPDATED) / 60 ))
-        if [[ $AGE_MINUTES -gt 30 ]]; then
-            echo "🟡 Context is stale (${AGE_MINUTES}m old)"
-        fi
-    fi
-fi
-
-# Load and display context
-echo ""
-CONTEXT=$(devloop amp-context 2>&1) || {
-    echo "⚠️  Failed to load context: $CONTEXT"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    exit 0
-}
-
-# Parse and display summary using grep (faster than jq)
-CHECK_NOW=$(echo "$CONTEXT" | grep -o '"check_now":[^}]*"count": [0-9]*' 2>/dev/null | grep -o '[0-9]*$' || echo "0")
-
-if [[ "$CHECK_NOW" -gt 0 ]]; then
-    echo "🔴 $CHECK_NOW issue(s) need attention"
-    echo "   Run /agent-summary for details"
-else
-    echo "🟢 No immediate issues from agents"
-fi
-
-# Confirm PostToolUse hook is active
-echo "✓ PostToolUse hook active - findings shown after file edits"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 exit 0
