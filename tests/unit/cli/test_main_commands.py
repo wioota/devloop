@@ -873,7 +873,7 @@ class TestCreateClaudeSettingsJson:
         }
         settings_file.write_text(json.dumps(old_settings, indent=2))
 
-        result = _create_claude_settings_json(temp_project_dir, upgrade=False)
+        _create_claude_settings_json(temp_project_dir, upgrade=False)
 
         new_settings = json.loads(settings_file.read_text())
 
