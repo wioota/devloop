@@ -70,7 +70,6 @@ class TestProtectedFiles:
         exit_code, stderr = run_hook("Write", ".beads/issues.jsonl")
 
         assert "manual editing" in stderr.lower(), "Should suggest manual editing"
-        assert "whitelist" in stderr.lower(), "Should mention whitelist"
         assert "user" in stderr.lower(), "Should mention asking user"
 
 
@@ -225,25 +224,12 @@ class TestWhitelist:
         whitelist_path = Path(".claude/file-protection-whitelist.json")
         assert not whitelist_path.exists(), "Whitelist should not exist by default"
 
-    def test_whitelist_allows_protected_file(self):
-        """File in whitelist should be allowed despite being protected."""
-        whitelist_path = Path(".claude/file-protection-whitelist.json")
-        whitelist_path.parent.mkdir(parents=True, exist_ok=True)
+    def test_protected_file_still_blocked(self):
+        """Protected file should be blocked (whitelist was removed)."""
+        exit_code, stderr = run_hook("Write", "AGENTS.md")
 
-        try:
-            # Create whitelist allowing AGENTS.md
-            whitelist_data = {"allowed_patterns": ["AGENTS.md"]}
-            whitelist_path.write_text(json.dumps(whitelist_data))
-
-            # Now writing to AGENTS.md should succeed
-            exit_code, stderr = run_hook("Write", "AGENTS.md")
-
-            assert exit_code == 0, "Whitelisted file should be allowed"
-            assert stderr == "", "No error for whitelisted file"
-        finally:
-            # Clean up
-            if whitelist_path.exists():
-                whitelist_path.unlink()
+        assert exit_code == 2, "Protected file should be blocked"
+        assert "Protected file" in stderr
 
     def test_invalid_whitelist_falls_back_to_defaults(self):
         """Invalid whitelist should fall back to default protection."""

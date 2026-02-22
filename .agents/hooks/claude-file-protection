@@ -4,30 +4,62 @@
 #
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 0
-input_json=$(cat)
-tool_name=$(echo "$input_json" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
-tool_input=$(echo "$input_json" | jq -r '.tool_input // {}' 2>/dev/null || echo "{}")
-if [[ "$tool_name" != "Write" && "$tool_name" != "Edit" ]]; then
-    exit 0
-fi
-file_path=$(echo "$tool_input" | jq -r '.path // ""' 2>/dev/null || echo "")
-if [ -n "$file_path" ]; then
-    file_path=$(realpath "$file_path" 2>/dev/null || echo "$file_path")
-fi
-protected_patterns=(".beads/" ".devloop/" ".git/" ".agents/hooks/" ".claude/" "AGENTS.md" "CODING_RULES.md" "AMP_ONBOARDING.md")
-is_protected=0
-for pattern in "${protected_patterns[@]}"; do
-    if [[ "$file_path" == *"$pattern"* ]]; then
-        is_protected=1
-        break
-    fi
-done
-if [ $is_protected -eq 1 ]; then
-    cat >&2 <<EOF
-🚫 Protected file: $file_path
-This file is protected by DevLoop to prevent accidental modifications.
-If you need to modify this file, use manual editing or ask the user.
-EOF
-    exit 2
-fi
-exit 0
+
+INPUT_FILE=$(mktemp)
+cat > "$INPUT_FILE"
+export INPUT_FILE PROJECT_DIR
+
+python3 << 'PYTHON_EOF'
+import json
+import os
+import sys
+from pathlib import Path
+
+protected_patterns = [
+    ".beads/", ".devloop/", ".git/", ".agents/hooks/", ".claude/",
+    "AGENTS.md", "CODING_RULES.md", "AMP_ONBOARDING.md",
+]
+
+input_file = os.environ.get("INPUT_FILE", "")
+if not input_file:
+    sys.exit(0)
+try:
+    with open(input_file) as f:
+        input_data = f.read()
+    if not input_data.strip():
+        sys.exit(0)
+    hook_input = json.loads(input_data)
+except (json.JSONDecodeError, OSError):
+    sys.exit(0)
+
+tool_name = hook_input.get("tool_name", "")
+if tool_name not in ("Write", "Edit"):
+    sys.exit(0)
+
+tool_input = hook_input.get("tool_input", {})
+if not isinstance(tool_input, dict):
+    sys.exit(0)
+
+file_path = tool_input.get("file_path") or tool_input.get("path", "")
+if not file_path:
+    sys.exit(0)
+
+try:
+    file_path = os.path.realpath(file_path)
+except OSError:
+    pass
+
+is_protected = any(pat in file_path for pat in protected_patterns)
+if is_protected:
+    sys.stderr.write(
+        f"\U0001f6ab Protected file: {file_path}\n"
+        "This file is protected by DevLoop to prevent accidental modifications.\n"
+        "If you need to modify this file, use manual editing or ask the user.\n"
+    )
+    sys.exit(2)
+sys.exit(0)
+PYTHON_EOF
+
+EXIT_CODE=$?
+rm -f "$INPUT_FILE"
+exit $EXIT_CODE

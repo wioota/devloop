@@ -289,18 +289,8 @@ class TestFileProtectionHook:
             "nano" in stderr or "manual editing" in stderr
         ), "Error should suggest alternatives"
 
-    def test_whitelist_allows_protected_files(self, hook_tester):
-        """Whitelist should allow writes to protected files."""
-        # Create whitelist
-        whitelist_file = (
-            hook_tester.project_root / ".claude" / "file-protection-whitelist.json"
-        )
-        whitelist_file.parent.mkdir(parents=True, exist_ok=True)
-        whitelist_file.write_text(
-            json.dumps({"allowed_patterns": [".beads/custom.json"]})
-        )
-
-        # This should be blocked normally
+    def test_protected_file_blocked_without_whitelist(self, hook_tester):
+        """Protected files should be blocked (whitelist was removed)."""
         input_data = {
             "tool_name": "Write",
             "tool_input": {"path": ".beads/custom.json"},
@@ -308,7 +298,7 @@ class TestFileProtectionHook:
         code, stdout, stderr = hook_tester.run_hook(
             "claude-file-protection", input_data=input_data
         )
-        assert code == 0, "Whitelisted file should be allowed"
+        assert code == 2, "Protected file should be blocked"
 
     def test_whitelist_does_not_allow_other_protected_files(self, hook_tester):
         """Whitelist should only allow specific patterns."""
