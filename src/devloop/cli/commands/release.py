@@ -37,11 +37,10 @@ def publish(
 ) -> int:
     """Publish a new release.
 
-    Performs the full release workflow:
+    Performs the release workflow:
     1. Pre-release checks (git clean, branch, CI passes, registry credentials)
     2. Create git tag (v{version} by default)
-    3. Publish to registry (PyPI, Artifactory, etc.)
-    4. Push tag to remote
+    3. Push tag to remote (CI handles the actual PyPI publish)
 
     Example:
         devloop release publish 1.2.3
@@ -57,12 +56,12 @@ def publish(
         console.print("[yellow]Dry-run mode[/yellow] - no changes will be made")
         console.print()
 
-    # Create config
+    # Create config — publish=False because CI handles PyPI on tag push
     config = ReleaseConfig(
         version=version,
         branch=branch,
         create_tag=not skip_tag,
-        publish=not skip_publish,
+        publish=False,
         ci_provider=ci_provider,
         registry_provider=registry_provider,
     )
@@ -111,30 +110,25 @@ def publish(
             return 1
         console.print()
 
-    # Publish if configured
-    if config.publish:
-        console.print("[bold]Publishing to registry...[/bold]")
-        pub_result = manager.publish_release()
-        if pub_result.success:
-            console.print(
-                f"[green]✓ Published to:[/green] {pub_result.registry_provider_name}"
-            )
-            if pub_result.url:
-                console.print(f"[cyan]URL:[/cyan] {pub_result.url}")
-        else:
-            console.print(f"[red]✗ Publishing failed:[/red] {pub_result.error}")
-            return 1
+    # Push tag — CI release workflow handles the actual PyPI publish
+    tag_name = f"v{version}"
+    if config.create_tag:
+        console.print(f"[bold]Pushing tag {tag_name} to remote...[/bold]")
+        manager._push_tag_to_remote(tag_name)
+        console.print("[green]✓ Tag pushed[/green] — CI will publish to PyPI")
         console.print()
 
     # Summary
-    console.print("[bold][green]✓ Release successful![/green][/bold]")
+    console.print("[bold][green]✓ Release initiated![/green][/bold]")
     if checks_result.ci_provider_name:
         console.print(f"  CI Provider: {checks_result.ci_provider_name}")
-    if checks_result.registry_provider_name:
-        console.print(f"  Registry: {checks_result.registry_provider_name}")
     console.print(f"  Version: {version}")
     if config.create_tag:
-        console.print(f"  Tag: v{version}")
+        console.print(f"  Tag: {tag_name}")
+    console.print(
+        "  PyPI: CI will publish automatically — monitor at "
+        "https://github.com/wioota/devloop/actions"
+    )
 
     return 0
 

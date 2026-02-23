@@ -11,51 +11,39 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.11"
-    
+
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-    
+
     - name: Install dependencies
       run: poetry install
-    
+
     - name: Build distribution packages
       run: poetry build
-    
+
     - name: Publish to PyPI
       env:
         POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-      run: poetry publish
-    
+      run: poetry publish --skip-existing
+
     - name: Create GitHub Release
-      uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Automatic release from tag push
-          
-          ## Changes
-          See the full changelog in CHANGELOG.md
-          
-          ## Installation
-          ```bash
-          pip install devloop
-          ```
-        draft: false
-        prerelease: false
-    
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "${{ github.ref_name }}" dist/* \
+          --title "Release ${{ github.ref_name }}" \
+          --generate-notes
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:

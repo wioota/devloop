@@ -47,7 +47,7 @@ class TestPublish:
         return mock_mgr
 
     def test_publish_success_full_workflow(self, mock_manager):
-        """Test successful full release workflow."""
+        """Test successful full release workflow — tag + push, CI handles PyPI."""
         with patch("devloop.cli.commands.release.ReleaseConfig") as MockConfig:
             with patch(
                 "devloop.cli.commands.release.ReleaseManager",
@@ -67,9 +67,14 @@ class TestPublish:
 
                     assert result == 0
                     MockConfig.assert_called_once()
+                    # publish is always False — CI handles PyPI
+                    config_call = MockConfig.call_args[1]
+                    assert config_call["publish"] is False
                     mock_manager.run_pre_release_checks.assert_called_once()
                     mock_manager.create_release_tag.assert_called_once()
-                    mock_manager.publish_release.assert_called_once()
+                    mock_manager._push_tag_to_remote.assert_called_once_with("v1.0.0")
+                    # No local publish — CI does it
+                    mock_manager.publish_release.assert_not_called()
 
     def test_publish_with_custom_branch(self, mock_manager):
         """Test publish with custom branch."""
@@ -120,12 +125,11 @@ class TestPublish:
                     assert config_call["registry_provider"] == "pypi"
 
     def test_publish_skip_tag(self, mock_manager):
-        """Test publish with skip_tag option."""
+        """Test publish with skip_tag option — no tag, no push."""
         with patch("devloop.cli.commands.release.ReleaseConfig") as MockConfig:
             # Mock config with create_tag=False
             mock_config = Mock()
             mock_config.create_tag = False
-            mock_config.publish = True
             MockConfig.return_value = mock_config
 
             with patch(
@@ -148,16 +152,11 @@ class TestPublish:
                     config_call = MockConfig.call_args[1]
                     assert config_call["create_tag"] is False
                     mock_manager.create_release_tag.assert_not_called()
+                    mock_manager._push_tag_to_remote.assert_not_called()
 
-    def test_publish_skip_publish(self, mock_manager):
-        """Test publish with skip_publish option."""
+    def test_publish_always_sets_publish_false(self, mock_manager):
+        """Test that publish always sets publish=False (CI handles PyPI)."""
         with patch("devloop.cli.commands.release.ReleaseConfig") as MockConfig:
-            # Mock config with publish=False
-            mock_config = Mock()
-            mock_config.create_tag = True
-            mock_config.publish = False
-            MockConfig.return_value = mock_config
-
             with patch(
                 "devloop.cli.commands.release.ReleaseManager",
                 return_value=mock_manager,
@@ -170,12 +169,13 @@ class TestPublish:
                         registry_provider=None,
                         skip_checks=False,
                         skip_tag=False,
-                        skip_publish=True,
+                        skip_publish=False,
                         dry_run=False,
                     )
 
                     assert result == 0
                     config_call = MockConfig.call_args[1]
+                    # publish is always False regardless of skip_publish flag
                     assert config_call["publish"] is False
                     mock_manager.publish_release.assert_not_called()
 
@@ -274,9 +274,10 @@ class TestPublish:
                     )
 
                     assert result == 0
-                    # Should proceed despite failed checks
+                    # Should proceed despite failed checks — tag + push
                     mock_manager.create_release_tag.assert_called_once()
-                    mock_manager.publish_release.assert_called_once()
+                    mock_manager._push_tag_to_remote.assert_called_once_with("v1.0.0")
+                    mock_manager.publish_release.assert_not_called()
 
     def test_publish_tag_creation_fails(self, mock_manager):
         """Test publish when tag creation fails."""
@@ -307,14 +308,8 @@ class TestPublish:
                     # Should not proceed to publish if tag fails
                     mock_manager.publish_release.assert_not_called()
 
-    def test_publish_publishing_fails(self, mock_manager):
-        """Test publish when publishing to registry fails."""
-        mock_pub_result = Mock()
-        mock_pub_result.success = False
-        mock_pub_result.error = "Authentication failed"
-
-        mock_manager.publish_release.return_value = mock_pub_result
-
+    def test_publish_pushes_tag_after_creation(self, mock_manager):
+        """Test that tag push happens after successful tag creation."""
         with patch("devloop.cli.commands.release.ReleaseConfig"):
             with patch(
                 "devloop.cli.commands.release.ReleaseManager",
@@ -322,7 +317,7 @@ class TestPublish:
             ):
                 with patch("devloop.cli.commands.release.console"):
                     result = publish(
-                        version="1.0.0",
+                        version="2.5.0",
                         branch="main",
                         ci_provider=None,
                         registry_provider=None,
@@ -332,7 +327,8 @@ class TestPublish:
                         dry_run=False,
                     )
 
-                    assert result == 1
+                    assert result == 0
+                    mock_manager._push_tag_to_remote.assert_called_once_with("v2.5.0")
 
     def test_publish_with_url_in_results(self, mock_manager):
         """Test publish displays URLs when available."""
