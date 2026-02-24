@@ -341,7 +341,7 @@ devloop watch .
 
 **That's it!** No manual configuration needed. DevLoop will automatically monitor your project, run agents on file changes, and enforce commit discipline.
 
-[View the installation automation details →](./INSTALLATION_AUTOMATION.md)
+[View the installation automation details →](./docs/installation-automation.md)
 
 ### Common Commands
 
@@ -1293,9 +1293,8 @@ poetry run mypy src
 - **[Agent Reference](./ARCHITECTURE.md)** — Agent categories and architecture
 
 ### Advanced
-- **[Development Guide](./docs/development.md)** — Contributing guide
-- **[Implementation Status](./IMPLEMENTATION_STATUS.md)** — What's implemented
-- **[Learning & Optimization](./PHASE3_COMPLETE.md)** — Advanced features
+- **[Development Guide](./CODING_RULES.md)** — Contributing and development standards
+- **[Upgrade Guide](./docs/UPGRADE_GUIDE.md)** — Version migration and breaking changes
 
 ---
 
@@ -1440,14 +1439,15 @@ coderabbit review --format json <file>
 
 ## Amp Integration
 
-Using DevLoop in Amp? See [AMP_ONBOARDING.md](./AMP_ONBOARDING.md) for:
+Using DevLoop in Amp? The `devloop init` command automatically configures Amp integration:
 
-- Installation and registration checklist
-- Required configuration
-- Post-task verification workflow
-- Troubleshooting guide
+- Registers slash commands (`/agent-summary`, `/agent-status`)
+- Sets up post-task verification hooks
+- Injects commit discipline into system prompts
 
 The commit/push discipline is automatically enforced via `.agents/verify-task-complete`.
+
+See the [Getting Started Guide](./docs/getting-started.md) for detailed setup instructions.
 
 ---
 

@@ -208,7 +208,7 @@ devloop init /path/to/project --non-interactive
 devloop init /path/to/project --verbose
 ```
 
-See [INSTALLATION_AUTOMATION.md](./INSTALLATION_AUTOMATION.md) for complete technical details.
+See [docs/installation-automation.md](./docs/installation-automation.md) for complete technical details.
 
 ## Amp Thread Context Capture
 
