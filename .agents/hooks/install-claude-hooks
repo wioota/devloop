@@ -42,13 +42,14 @@ fi
 
 # Update settings.json with hooks configuration
 # This is a simplified approach - in production, use a proper JSON tool
+export INSTALL_PROJECT_ROOT="$(realpath "$PROJECT_ROOT")"
 python3 << 'EOF'
 import json
-import sys
+import os
 from pathlib import Path
 
 settings_path = Path.home() / ".claude" / "settings.json"
-project_root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
+project_root = Path(os.environ.get("INSTALL_PROJECT_ROOT", ".")).resolve()
 hooks_dir = project_root / ".agents" / "hooks"
 
 # Read existing settings

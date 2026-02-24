@@ -915,5 +915,57 @@ class TestHooksDocumentation:
                 assert has_docs, f"{hook_file.name} should have header comments"
 
 
+class TestInstallClaudeHooks:
+    """Regression tests for the install-claude-hooks script."""
+
+    def test_installs_absolute_paths(self, tmp_path, hook_tester):
+        """install-claude-hooks must write absolute paths, not relative ones.
+
+        Regression: the script used sys.argv in a Python heredoc (always empty),
+        causing relative paths to be written to ~/.claude/settings.json.
+        """
+        import json
+        import subprocess
+
+        # Set up a fake HOME with an empty settings file
+        fake_home = tmp_path / "home"
+        fake_home.mkdir()
+        (fake_home / ".claude").mkdir()
+        settings_file = fake_home / ".claude" / "settings.json"
+        settings_file.write_text("{}")
+
+        actual_hooks_dir = Path(__file__).parent.parent.parent / ".agents" / "hooks"
+        install_script = actual_hooks_dir / "install-claude-hooks"
+        project_root = hook_tester.project_root
+
+        env = os.environ.copy()
+        env["HOME"] = str(fake_home)
+
+        result = subprocess.run(
+            [str(install_script), str(project_root)],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        assert result.returncode == 0, (
+            f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+
+        settings = json.loads(settings_file.read_text())
+        hooks = settings.get("hooks", {})
+        assert hooks, "No hooks were written to settings.json"
+
+        for event_name, event_hooks in hooks.items():
+            for entry in event_hooks:
+                for hook in entry.get("hooks", []):
+                    cmd = hook.get("command", "")
+                    assert cmd.startswith("/"), (
+                        f"Hook '{event_name}' has relative path: {cmd!r} — expected absolute"
+                    )
+                    assert str(project_root) in cmd, (
+                        f"Hook '{event_name}' path {cmd!r} doesn't contain project root {project_root}"
+                    )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
