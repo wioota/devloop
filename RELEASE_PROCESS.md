@@ -20,7 +20,7 @@ DevLoop automatically detects and publishes to:
 - **Artifactory** - Via Artifactory REST API (planned)
 - **Custom Registries** - Via manual configuration
 
-See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider documentation.
+See [Provider System](./docs/architecture.md#provider-system) for detailed provider documentation.
 
 ## Quick Release Commands
 
@@ -241,7 +241,7 @@ devloop release check 1.2.3 --registry docker
 ```
 
 **Custom Registry:**
-For non-standard registries, see [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for custom provider setup.
+For non-standard registries, see [Provider System](./docs/architecture.md#provider-system) for custom provider setup.
 
 ### Manual Override
 
@@ -252,7 +252,7 @@ devloop release publish 1.2.3 --ci github --registry pypi
 
 This will validate that the tools are installed and authenticated before attempting the release.
 
-See [PROVIDER_SYSTEM.md](./docs/PROVIDER_SYSTEM.md) for detailed provider setup and troubleshooting for your specific CI/registry combination.
+See [Provider System](./docs/architecture.md#provider-system) for detailed provider setup and troubleshooting for your specific CI/registry combination.
 
 ## Publishing & Security Considerations
 

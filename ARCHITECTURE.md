@@ -323,7 +323,7 @@ By default, DevLoop logs can grow unbounded. **Configure log rotation** to preve
 }
 ```
 
-This keeps logs under control while preserving recent history. See [LOG_ROTATION.md](./docs/LOG_ROTATION.md) for details.
+This keeps logs under control while preserving recent history. See [Configuration Guide — Log Rotation](./docs/configuration.md#log-rotation) for details.
 
 ### Agents Configuration
 
@@ -391,5 +391,4 @@ Agents are configured via `.devloop/agents.json`:
 
 - [CLI_REFERENCE.md](./CLI_REFERENCE.md) - Complete command documentation
 - [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) - Release workflow
-- [DEVELOPMENT.md](./DEVELOPMENT.md) - Implementation guidelines
-- [TESTING.md](./TESTING.md) - Testing approach for agents
+- [CODING_RULES.md](./CODING_RULES.md) - Development standards and testing approach
