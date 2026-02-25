@@ -302,7 +302,7 @@ See [CLI_REFERENCE.md](./CLI_REFERENCE.md) for complete command documentation.
 - Use read-only or project-scoped tokens when possible
 - Scan commits for accidentally leaked secrets before pushing
 
-See [docs/TOKEN_SECURITY.md](./docs/TOKEN_SECURITY.md) for complete token security guide.
+See [docs/security.md](./docs/security.md#token-security) for complete token security guide.
 
 ---
 
@@ -314,7 +314,7 @@ See [docs/TOKEN_SECURITY.md](./docs/TOKEN_SECURITY.md) for complete token securi
 - **[RELEASE_PROCESS.md](./RELEASE_PROCESS.md)** - Release workflow and troubleshooting
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and agent categories
 - **[CODING_RULES.md](./CODING_RULES.md)** - Development standards
-- **[docs/TOKEN_SECURITY.md](./docs/TOKEN_SECURITY.md)** - Token security guide
+- **[docs/security.md](./docs/security.md#token-security)** - Token security guide
 
 ---
 

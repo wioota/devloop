@@ -246,7 +246,7 @@ pip install devloop[all-optional]
 **Optional sandbox enhancements:**
 - **Pyodide WASM Sandbox** (cross-platform Python sandboxing)
   - Requires: Node.js 18+ (system dependency)
-  - Install: See [Pyodide Installation Guide](./docs/PYODIDE_INSTALLATION.md)
+  - Install: See [Security Guide — Pyodide](./docs/security.md#pyodide-wasm-sandbox)
   - Works in POC mode without installation for testing
 
 #### System Dependencies
@@ -341,7 +341,7 @@ devloop watch .
 
 **That's it!** No manual configuration needed. DevLoop will automatically monitor your project, run agents on file changes, and enforce commit discipline.
 
-[View the installation automation details →](./INSTALLATION_AUTOMATION.md)
+[View the installation automation details →](./docs/installation-automation.md)
 
 ### Common Commands
 
@@ -383,7 +383,7 @@ devloop agent dependencies list ./my-agent       # Show agent's dependencies
 devloop custom-create my_agent pattern_matcher
 ```
 
-[View all CLI commands →](./docs/cli-commands.md)
+[View all CLI commands →](./CLI_REFERENCE.md)
 
 ### Verify Installation & Version Compatibility
 
@@ -616,7 +616,7 @@ devloop marketplace server stop
 - `GET /api/v1/stats` — Registry statistics (agent count, total installations, etc.)
 - `POST /api/v1/install/{name}/{version}` — Record agent installation
 
-[Full marketplace API documentation →](./docs/MARKETPLACE_API.md)
+[Full marketplace API documentation →](./docs/marketplace.md#rest-api-reference)
 
 ### Tool Dependency Management
 
@@ -921,7 +921,7 @@ The release workflow automatically:
 3. Publishes to registry
 4. Pushes tag to remote repository
 
-[Full provider documentation →](./docs/PROVIDER_SYSTEM.md)
+[Full provider documentation →](./docs/architecture.md#provider-system)
 
 ---
 
@@ -997,7 +997,7 @@ devloop init /path/to/project
 devloop status --show-token-info
 ```
 
-[Full token security guide →](./docs/TOKEN_SECURITY.md)
+[Full token security guide →](./docs/security.md#token-security)
 
 [Full configuration reference →](./docs/configuration.md)
 
@@ -1211,7 +1211,7 @@ poetry run pytest -v
 
 **Current status:** ✅ 737+ tests passing
 
-[View test strategy →](./docs/testing.md)
+[View test strategy →](./CODING_RULES.md)
 
 ---
 
@@ -1255,7 +1255,7 @@ class MyAgent(Agent):
 
 3. Add tests in `tests/unit/agents/test_my_agent.py`
 
-[Developer guide →](./docs/development.md)
+[Developer guide →](./CODING_RULES.md)
 
 ### Code Style
 
@@ -1279,23 +1279,18 @@ poetry run mypy src
 - **[Getting Started Guide](./docs/getting-started.md)** — Installation and basic usage
 - **[Architecture Guide](./docs/architecture.md)** — System design and components
 - **[Configuration Guide](./docs/configuration.md)** — Full config reference
-- **[CLI Commands](./docs/cli-commands.md)** — Command reference
+- **[CLI Commands](./CLI_REFERENCE.md)** — Command reference
 
 ### Agent Development
-- **[Agent Development Guide](./docs/AGENT_DEVELOPMENT.md)** — Tutorial on creating agents with patterns and best practices
-- **[Agent API Reference](./docs/AGENT_API_REFERENCE.md)** — Complete API documentation for all agent classes and interfaces
-- **[Agent Examples](./docs/AGENT_EXAMPLES.md)** — Real-world examples from simple to advanced implementations
-- **[Agent Troubleshooting](./docs/AGENT_TROUBLESHOOTING.md)** — Common issues and solutions
+- **[Agent Development Guide](./docs/agent-development.md)** — Tutorial, API reference, examples, and troubleshooting
 
 ### Marketplace
-- **[Marketplace Guide](./docs/MARKETPLACE_GUIDE.md)** — Discovering, installing, and publishing agents
-- **[Marketplace API Guide](./docs/MARKETPLACE_API.md)** — Agent registry API reference
+- **[Marketplace Guide](./docs/marketplace.md)** — Discovering, installing, publishing agents, and API reference
 - **[Agent Reference](./ARCHITECTURE.md)** — Agent categories and architecture
 
 ### Advanced
-- **[Development Guide](./docs/development.md)** — Contributing guide
-- **[Implementation Status](./IMPLEMENTATION_STATUS.md)** — What's implemented
-- **[Learning & Optimization](./PHASE3_COMPLETE.md)** — Advanced features
+- **[Development Guide](./CODING_RULES.md)** — Contributing and development standards
+- **[Upgrade Guide](./docs/UPGRADE_GUIDE.md)** — Version migration and breaking changes
 
 ---
 
@@ -1411,7 +1406,7 @@ coderabbit review --format json <file>
 3. Disable the problematic agent in `.devloop/agents.json`
 4. Report issue with: `git show HEAD:.devloop/agents.json`
 
-[Full troubleshooting guide →](./docs/troubleshooting.md)
+[Full troubleshooting guide →](#troubleshooting)
 
 ---
 
@@ -1440,14 +1435,15 @@ coderabbit review --format json <file>
 
 ## Amp Integration
 
-Using DevLoop in Amp? See [AMP_ONBOARDING.md](./AMP_ONBOARDING.md) for:
+Using DevLoop in Amp? The `devloop init` command automatically configures Amp integration:
 
-- Installation and registration checklist
-- Required configuration
-- Post-task verification workflow
-- Troubleshooting guide
+- Registers slash commands (`/agent-summary`, `/agent-status`)
+- Sets up post-task verification hooks
+- Injects commit discipline into system prompts
 
 The commit/push discipline is automatically enforced via `.agents/verify-task-complete`.
+
+See the [Getting Started Guide](./docs/getting-started.md) for detailed setup instructions.
 
 ---
 
@@ -1517,7 +1513,7 @@ Built with:
 
 [^1]: **90%+ CI failures caught locally** — Based on typical Python/TypeScript development workflows with comprehensive linting, formatting, and type checking. Actual results depend on your agent configuration and test suite. DevLoop's effectiveness increases with more agents enabled and better test coverage. See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#version-compatibility) for feature availability by version.
 
-[^2]: **60%+ CI cost reduction** — Estimated reduction assumes: (1) 6-8 CI failures per day baseline, (2) ~15 minutes per failure roundtrip, (3) CI costs proportional to pipeline runs. This is a theoretical projection based on typical development patterns. Actual cost savings depend on your CI pricing model, agent configuration, and codebase size. For verified metrics, see [docs/METRICS_AND_MONITORING.md](./docs/METRICS_AND_MONITORING.md).
+[^2]: **60%+ CI cost reduction** — Estimated reduction assumes: (1) 6-8 CI failures per day baseline, (2) ~15 minutes per failure roundtrip, (3) CI costs proportional to pipeline runs. This is a theoretical projection based on typical development patterns. Actual cost savings depend on your CI pricing model, agent configuration, and codebase size. For verified metrics, see [Architecture Guide — Metrics](./docs/architecture.md#metrics-and-monitoring).
 
 [^3]: **6-8 CI failures per day and 75-90 minutes saved** — These estimates are based on typical multi-developer teams working on moderately complex codebases. They assume agents catch common issues (formatting, linting, type errors, security warnings) before push. Your actual results will vary significantly based on: code complexity, team size, quality of tests, agent configuration, and development practices. For personalized ROI calculation, enable metrics tracking in `.devloop/agents.json` and see `devloop telemetry stats`. DevLoop will collect real usage data as you use it, which can replace these estimates with empirically validated numbers.
 

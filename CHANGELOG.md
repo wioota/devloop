@@ -15,6 +15,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.2] - 2026-02-24
+
+### Improvements
+
+#### CI & Publishing
+- **CI-only PyPI publishing** — Removed direct CLI publishing; `devloop release publish` now creates and pushes the git tag, and GitHub Actions handles the actual PyPI upload
+- **Replaced jq with python3 in hooks** — File-protection hook no longer requires `jq` as a system dependency
+
+#### Testing
+- **Test coverage improvements** — Added tests for MCP server dispatch, bubblewrap sandbox, security modules, summary generator, summary formatter, core/config, and core/action_logger
+- **Ruff lint fixes** — Resolved lint errors in test files
+
+### Bug Fixes
+
+- **install-claude-hooks writes absolute paths** — Fixed path resolution in Claude Code settings.json
+
+---
+
+## [0.10.1] - 2026-02-18
+
+### Security
+
+- **cryptography 46.0.4 → 46.0.5** — Patched GHSA-r6ph-v2qm-q3c2 security vulnerability
+
+### Bug Fixes
+
+- **Type annotation fixes** — Corrected 3 mypy type annotations in main.py and aligned test_init_upgrade.py with actual implementation signatures
+- **Formatting** — Applied Black formatting to test_main_commands.py
+
+---
+
+## [0.10.0] - 2026-02-15
+
+### New Features
+
+#### Init Orchestrator with Upgrade Support
+- **Idempotent init** — `devloop init` now supports re-running on existing projects, detecting what's already installed and only updating changed components
+- **Init manifest** — Tracks installed hooks, commands, and settings for reliable upgrades
+- **Stale file cleanup** — Automatically removes files from previous versions that are no longer needed
+- **Backup skipping** — Skips backup when content is unchanged for faster re-init
+
+#### Dogfood Marketplace
+- **4 packaged agents** — Bundled marketplace agents for dogfooding the agent publish workflow
+- **Agent publish CLI** — `devloop agent publish` command for publishing agents to the marketplace registry
+- **HTTP API smoke tests** — Added integration tests for marketplace server endpoints
+
+### Bug Fixes
+
+- **77 mypy type errors resolved** — Fixed type errors across 28 files
+- **AGENTS.md merge fix** — Replaced heading-to-check mapping with idempotent section-level dedup merge
+
+---
+
+## [0.9.0] - 2026-02-08
+
+### New Features
+
+#### MCP Server for Claude Code
+- **MCP server module** — New `mcp` module providing Model Context Protocol integration for Claude Code
+- **Verification tools** — MCP tools for running code quality checks directly from Claude Code
+- **PostToolUse hook** — Shows DevLoop findings after file edits in Claude Code
+
+#### Code Quality
+- **mypy `warn_return_any`** — Enabled stricter return type checking and fixed all violations
+- **Reduced CLI complexity** — Refactored CLI main.py functions for lower cyclomatic complexity
+
+### Security
+
+- **Black 26.1.0** — Updated to fix CVE-2024-21503
+
+### Bug Fixes
+
+- **AGENTS.md scaffold injection** — Replaced with direct template merge for more reliable init
+- **Debounce hook findings** — Prevented duplicate findings from rapid file changes
+- **Claude Code hooks format** — Updated to new array format
+- **Flaky test fix** — Stabilized test_find_related_tests_filters_excluded
+
+### Testing
+
+- **Comprehensive test additions** — Added tests for CLI audit and marketplace commands, collectors module, and provider modules
+
+---
+
 ## [0.8.0] - 2026-02-01
 
 ### New Features
@@ -782,24 +865,22 @@ See [docs/UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md#020-project-rename-dev-agents-
 
 ## Version History Summary
 
-| Version | Date | Description | Tests | Lines of Code |
-|---------|------|-------------|-------|---------------|
-| 0.1.0 | 2025-11-28 | Context Store + Rename | 96 | ~3,400 |
-| 0.0.3 | 2025-10 | Learning & Optimization | 67+ | ~3,000 |
-| 0.0.2 | 2025-10 | Production Agents | 40+ | ~2,500 |
-| 0.0.1 | 2025-10 | Foundation & Prototype | 22 | ~1,500 |
+| Version | Date | Description | Tests |
+|---------|------|-------------|-------|
+| 0.10.2 | 2026-02-24 | CI-only PyPI publishing, test coverage | 900+ |
+| 0.10.1 | 2026-02-18 | Cryptography security patch | 880+ |
+| 0.10.0 | 2026-02-15 | Init orchestrator, dogfood marketplace | 870+ |
+| 0.9.0 | 2026-02-08 | MCP server, PostToolUse hook | 850+ |
+| 0.8.0 | 2026-02-01 | DevLoop insights, Claude Code integration | 837+ |
+| 0.7.0 | 2026-01-31 | Test coverage infrastructure | 737+ |
+| 0.6.4 | 2025-12-15 | Documentation structure | 737+ |
+| 0.6.0 | 2025-12-14 | Package registry, Claude hooks, telemetry | 527+ |
+| 0.5.0 | 2025-12-13 | VSCode extension, provider system, security | 527+ |
+| 0.4.0 | 2025-12-09 | Event logging, performance tracking | 400+ |
+| 0.3.0 | 2025-12-06 | Sandbox security, Claude Code integration | 300+ |
+| 0.2.0 | 2025-11-29 | Project rename to DevLoop | 167 |
+| 0.1.0 | 2025-11-28 | Context Store | 96 |
+| 0.0.1 | 2025-10 | Foundation & Prototype | 22 |
 
 ---
 
-## Future Plans
-
-See [PUBLISHING_PLAN.md](./PUBLISHING_PLAN.md) for:
-- Public release roadmap
-- PyPI publishing
-- Documentation completion
-- Community building
-
-See [DOC_LIFECYCLE_AGENT_SPEC.md](./DOC_LIFECYCLE_AGENT_SPEC.md) for:
-- Automated documentation management
-- Archive organization
-- Lifecycle automation
