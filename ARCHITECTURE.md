@@ -36,50 +36,94 @@ DevLoop agents operate autonomously, responding to filesystem changes, git opera
 - **Network Events**: Dependency updates, CI/CD webhooks
 - **System Events**: Low memory, high CPU, disk space warnings
 
-## Agent Categories
+## Implemented Agents (15)
 
-### 1. Code Quality Agents
-- **Linter Agent**: Runs linters on changed files
-- **Formatter Agent**: Auto-formats code on save
-- **Type Checker Agent**: Monitors type errors in background
-- **Security Scanner**: Detects potential security issues
-- **Complexity Analyzer**: Warns about high-complexity code
+These agents are fully implemented with tests and available in the current release.
 
-### 2. Testing Agents
-- **Test Runner Agent**: Runs relevant tests on file changes
-- **Coverage Monitor**: Tracks test coverage trends
-- **Test Generator**: Suggests missing test cases
-- **Flaky Test Detector**: Identifies unreliable tests
+### Code Quality
+| Agent | Module | Description |
+|-------|--------|-------------|
+| **Linter** | `agents/linter.py` | Runs linters (ruff, eslint) on changed files |
+| **Formatter** | `agents/formatter.py` | Auto-formats code (Black, prettier, gofmt) |
+| **Type Checker** | `agents/type_checker.py` | Background type checking (mypy, pyright, pyre) |
+| **Security Scanner** | `agents/security_scanner.py` | Detects vulnerabilities with Bandit |
+| **Code Rabbit** | `agents/code_rabbit.py` | AI-powered code analysis and insights |
 
-### 3. Git & Version Control Agents
-- **Commit Message Assistant**: Suggests commit messages based on changes
-- **Merge Conflict Resolver**: Provides context for conflicts
-- **Branch Hygiene Agent**: Suggests cleanup of stale branches
-- **Code Review Preparer**: Generates PR descriptions and checklists
+### Testing & Security
+| Agent | Module | Description |
+|-------|--------|-------------|
+| **Test Runner** | `agents/test_runner.py` | Runs relevant tests on file changes |
+| **Snyk** | `agents/snyk.py` | Dependency vulnerability scanning |
+| **Performance Profiler** | `agents/performance_profiler.py` | Tracks performance metrics and regressions |
 
-### 4. Documentation Agents
-- **Doc Sync Agent**: Ensures docs match code changes
-- **Comment Updater**: Flags outdated comments
-- **README Maintainer**: Suggests README updates
-- **API Doc Generator**: Updates API documentation
+### Development Workflow
+| Agent | Module | Description |
+|-------|--------|-------------|
+| **Git Commit Assistant** | `agents/git_commit_assistant.py` | Suggests commit messages based on staged changes |
+| **CI Monitor** | `agents/ci_monitor.py` | Tracks GitHub Actions / CI pipeline status |
+| **Doc Lifecycle** | `agents/doc_lifecycle.py` | Manages documentation organization |
+| **Agent Health Monitor** | `agents/agent_health_monitor.py` | Monitors agent execution health and failure patterns |
 
-### 5. Dependency & Build Agents
-- **Dependency Updater**: Monitors for package updates
-- **Build Optimizer**: Suggests build improvements
-- **Bundle Analyzer**: Tracks bundle size changes
-- **Import Organizer**: Optimizes import statements
+### Infrastructure
+| Agent | Module | Description |
+|-------|--------|-------------|
+| **Echo** | `agents/echo.py` | Test/demo agent for event system verification |
+| **File Logger** | `agents/file_logger.py` | Logs file events for debugging |
+| **Sandbox Helper** | `agents/sandbox_helper.py` | Manages sandbox execution environments |
 
-### 6. Performance & Monitoring Agents
-- **Performance Profiler**: Detects performance regressions
-- **Memory Leak Detector**: Monitors for memory issues
-- **Log Analyzer**: Parses logs for patterns
-- **Error Aggregator**: Collects and categorizes errors
+## Implemented Infrastructure
 
-### 7. Productivity Agents
-- **Focus Time Tracker**: Monitors development sessions
-- **Context Preloader**: Loads relevant files when switching branches
-- **Snippet Manager**: Suggests code snippets
-- **Refactoring Suggester**: Identifies refactoring opportunities
+Beyond agents, DevLoop includes these implemented subsystems:
+
+- **Tool Registry** — Agent tool dependency management and resolution
+- **Pattern Analysis** — Cross-session pattern detection from developer feedback
+- **Audit Logging** — SQLite event store with 30-day retention
+- **Transactional I/O** — Atomic writes, checksums, corruption recovery
+- **Config Schema Versioning** — Automatic migration between config versions
+- **Daemon Health** — Process supervision and restart handling
+- **Custom Agent Framework** — No-code agent builder with templates
+- **Backup Manager** — Self-healing filesystem with file repair
+- **MCP Server** — Model Context Protocol integration for Claude Code
+- **Marketplace Registry** — Agent publishing, signing, discovery, and HTTP API
+
+## Planned Agents (Future Roadmap)
+
+These agents are designed but not yet implemented. They represent the full vision for DevLoop.
+
+### Code Quality (Planned)
+- **Complexity Analyzer** — Warn about high-complexity code
+
+### Testing (Planned)
+- **Coverage Monitor** — Track test coverage trends
+- **Test Generator** — Suggest missing test cases
+- **Flaky Test Detector** — Identify unreliable tests
+
+### Git & Version Control (Planned)
+- **Merge Conflict Resolver** — Provide context for conflicts
+- **Branch Hygiene Agent** — Suggest cleanup of stale branches
+- **Code Review Preparer** — Generate PR descriptions and checklists
+
+### Documentation (Planned)
+- **Comment Updater** — Flag outdated comments
+- **README Maintainer** — Suggest README updates
+- **API Doc Generator** — Update API documentation
+
+### Dependency & Build (Planned)
+- **Dependency Updater** — Monitor for package updates
+- **Build Optimizer** — Suggest build improvements
+- **Bundle Analyzer** — Track bundle size changes
+- **Import Organizer** — Optimize import statements
+
+### Performance & Monitoring (Planned)
+- **Memory Leak Detector** — Monitor for memory issues
+- **Log Analyzer** — Parse logs for patterns
+- **Error Aggregator** — Collect and categorize errors
+
+### Productivity (Planned)
+- **Focus Time Tracker** — Monitor development sessions
+- **Context Preloader** — Load relevant files when switching branches
+- **Snippet Manager** — Suggest code snippets
+- **Refactoring Suggester** — Identify refactoring opportunities
 
 ## Summary & Reporting System
 
