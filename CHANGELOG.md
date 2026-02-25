@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.3] - 2026-02-24
+
+### Bug Fixes
+
+- **install-claude-hooks** - Fixed script writing relative paths to `~/.claude/settings.json` instead of absolute paths. The Python heredoc was reading `sys.argv` (always empty in heredoc context) instead of the project root passed as an argument. Hooks installed via `devloop init` would silently fail when Claude was launched from any directory other than the project root.
+
+---
+
 ## [0.8.0] - 2026-02-01
 
 ### New Features
