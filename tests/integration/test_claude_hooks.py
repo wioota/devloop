@@ -947,9 +947,9 @@ class TestInstallClaudeHooks:
             text=True,
             env=env,
         )
-        assert result.returncode == 0, (
-            f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
-        )
+        assert (
+            result.returncode == 0
+        ), f"Script failed:\nstdout: {result.stdout}\nstderr: {result.stderr}"
 
         settings = json.loads(settings_file.read_text())
         hooks = settings.get("hooks", {})
@@ -959,12 +959,12 @@ class TestInstallClaudeHooks:
             for entry in event_hooks:
                 for hook in entry.get("hooks", []):
                     cmd = hook.get("command", "")
-                    assert cmd.startswith("/"), (
-                        f"Hook '{event_name}' has relative path: {cmd!r} — expected absolute"
-                    )
-                    assert str(project_root) in cmd, (
-                        f"Hook '{event_name}' path {cmd!r} doesn't contain project root {project_root}"
-                    )
+                    assert cmd.startswith(
+                        "/"
+                    ), f"Hook '{event_name}' has relative path: {cmd!r} — expected absolute"
+                    assert (
+                        str(project_root) in cmd
+                    ), f"Hook '{event_name}' path {cmd!r} doesn't contain project root {project_root}"
 
 
 if __name__ == "__main__":
