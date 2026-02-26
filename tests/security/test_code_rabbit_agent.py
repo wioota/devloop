@@ -1,6 +1,5 @@
 """End-to-end tests for CodeRabbitAgent."""
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -107,19 +106,8 @@ async def test_agent_parses_code_rabbit_output(agent):
             payload={"path": str(py_file)},
         )
 
-        # Mock code-rabbit output
-        mock_output = json.dumps(
-            [
-                {
-                    "line": 1,
-                    "column": 1,
-                    "code": "unused-import",
-                    "message": "Unused import 'unused_module'",
-                    "severity": "warning",
-                    "type": "code-smell",
-                },
-            ]
-        ).encode()
+        # Mock code-rabbit plain text output
+        mock_output = b"Unused import 'unused_module' on line 1"
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
             # First call: version check (success)
@@ -137,7 +125,7 @@ async def test_agent_parses_code_rabbit_output(agent):
 
             assert result.success
             assert result.data["issue_count"] == 1
-            assert result.data["issues"][0]["code"] == "unused-import"
+            assert result.data["issues"][0]["code"] == "code-review"
 
 
 @pytest.mark.asyncio
@@ -191,19 +179,8 @@ async def test_agent_filters_by_severity(agent):
             payload={"path": str(py_file)},
         )
 
-        # Mock code-rabbit with info-level finding
-        mock_output = json.dumps(
-            [
-                {
-                    "line": 1,
-                    "column": 1,
-                    "code": "note-001",
-                    "message": "Consider using f-strings",
-                    "severity": "info",
-                    "type": "style",
-                },
-            ]
-        ).encode()
+        # Mock code-rabbit plain text output
+        mock_output = b"Consider using f-strings on line 1"
 
         with patch("asyncio.create_subprocess_exec") as mock_exec:
             version_response = AsyncMock()
@@ -249,27 +226,8 @@ async def test_agent_writes_findings_to_context_store(agent):
             payload={"path": str(py_file)},
         )
 
-        # Mock code-rabbit output with multiple issues
-        mock_output = json.dumps(
-            [
-                {
-                    "line": 1,
-                    "column": 1,
-                    "code": "complexity-high",
-                    "message": "Function complexity is too high",
-                    "severity": "error",
-                    "type": "complexity",
-                },
-                {
-                    "line": 2,
-                    "column": 5,
-                    "code": "unused-variable",
-                    "message": "Variable 'y' is not used",
-                    "severity": "warning",
-                    "type": "code-smell",
-                },
-            ]
-        ).encode()
+        # Mock code-rabbit plain text review output
+        mock_output = b"Function complexity is too high\nVariable 'y' is not used"
 
         # Mock context store
         from devloop.core.context_store import context_store
@@ -298,28 +256,15 @@ async def test_agent_writes_findings_to_context_store(agent):
                 result = await agent.handle(event)
 
                 assert result.success
-                assert len(findings_added) == 2
+                assert len(findings_added) == 1
 
-                # Check error-level finding
-                error_finding = findings_added[0]
-                assert error_finding.agent == "code-rabbit"
-                assert error_finding.severity.value == "error"
-                assert error_finding.line == 1
-                assert "complexity" in error_finding.message.lower()
-                assert error_finding.category == "complexity-high"
-                assert error_finding.context["issue_type"] == "complexity"
-
-                # Check warning-level finding
-                warning_finding = findings_added[1]
-                assert warning_finding.severity.value == "warning"
-                assert warning_finding.line == 2
-                assert warning_finding.column == 5
-                assert (
-                    "not used" in warning_finding.message.lower()
-                    or "unused" in warning_finding.message.lower()
-                )
-                assert warning_finding.category == "unused-variable"
-                assert warning_finding.context["issue_type"] == "code-smell"
+                # Check the single review finding
+                finding = findings_added[0]
+                assert finding.agent == "code-rabbit"
+                assert finding.severity.value == "info"
+                assert "complexity" in finding.message.lower()
+                assert finding.category == "code-review"
+                assert finding.context["issue_type"] == "review"
         finally:
             context_store.add_finding = original_add_finding
 

@@ -1,7 +1,6 @@
 """Code Rabbit agent - integrates Code Rabbit CLI for code analysis."""
 
 import asyncio
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -158,12 +157,12 @@ class CodeRabbitAgent(Agent):
                     success=False, error="coderabbit CLI not installed"
                 )
 
-            # Run CodeRabbit with JSON output (review command)
+            # Run CodeRabbit with plain text output (review command)
             proc = await asyncio.create_subprocess_exec(
                 "coderabbit",
                 "review",
-                "--format",
-                "json",
+                "--plain",
+                "--no-color",
                 str(path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -178,13 +177,18 @@ class CodeRabbitAgent(Agent):
                 )
 
             if stdout:
-                try:
-                    data = json.loads(stdout.decode())
-                    issues = data.get("issues", []) if isinstance(data, dict) else data
-                    return CodeRabbitResult(success=True, issues=issues)
-                except json.JSONDecodeError as e:
+                text = stdout.decode().strip()
+                if text:
                     return CodeRabbitResult(
-                        success=False, error=f"Failed to parse Code Rabbit output: {e}"
+                        success=True,
+                        issues=[
+                            {
+                                "message": text,
+                                "severity": "info",
+                                "code": "code-review",
+                                "type": "review",
+                            }
+                        ],
                     )
 
             return CodeRabbitResult(success=True, issues=[])
