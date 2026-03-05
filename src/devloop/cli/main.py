@@ -53,6 +53,7 @@ from .commands import metrics as metrics_cmd
 from .commands import release as release_cmd
 from .commands import summary as summary_cmd
 from .commands import telemetry as telemetry_cmd
+from .commands import doctor as doctor_cmd
 from .commands import tools as tools_cmd
 
 _typer_app = typer.Typer(
@@ -69,6 +70,7 @@ _typer_app.add_typer(mcp_server_cmd.app, name="mcp-server")
 _typer_app.add_typer(metrics_cmd.app, name="metrics")
 _typer_app.add_typer(release_cmd.app, name="release")
 _typer_app.add_typer(telemetry_cmd.app, name="telemetry")
+_typer_app.add_typer(doctor_cmd.app, name="doctor")
 _typer_app.add_typer(tools_cmd.app, name="tools")
 
 # Wrap Typer app to handle Click-based audit command
