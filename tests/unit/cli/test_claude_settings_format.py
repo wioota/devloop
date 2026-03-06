@@ -162,6 +162,24 @@ class TestClaudeSettingsFormat:
                         f'must be a string (e.g. "Edit|Write")'
                     )
 
+    def test_matchers_include_amp_tool_names(self, tmp_path):
+        """Hook matchers must match both Claude Code (Write|Edit) and Amp (create_file|edit_file) tools."""
+        _create_claude_settings_json(tmp_path)
+
+        settings = json.loads((tmp_path / ".claude" / "settings.json").read_text())
+        hooks = settings["hooks"]
+
+        pre_matcher = hooks["PreToolUse"][0]["matcher"]
+        post_matcher = hooks["PostToolUse"][0]["matcher"]
+
+        for tool_name in ("Write", "Edit", "create_file", "edit_file"):
+            assert (
+                tool_name in pre_matcher
+            ), f"PreToolUse matcher '{pre_matcher}' missing Amp tool '{tool_name}'"
+            assert (
+                tool_name in post_matcher
+            ), f"PostToolUse matcher '{post_matcher}' missing Amp tool '{tool_name}'"
+
     def test_committed_settings_json_is_valid(self):
         """The actual .claude/settings.json checked into the repo must be valid."""
         repo_root = Path(__file__).resolve().parents[3]

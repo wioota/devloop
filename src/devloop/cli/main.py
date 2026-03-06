@@ -1098,7 +1098,7 @@ except (json.JSONDecodeError, OSError):
     sys.exit(0)
 
 tool_name = hook_input.get("tool_name", "")
-if tool_name not in ("Write", "Edit"):
+if tool_name not in ("Write", "Edit", "create_file", "edit_file"):
     sys.exit(0)
 
 tool_input = hook_input.get("tool_input", {})
@@ -1278,7 +1278,7 @@ try:
 except (json.JSONDecodeError, OSError):
     sys.exit(0)
 tool_name = hook_input.get("tool_name", "")
-if tool_name not in ["Edit", "Write"]:
+if tool_name not in ["Edit", "Write", "edit_file", "create_file"]:
     sys.exit(0)
 tool_input = hook_input.get("tool_input", {})
 if not isinstance(tool_input, dict):
@@ -1367,7 +1367,7 @@ def _create_claude_settings_json(path: Path, upgrade: bool = False) -> str | Non
         ],
         "PreToolUse": [
             {
-                "matcher": "Write|Edit",
+                "matcher": "Write|Edit|create_file|edit_file",
                 "hooks": [
                     {
                         "type": "command",
@@ -1382,7 +1382,7 @@ def _create_claude_settings_json(path: Path, upgrade: bool = False) -> str | Non
         ],
         "PostToolUse": [
             {
-                "matcher": "Edit|Write",
+                "matcher": "Edit|Write|edit_file|create_file",
                 "hooks": [
                     {
                         "type": "command",
