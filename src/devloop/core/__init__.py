@@ -24,6 +24,7 @@ from .event import Event, EventBus, Priority
 from .import_graph import ImportGraph
 from .event_store import event_store
 from .manager import AgentManager
+from .pipeline import Pipeline, PipelineResult, PipelineStageResult
 from .pattern_analyzer import (
     Pattern,
     PatternAnalyzer,
@@ -82,6 +83,9 @@ __all__ = [
     "PatternMatch",
     "Priority",
     "AgentManager",
+    "Pipeline",
+    "PipelineResult",
+    "PipelineStageResult",
     "ChecksumMismatchError",
     "initialize_transaction_system",
     "SelfHealing",

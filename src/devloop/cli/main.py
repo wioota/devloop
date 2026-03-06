@@ -502,6 +502,64 @@ def _register_agents(
         agent_manager.register(agent)
 
 
+def _register_pipelines(
+    config: ConfigWrapper, event_bus: EventBus, agent_manager: AgentManager
+) -> list:
+    """Register pipelines from configuration.
+
+    Pipelines are defined in the config under "pipelines" key. Each pipeline
+    specifies an ordered list of agent names to run sequentially.
+
+    Args:
+        config: Configuration wrapper with pipeline settings
+        event_bus: Event bus for pipeline communication
+        agent_manager: Agent manager with registered agents
+
+    Returns:
+        List of created Pipeline instances
+    """
+    from devloop.core.pipeline import Pipeline
+
+    pipelines_config = config._config.get("pipelines", {})
+    pipelines = []
+
+    for pipeline_name, pipeline_cfg in pipelines_config.items():
+        if not pipeline_cfg.get("enabled", True):
+            continue
+
+        stage_names = pipeline_cfg.get("stages", [])
+        triggers = pipeline_cfg.get("triggers", ["file:modified"])
+        short_circuit = pipeline_cfg.get("shortCircuit", True)
+
+        # Resolve stage agents from the agent manager
+        stages = []
+        for stage_name in stage_names:
+            agent = agent_manager.get_agent(stage_name)
+            if agent:
+                stages.append(agent)
+            else:
+                logging.getLogger("pipeline").warning(
+                    f"Pipeline '{pipeline_name}': agent '{stage_name}' not found, skipping"
+                )
+
+        if not stages:
+            logging.getLogger("pipeline").warning(
+                f"Pipeline '{pipeline_name}': no valid stages, skipping"
+            )
+            continue
+
+        pipeline = Pipeline(
+            name=pipeline_name,
+            stages=stages,
+            event_bus=event_bus,
+            triggers=triggers,
+            short_circuit=short_circuit,
+        )
+        pipelines.append(pipeline)
+
+    return pipelines
+
+
 async def _initialize_stores(path: Path) -> None:
     """Initialize context and event stores.
 
@@ -599,13 +657,26 @@ async def watch_async(path: Path, config_path: Path | None) -> None:
     # Register all enabled agents
     _register_agents(config, event_bus, agent_manager)
 
+    # Register pipelines
+    pipelines = _register_pipelines(config, event_bus, agent_manager)
+
     # Start everything
     await fs_collector.start()
     await agent_manager.start_all()
 
+    # Start pipelines
+    for pipeline in pipelines:
+        await pipeline.start()
+
     console.print("[green]✓[/green] Started agents:")
     for agent_name in agent_manager.list_agents():
         console.print(f"  • [cyan]{agent_name}[/cyan]")
+
+    if pipelines:
+        console.print("[green]✓[/green] Started pipelines:")
+        for pipeline in pipelines:
+            stage_names = " → ".join(s.name for s in pipeline.stages)
+            console.print(f"  • [cyan]{pipeline.name}[/cyan]: {stage_names}")
 
     # Replay missed events
     await _replay_events(event_bus, agent_manager)
@@ -618,6 +689,8 @@ async def watch_async(path: Path, config_path: Path | None) -> None:
     # Stop everything
     cleanup_task.cancel()
     await health_check.stop()
+    for pipeline in pipelines:
+        await pipeline.stop()
     await agent_manager.stop_all()
     await fs_collector.stop()
 
