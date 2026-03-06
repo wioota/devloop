@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 from devloop.core.agent import Agent, AgentResult
 from devloop.core.context_store import Finding, Severity
 from devloop.core.event import Event
+from devloop.core.import_graph import ImportGraph
 from devloop.core.project_context import ProjectContext
 
 
@@ -171,6 +172,18 @@ class TestRunnerAgent(Agent):
         # Initialize project context for test discovery
         self.project_context = ProjectContext(Path.cwd())
 
+        # Build import graph for smart test discovery
+        self._import_graph: ImportGraph | None = None
+        if self.config.related_tests_only:
+            try:
+                project_root = Path.cwd()
+                src_dirs = self._detect_src_dirs(project_root)
+                self._import_graph = ImportGraph(project_root, src_dirs=src_dirs)
+                self._import_graph.build()
+            except Exception as e:
+                self.logger.warning(f"Failed to build import graph: {e}")
+                self._import_graph = None
+
     async def handle(self, event: Event) -> AgentResult:
         """Handle file change event by running tests."""
         if not self.config.run_on_save:
@@ -192,6 +205,13 @@ class TestRunnerAgent(Agent):
             )
 
         path = Path(file_path)
+
+        # Keep import graph warm on .py changes
+        if self._import_graph and path.suffix == ".py":
+            try:
+                self._import_graph.update_file(path)
+            except Exception as e:
+                self.logger.debug(f"Import graph update failed: {e}")
 
         # Determine if this is a test file or source file
         is_test_file = self._is_test_file(path)
@@ -332,8 +352,41 @@ class TestRunnerAgent(Agent):
 
         return None
 
+    @staticmethod
+    def _detect_src_dirs(project_root: Path) -> list[Path]:
+        """Detect source directories in the project."""
+        candidates = ["src", "lib", "app"]
+        dirs = []
+        for name in candidates:
+            d = project_root / name
+            if d.is_dir():
+                dirs.append(d)
+        # If no standard src dirs, use project root itself
+        if not dirs:
+            dirs.append(project_root)
+        return dirs
+
     def _find_related_tests(self, path: Path) -> List[Path]:
         """Find test files related to a source file.
+
+        Uses import graph for transitive dependency analysis (Python),
+        falling back to filename matching if the graph returns nothing.
+        """
+        # Try import graph first (Python only)
+        if self._import_graph and path.suffix == ".py":
+            try:
+                graph_tests = self._import_graph.get_affected_tests(path)
+                if graph_tests:
+                    # Filter out excluded paths
+                    return [t for t in graph_tests if not self._is_excluded(t)]
+            except Exception as e:
+                self.logger.debug(f"Import graph lookup failed: {e}")
+
+        # Fallback: filename-based matching
+        return self._find_related_tests_by_name(path)
+
+    def _find_related_tests_by_name(self, path: Path) -> List[Path]:
+        """Find test files by naming convention (fallback).
 
         Uses project context to determine test roots and applies exclusion patterns.
         """

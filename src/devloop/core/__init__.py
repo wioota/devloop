@@ -21,6 +21,7 @@ from .config_schema import (
 from .context_store import context_store
 from .daemon_health import DaemonHealthCheck, check_daemon_health
 from .event import Event, EventBus, Priority
+from .import_graph import ImportGraph
 from .event_store import event_store
 from .manager import AgentManager
 from .pattern_analyzer import (
@@ -67,6 +68,7 @@ __all__ = [
     "Event",
     "EventBus",
     "event_store",
+    "ImportGraph",
     "get_action_logger",
     "get_amp_thread_mapper",
     "get_pattern_detector",
