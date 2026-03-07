@@ -13,5 +13,5 @@ stop_hook_active=$(echo "$input_json" | jq -r '.stop_hook_active // false' 2>/de
 if [ "$stop_hook_active" = "true" ]; then
     exit 0
 fi
-devloop amp_findings 2>/dev/null || true
+devloop amp-findings &>/dev/null || true
 exit 0
