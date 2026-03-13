@@ -26,6 +26,35 @@ class Dependency:
 
 
 @dataclass
+class ToolDependency:
+    """External tool dependency (CLI binary, Python package, etc.)."""
+
+    type: str  # "python" | "binary" | "npm-global" | "venv" | "docker"
+    package: Optional[str] = None  # pip package name (python type)
+    min_version: Optional[str] = None  # e.g. "1.7.0"
+    install_hint: Optional[str] = None  # e.g. "apt-get install shellcheck"
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ToolDependency":
+        return cls(
+            type=data["type"],
+            package=data.get("package"),
+            min_version=data.get("minVersion"),
+            install_hint=data.get("install"),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {"type": self.type}
+        if self.package:
+            d["package"] = self.package
+        if self.min_version:
+            d["minVersion"] = self.min_version
+        if self.install_hint:
+            d["install"] = self.install_hint
+        return d
+
+
+@dataclass
 class Rating:
     """Agent rating information."""
 
@@ -66,6 +95,7 @@ class AgentMetadata:
     python_version: str = ">=3.11"  # Semantic version constraint
     devloop_version: str = ">=0.5.0"  # Minimum devloop version
     dependencies: List[Dependency] = field(default_factory=list)
+    tool_dependencies: Dict[str, ToolDependency] = field(default_factory=dict)
 
     # Marketplace metadata
     published_at: Optional[str] = None
@@ -100,6 +130,10 @@ class AgentMetadata:
                 distribution=rating_data.get("distribution", {}),
             )
 
+        tool_deps = {}
+        for tool_name, tool_data in data.get("toolDependencies", {}).items():
+            tool_deps[tool_name] = ToolDependency.from_dict(tool_data)
+
         return cls(
             name=data["name"],
             version=data["version"],
@@ -114,6 +148,7 @@ class AgentMetadata:
             python_version=data.get("python_version", ">=3.11"),
             devloop_version=data.get("devloop_version", ">=0.5.0"),
             dependencies=deps,
+            tool_dependencies=tool_deps,
             published_at=data.get("published_at"),
             updated_at=data.get("updated_at"),
             downloads=data.get("downloads", 0),
@@ -180,6 +215,11 @@ class AgentMetadata:
 
         if self.custom:
             data["custom"] = self.custom
+
+        if self.tool_dependencies:
+            data["toolDependencies"] = {
+                name: dep.to_dict() for name, dep in self.tool_dependencies.items()
+            }
 
         return data
 
