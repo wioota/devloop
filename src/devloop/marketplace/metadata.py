@@ -34,8 +34,11 @@ class ToolDependency:
     min_version: Optional[str] = None  # e.g. "1.7.0"
     install_hint: Optional[str] = None  # e.g. "apt-get install shellcheck"
 
+    VALID_TOOL_TYPES = {"python", "binary", "npm-global", "venv", "docker"}
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ToolDependency":
+        """Create from dictionary."""
         return cls(
             type=data["type"],
             package=data.get("package"),
@@ -44,14 +47,24 @@ class ToolDependency:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
         d: Dict[str, Any] = {"type": self.type}
-        if self.package:
+        if self.package is not None:
             d["package"] = self.package
-        if self.min_version:
+        if self.min_version is not None:
             d["minVersion"] = self.min_version
-        if self.install_hint:
+        if self.install_hint is not None:
             d["install"] = self.install_hint
         return d
+
+    def validate(self) -> List[str]:
+        """Validate tool dependency. Returns list of errors."""
+        errors = []
+        if self.type not in self.VALID_TOOL_TYPES:
+            errors.append(
+                f"type must be one of {sorted(self.VALID_TOOL_TYPES)}, got '{self.type}'"
+            )
+        return errors
 
 
 @dataclass

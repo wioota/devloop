@@ -7,6 +7,7 @@ from devloop.marketplace.metadata import (
     AgentMetadata,
     Dependency,
     Rating,
+    ToolDependency,
 )
 
 
@@ -297,41 +298,50 @@ class TestAgentMetadata:
         assert metadata.rating.average == 4.5
         assert metadata.rating.count == 10
 
+    def test_tool_dependency_from_dict(self):
+        """Test creating ToolDependency from dict."""
+        dep = ToolDependency.from_dict(
+            {
+                "type": "python",
+                "minVersion": "1.7.0",
+                "package": "bandit",
+                "install": "pip install bandit",
+            }
+        )
+        assert dep.type == "python"
+        assert dep.min_version == "1.7.0"
+        assert dep.package == "bandit"
+        assert dep.install_hint == "pip install bandit"
 
-def test_tool_dependency_from_dict():
-    from devloop.marketplace.metadata import ToolDependency
-    dep = ToolDependency.from_dict({
-        "type": "python",
-        "minVersion": "1.7.0",
-        "package": "bandit",
-        "install": "pip install bandit",
-    })
-    assert dep.type == "python"
-    assert dep.min_version == "1.7.0"
-    assert dep.package == "bandit"
-    assert dep.install_hint == "pip install bandit"
-
-
-def test_agent_metadata_tool_dependencies_roundtrip():
-    from devloop.marketplace.metadata import AgentMetadata, ToolDependency
-    agent = AgentMetadata(
-        name="test-agent",
-        version="1.0.0",
-        description="Test",
-        author="Author",
-        license="MIT",
-        homepage="https://example.com",
-        tool_dependencies={
-            "bandit": ToolDependency(type="python", package="bandit", min_version="1.7.0"),
-            "shellcheck": ToolDependency(type="binary", install_hint="apt-get install shellcheck"),
-        },
-    )
-    data = agent.to_dict()
-    assert "toolDependencies" in data
-    assert "bandit" in data["toolDependencies"]
-    roundtripped = AgentMetadata.from_dict(data)
-    assert "bandit" in roundtripped.tool_dependencies
-    assert roundtripped.tool_dependencies["bandit"].type == "python"
+    def test_agent_metadata_tool_dependencies_roundtrip(self):
+        """Test roundtrip serialization of tool_dependencies."""
+        agent = AgentMetadata(
+            name="test-agent",
+            version="1.0.0",
+            description="Test",
+            author="Author",
+            license="MIT",
+            homepage="https://example.com",
+            tool_dependencies={
+                "bandit": ToolDependency(
+                    type="python", package="bandit", min_version="1.7.0"
+                ),
+                "shellcheck": ToolDependency(
+                    type="binary", install_hint="apt-get install shellcheck"
+                ),
+            },
+        )
+        data = agent.to_dict()
+        assert "toolDependencies" in data
+        assert "bandit" in data["toolDependencies"]
+        roundtripped = AgentMetadata.from_dict(data)
+        assert "bandit" in roundtripped.tool_dependencies
+        assert roundtripped.tool_dependencies["bandit"].type == "python"
+        assert "shellcheck" in roundtripped.tool_dependencies
+        assert (
+            roundtripped.tool_dependencies["shellcheck"].install_hint
+            == "apt-get install shellcheck"
+        )
 
 
 if __name__ == "__main__":
