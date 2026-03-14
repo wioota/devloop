@@ -72,6 +72,8 @@ class ToolDependencyChecker:
 
     def _check_binary(self, name: str, dep: ToolDependency) -> ToolCheckResult:
         """Check a binary/executable dependency."""
+        # "venv" type checks if the executable is on PATH (basic check; full venv
+        # isolation detection is a future improvement)
         path = shutil.which(name)
         if not path:
             if dep.type == "npm-global":
@@ -124,4 +126,5 @@ class ToolDependencyChecker:
             hint = "" if present else (dep.install_hint or f"docker pull {name}")
             return ToolCheckResult(name=name, present=present, remediation=hint)
         except Exception:
-            return ToolCheckResult(name=name, present=True, version_unverifiable=True)
+            hint = dep.install_hint or f"docker pull {name}"
+            return ToolCheckResult(name=name, present=False, remediation=hint)
