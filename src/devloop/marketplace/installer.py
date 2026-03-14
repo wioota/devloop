@@ -200,7 +200,9 @@ class AgentInstaller:
 
             # Check tool dependencies (warn only, never block)
             tool_warnings = self._check_tool_dependencies(agent)
-            base_msg = f"Successfully installed {agent_name}@{agent.version} and dependencies"
+            base_msg = (
+                f"Successfully installed {agent_name}@{agent.version} and dependencies"
+            )
             if tool_warnings:
                 warning_str = "\n".join(tool_warnings)
                 return True, (
@@ -305,7 +307,7 @@ class AgentInstaller:
             elif result.version_unverifiable and result.required_version:
                 warnings.append(
                     f"  Tool '{result.name}' found but version could not be verified "
-                    f"(requires >={result.required_version})"
+                    f"(requires>={result.required_version})"
                 )
         return warnings
 

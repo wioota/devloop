@@ -3,11 +3,12 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from devloop.marketplace.installer import AgentInstaller
-from devloop.marketplace.metadata import AgentMetadata, Dependency
+from devloop.marketplace.metadata import AgentMetadata, Dependency, ToolDependency
 from devloop.marketplace.registry import AgentRegistry, RegistryConfig
 from devloop.marketplace.registry_client import RegistryClient
 
@@ -279,9 +280,6 @@ class TestAgentInstaller:
 
     def test_install_warns_on_missing_tool_deps(self, installer, registry):
         """Install succeeds but warns when tool deps are missing."""
-        from devloop.marketplace.metadata import ToolDependency
-        from unittest.mock import patch
-
         agent_with_tools = AgentMetadata(
             name="agent-with-tools",
             version="1.0.0",
@@ -305,11 +303,37 @@ class TestAgentInstaller:
         assert "shellcheck" in message
         assert "apt-get install shellcheck" in message
 
+    def test_install_warns_on_unverifiable_tool_version(self, installer, registry):
+        """Warns when tool is present but version cannot be verified."""
+        agent_with_tools = AgentMetadata(
+            name="agent-version-check",
+            version="1.0.0",
+            description="Agent needing versioned tool",
+            author="Author",
+            license="MIT",
+            homepage="https://example.com",
+            tool_dependencies={
+                "mytool": ToolDependency(type="binary", min_version="2.0.0"),
+            },
+        )
+        registry.register_agent(agent_with_tools)
+
+        with patch(
+            "devloop.marketplace.tool_checker.shutil.which",
+            return_value="/usr/bin/mytool",
+        ):
+            with patch(
+                "devloop.marketplace.tool_checker.subprocess.run",
+                side_effect=Exception("timeout"),
+            ):
+                success, message = installer.install("agent-version-check")
+
+        assert success is True
+        assert "mytool" in message
+        assert "requires>=2.0.0" in message
+
     def test_install_no_warning_when_tool_deps_satisfied(self, installer, registry):
         """No warning when all tool deps are present."""
-        from devloop.marketplace.metadata import ToolDependency
-        from unittest.mock import patch
-
         agent_with_tools = AgentMetadata(
             name="agent-tools-ok",
             version="1.0.0",
@@ -323,7 +347,10 @@ class TestAgentInstaller:
         )
         registry.register_agent(agent_with_tools)
 
-        with patch("devloop.marketplace.tool_checker.shutil.which", return_value="/usr/bin/black"):
+        with patch(
+            "devloop.marketplace.tool_checker.shutil.which",
+            return_value="/usr/bin/black",
+        ):
             success, message = installer.install("agent-tools-ok")
 
         assert success is True
