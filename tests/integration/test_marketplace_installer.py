@@ -277,6 +277,59 @@ class TestAgentInstaller:
 
         assert len(dependents) >= 0  # May or may not be tracked as dependent
 
+    def test_install_warns_on_missing_tool_deps(self, installer, registry):
+        """Install succeeds but warns when tool deps are missing."""
+        from devloop.marketplace.metadata import ToolDependency
+        from unittest.mock import patch
+
+        agent_with_tools = AgentMetadata(
+            name="agent-with-tools",
+            version="1.0.0",
+            description="Agent needing external tools",
+            author="Author",
+            license="MIT",
+            homepage="https://example.com",
+            tool_dependencies={
+                "shellcheck": ToolDependency(
+                    type="binary",
+                    install_hint="apt-get install shellcheck",
+                ),
+            },
+        )
+        registry.register_agent(agent_with_tools)
+
+        with patch("devloop.marketplace.tool_checker.shutil.which", return_value=None):
+            success, message = installer.install("agent-with-tools")
+
+        assert success is True  # install always succeeds
+        assert "shellcheck" in message
+        assert "apt-get install shellcheck" in message
+
+    def test_install_no_warning_when_tool_deps_satisfied(self, installer, registry):
+        """No warning when all tool deps are present."""
+        from devloop.marketplace.metadata import ToolDependency
+        from unittest.mock import patch
+
+        agent_with_tools = AgentMetadata(
+            name="agent-tools-ok",
+            version="1.0.0",
+            description="Agent with satisfied tools",
+            author="Author",
+            license="MIT",
+            homepage="https://example.com",
+            tool_dependencies={
+                "black": ToolDependency(type="binary"),
+            },
+        )
+        registry.register_agent(agent_with_tools)
+
+        with patch("devloop.marketplace.tool_checker.shutil.which", return_value="/usr/bin/black"):
+            success, message = installer.install("agent-tools-ok")
+
+        assert success is True
+        assert "warning" not in message.lower()
+        assert "missing" not in message.lower()
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

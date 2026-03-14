@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from .metadata import AgentMetadata
 from .registry_client import RegistryClient
+from .tool_checker import ToolDependencyChecker
 
 logger = logging.getLogger(__name__)
 
@@ -197,10 +198,16 @@ class AgentInstaller:
             # Record download
             self.registry_client.download_agent(agent_name)
 
-            return (
-                True,
-                f"Successfully installed {agent_name}@{agent.version} and dependencies",
-            )
+            # Check tool dependencies (warn only, never block)
+            tool_warnings = self._check_tool_dependencies(agent)
+            base_msg = f"Successfully installed {agent_name}@{agent.version} and dependencies"
+            if tool_warnings:
+                warning_str = "\n".join(tool_warnings)
+                return True, (
+                    f"{base_msg}\n\n"
+                    f"⚠ Missing tool dependencies — install manually:\n{warning_str}"
+                )
+            return True, base_msg
 
         except Exception as e:
             # Rollback on error
@@ -280,6 +287,27 @@ class AgentInstaller:
         except Exception as e:
             logger.error(f"Failed to restore backup: {e}")
             return False
+
+    def _check_tool_dependencies(self, agent: AgentMetadata) -> List[str]:
+        """Check tool deps and return warning strings for missing ones."""
+        if not agent.tool_dependencies:
+            return []
+
+        checker = ToolDependencyChecker()
+        results = checker.check(agent.tool_dependencies)
+        warnings = []
+        for result in results:
+            if not result.present:
+                msg = f"  Missing tool '{result.name}'"
+                if result.remediation:
+                    msg += f": {result.remediation}"
+                warnings.append(msg)
+            elif result.version_unverifiable and result.required_version:
+                warnings.append(
+                    f"  Tool '{result.name}' found but version could not be verified "
+                    f"(requires >={result.required_version})"
+                )
+        return warnings
 
     def uninstall(
         self, agent_name: str, remove_dependencies: bool = False
