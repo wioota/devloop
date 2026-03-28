@@ -321,3 +321,74 @@ class TestConfigWrapper:
         agents = wrapper.agents()
         assert "linter" in agents
         assert "formatter" in agents
+
+
+# ---------------------------------------------------------------------------
+# Config project yaml overrides
+# ---------------------------------------------------------------------------
+
+
+class TestConfigProjectYaml:
+    def test_project_yaml_overrides_registry(self, tmp_path: Path) -> None:
+        agents_json = tmp_path / ".devloop" / "agents.json"
+        agents_json.parent.mkdir()
+        base = Config()._get_default_config()
+        agents_json.write_text(json.dumps(base))
+
+        yaml_file = tmp_path / "devloop.yaml"
+        yaml_file.write_text("registry:\n  provider: npm\n")
+
+        from unittest.mock import patch
+
+        with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
+            cfg = Config(str(agents_json))
+            result = cfg.load()
+
+        assert result["global"]["providers"]["registry"]["provider"] == "npm"
+
+    def test_project_yaml_path_stored(self, tmp_path: Path) -> None:
+        agents_json = tmp_path / ".devloop" / "agents.json"
+        agents_json.parent.mkdir()
+        agents_json.write_text(json.dumps(Config()._get_default_config()))
+
+        yaml_file = tmp_path / "devloop.yaml"
+        yaml_file.write_text("ci:\n  provider: gitlab\n")
+
+        from unittest.mock import patch
+
+        with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
+            cfg = Config(str(agents_json))
+            cfg.load()
+
+        assert cfg.project_yaml_path == yaml_file
+
+    def test_no_project_yaml_leaves_config_unchanged(self, tmp_path: Path) -> None:
+        agents_json = tmp_path / ".devloop" / "agents.json"
+        agents_json.parent.mkdir()
+        base = Config()._get_default_config()
+        agents_json.write_text(json.dumps(base))
+
+        from unittest.mock import patch
+
+        with patch("devloop.core.config.find_project_yaml", return_value=None):
+            cfg = Config(str(agents_json))
+            result = cfg.load()
+
+        assert result["global"]["providers"]["registry"]["provider"] == "pypi"
+        assert cfg.project_yaml_path is None
+
+    def test_invalid_project_yaml_falls_through(self, tmp_path: Path) -> None:
+        agents_json = tmp_path / ".devloop" / "agents.json"
+        agents_json.parent.mkdir()
+        agents_json.write_text(json.dumps(Config()._get_default_config()))
+
+        yaml_file = tmp_path / "devloop.yaml"
+        yaml_file.write_text(": bad yaml {{{\n")
+
+        from unittest.mock import patch
+
+        with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
+            cfg = Config(str(agents_json))
+            result = cfg.load()  # must not raise
+
+        assert result["global"]["providers"]["registry"]["provider"] == "pypi"

@@ -12,6 +12,7 @@ from .config_schema import (
     migrate_config,
     validate_config,
 )
+from .project_config import deep_merge, find_project_yaml, load_project_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,7 @@ class Config:
     def __init__(self, config_path: str = ".devloop/agents.json"):
         self.config_path = Path(config_path)
         self._config: Optional[Dict[str, Any]] = None
+        self.project_yaml_path: Optional[Path] = None
 
     def load(self, validate: bool = True, migrate: bool = True) -> Dict[str, Any]:
         """Load configuration from file with optional validation and migration.
@@ -127,11 +129,12 @@ class Config:
         # Always reload for development - remove caching for now
         if not self.config_path.exists():
             # Return default config
-            return self._get_default_config()
+            config: Dict[str, Any] = self._get_default_config()
+            return self._apply_project_yaml(config)
         else:
             try:
                 with open(self.config_path, "r") as f:
-                    config: Dict[str, Any] = json.load(f)
+                    config = json.load(f)
 
                 # Migrate config if needed
                 if migrate:
@@ -141,6 +144,7 @@ class Config:
                 if validate:
                     validate_config(config, fail_fast=True)
 
+                config = self._apply_project_yaml(config)
                 return config
 
             except (json.JSONDecodeError, IOError) as e:
@@ -175,6 +179,34 @@ class Config:
         except Exception as e:
             logger.error(f"Config migration failed: {e}")
             raise
+
+    def _apply_project_yaml(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Find and apply devloop.yaml overrides onto config."""
+        yaml_path = find_project_yaml(Path.cwd())
+        self.project_yaml_path = yaml_path
+        if yaml_path is None:
+            return config
+
+        overrides = load_project_yaml(yaml_path)
+        if not overrides:
+            return config
+
+        # Map devloop.yaml keys to config paths
+        global_providers = config.setdefault("global", {}).setdefault("providers", {})
+        if "registry" in overrides:
+            global_providers["registry"] = deep_merge(
+                global_providers.get("registry", {}), overrides["registry"]
+            )
+        if "ci" in overrides:
+            global_providers["ci"] = deep_merge(
+                global_providers.get("ci", {}), overrides["ci"]
+            )
+        if "release" in overrides:
+            config["release"] = deep_merge(
+                config.get("release", {}), overrides["release"]
+            )
+
+        return config
 
     def get_global_config(self) -> GlobalConfig:
         """Get global configuration."""
