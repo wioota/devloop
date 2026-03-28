@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
 
-from devloop.core.project_config import deep_merge, find_project_yaml, load_project_yaml
+from devloop.core.project_config import (
+    _git_root,
+    deep_merge,
+    find_project_yaml,
+    load_project_yaml,
+)
 
 
 class TestFindProjectYaml:
@@ -79,6 +85,55 @@ class TestLoadProjectYaml:
         p.write_text("")
         result = load_project_yaml(p)
         assert result == {}
+
+
+class TestLoadProjectYamlEdgeCases:
+    def test_returns_empty_on_non_dict_yaml(self, tmp_path: Path, caplog) -> None:
+        """YAML that parses successfully but yields a list (not a dict) should warn and return {}."""
+        p = tmp_path / "devloop.yaml"
+        p.write_text("- item1\n- item2\n")
+        result = load_project_yaml(p)
+        assert result == {}
+        assert "expected a mapping" in caplog.text
+
+    def test_returns_empty_on_oserror(self, tmp_path: Path, caplog) -> None:
+        """PermissionError when reading the file should warn and return {}."""
+        p = tmp_path / "devloop.yaml"
+        p.write_text("registry:\n  provider: npm\n")
+        with patch.object(
+            Path, "read_text", side_effect=PermissionError("Permission denied")
+        ):
+            result = load_project_yaml(p)
+        assert result == {}
+        assert "Could not read" in caplog.text
+
+
+class TestGitRoot:
+    def test_returns_path_in_git_repo(self, tmp_path: Path) -> None:
+        """_git_root returns the repo root for a directory inside a git repo."""
+        subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+        result = _git_root(tmp_path)
+        assert result is not None
+        assert result == tmp_path.resolve()
+
+    def test_returns_none_for_non_git_directory(self, tmp_path: Path) -> None:
+        """_git_root returns None when the directory is not inside a git repo."""
+        non_git = tmp_path / "not_a_repo"
+        non_git.mkdir()
+        # Patch subprocess.run to simulate git returning non-zero exit code
+        with patch("devloop.core.project_config.subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 128
+            result = _git_root(non_git)
+        assert result is None
+
+    def test_returns_none_when_git_not_in_path(self, tmp_path: Path) -> None:
+        """_git_root returns None when git executable is not found."""
+        with patch(
+            "devloop.core.project_config.subprocess.run",
+            side_effect=FileNotFoundError("git not found"),
+        ):
+            result = _git_root(tmp_path)
+        assert result is None
 
 
 class TestDeepMerge:
