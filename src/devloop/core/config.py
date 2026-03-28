@@ -149,7 +149,8 @@ class Config:
 
             except (json.JSONDecodeError, IOError) as e:
                 logger.warning(f"Could not load config from {self.config_path}: {e}")
-                return self._get_default_config()
+                config = self._get_default_config()
+                return self._apply_project_yaml(config)
             except ConfigValidationError as e:
                 logger.error(f"Config validation failed: {e}")
                 raise
@@ -182,7 +183,7 @@ class Config:
 
     def _apply_project_yaml(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Find and apply devloop.yaml overrides onto config."""
-        yaml_path = find_project_yaml(Path.cwd())
+        yaml_path = find_project_yaml(self.config_path.parent.resolve())
         self.project_yaml_path = yaml_path
         if yaml_path is None:
             return config
@@ -192,15 +193,16 @@ class Config:
             return config
 
         # Map devloop.yaml keys to config paths
-        global_providers = config.setdefault("global", {}).setdefault("providers", {})
         if "registry" in overrides:
-            global_providers["registry"] = deep_merge(
-                global_providers.get("registry", {}), overrides["registry"]
+            global_section = config.setdefault("global", {})
+            providers = global_section.setdefault("providers", {})
+            providers["registry"] = deep_merge(
+                providers.get("registry", {}), overrides["registry"]
             )
         if "ci" in overrides:
-            global_providers["ci"] = deep_merge(
-                global_providers.get("ci", {}), overrides["ci"]
-            )
+            global_section = config.setdefault("global", {})
+            providers = global_section.setdefault("providers", {})
+            providers["ci"] = deep_merge(providers.get("ci", {}), overrides["ci"])
         if "release" in overrides:
             config["release"] = deep_merge(
                 config.get("release", {}), overrides["release"]

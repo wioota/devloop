@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -338,8 +339,6 @@ class TestConfigProjectYaml:
         yaml_file = tmp_path / "devloop.yaml"
         yaml_file.write_text("registry:\n  provider: npm\n")
 
-        from unittest.mock import patch
-
         with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
             cfg = Config(str(agents_json))
             result = cfg.load()
@@ -354,8 +353,6 @@ class TestConfigProjectYaml:
         yaml_file = tmp_path / "devloop.yaml"
         yaml_file.write_text("ci:\n  provider: gitlab\n")
 
-        from unittest.mock import patch
-
         with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
             cfg = Config(str(agents_json))
             cfg.load()
@@ -367,8 +364,6 @@ class TestConfigProjectYaml:
         agents_json.parent.mkdir()
         base = Config()._get_default_config()
         agents_json.write_text(json.dumps(base))
-
-        from unittest.mock import patch
 
         with patch("devloop.core.config.find_project_yaml", return_value=None):
             cfg = Config(str(agents_json))
@@ -385,10 +380,21 @@ class TestConfigProjectYaml:
         yaml_file = tmp_path / "devloop.yaml"
         yaml_file.write_text(": bad yaml {{{\n")
 
-        from unittest.mock import patch
-
         with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
             cfg = Config(str(agents_json))
             result = cfg.load()  # must not raise
 
         assert result["global"]["providers"]["registry"]["provider"] == "pypi"
+
+    def test_project_yaml_applies_to_default_config(self, tmp_path: Path) -> None:
+        # agents.json does NOT exist — triggers default config path
+        agents_json = tmp_path / ".devloop" / "agents.json"
+        # (do NOT create it)
+        yaml_file = tmp_path / "devloop.yaml"
+        yaml_file.write_text("registry:\n  provider: npm\n")
+
+        with patch("devloop.core.config.find_project_yaml", return_value=yaml_file):
+            cfg = Config(str(agents_json))
+            result = cfg.load()
+
+        assert result["global"]["providers"]["registry"]["provider"] == "npm"
