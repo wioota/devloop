@@ -249,6 +249,47 @@ class TestWhitelist:
                 whitelist_path.unlink()
 
 
+class TestAllowlist:
+    """Test that Claude's runtime storage paths are allowlisted past protection."""
+
+    @pytest.mark.parametrize(
+        "file_path",
+        [
+            "/tmp/test-home/.claude/projects/some-project/memory/user.md",
+            "/tmp/test-home/.claude/projects/foo/transcripts/abc.jsonl",
+            "/tmp/test-home/.claude/todos/task-1.json",
+            "/tmp/test-home/.claude/shell-snapshots/snap-123.sh",
+            "/tmp/test-home/.claude/statsig/cache.json",
+        ],
+    )
+    def test_claude_runtime_paths_allowed(self, file_path):
+        """Paths under Claude's runtime storage subdirs must remain writable."""
+        exit_code, stderr = run_hook("Write", file_path)
+
+        assert (
+            exit_code == 0
+        ), f"{file_path} should be allowlisted (Claude runtime storage)"
+        assert stderr == "", f"No error expected for allowlisted path: {file_path}"
+
+    @pytest.mark.parametrize(
+        "file_path",
+        [
+            ".claude/settings.json",
+            ".claude/agents/foo.md",
+            ".claude/commands/bar.md",
+            ".claude/skills/baz/skill.md",
+        ],
+    )
+    def test_claude_config_paths_still_blocked(self, file_path):
+        """Project-level .claude/ config (settings, agents, commands) stays protected."""
+        exit_code, stderr = run_hook("Write", file_path)
+
+        assert (
+            exit_code == 2
+        ), f"{file_path} should remain blocked (config, not runtime)"
+        assert "Protected file" in stderr
+
+
 class TestPathNormalization:
     """Test path normalization and resolution."""
 

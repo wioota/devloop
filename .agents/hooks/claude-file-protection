@@ -20,6 +20,17 @@ protected_patterns = [
     "AGENTS.md", "CODING_RULES.md", "AMP_ONBOARDING.md",
 ]
 
+# Allowlist takes precedence: paths matching these are always permitted,
+# even if they would otherwise match protected_patterns. This carves out
+# Claude Code's own runtime storage (memory, transcripts, todos) which
+# lives under ~/.claude/ but must remain writable for Claude to function.
+allowlist_patterns = [
+    "/.claude/projects/",      # transcripts and per-project memory
+    "/.claude/todos/",         # Claude task storage
+    "/.claude/shell-snapshots/",  # shell environment snapshots
+    "/.claude/statsig/",       # telemetry/feature-flag state
+]
+
 input_file = os.environ.get("INPUT_FILE", "")
 if not input_file:
     sys.exit(0)
@@ -33,7 +44,7 @@ except (json.JSONDecodeError, OSError):
     sys.exit(0)
 
 tool_name = hook_input.get("tool_name", "")
-if tool_name not in ("Write", "Edit"):
+if tool_name not in ("Write", "Edit", "create_file", "edit_file"):
     sys.exit(0)
 
 tool_input = hook_input.get("tool_input", {})
@@ -48,6 +59,10 @@ try:
     file_path = os.path.realpath(file_path)
 except OSError:
     pass
+
+is_allowlisted = any(pat in file_path for pat in allowlist_patterns)
+if is_allowlisted:
+    sys.exit(0)
 
 is_protected = any(pat in file_path for pat in protected_patterns)
 if is_protected:

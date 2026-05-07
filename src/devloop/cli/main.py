@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import typer
 from rich.console import Console
@@ -1158,6 +1158,17 @@ protected_patterns = [
     "AGENTS.md", "CODING_RULES.md", "AMP_ONBOARDING.md",
 ]
 
+# Allowlist takes precedence: paths matching these are always permitted,
+# even if they would otherwise match protected_patterns. This carves out
+# Claude Code's own runtime storage (memory, transcripts, todos) which
+# lives under ~/.claude/ but must remain writable for Claude to function.
+allowlist_patterns = [
+    "/.claude/projects/",      # transcripts and per-project memory
+    "/.claude/todos/",         # Claude task storage
+    "/.claude/shell-snapshots/",  # shell environment snapshots
+    "/.claude/statsig/",       # telemetry/feature-flag state
+]
+
 input_file = os.environ.get("INPUT_FILE", "")
 if not input_file:
     sys.exit(0)
@@ -1186,6 +1197,10 @@ try:
     file_path = os.path.realpath(file_path)
 except OSError:
     pass
+
+is_allowlisted = any(pat in file_path for pat in allowlist_patterns)
+if is_allowlisted:
+    sys.exit(0)
 
 is_protected = any(pat in file_path for pat in protected_patterns)
 if is_protected:
@@ -1688,6 +1703,57 @@ def status():
         table.add_row(agent_name, enabled, triggers)
 
     console.print(table)
+
+
+@app.command()
+def config_show(
+    path: Path = typer.Argument(Path.cwd(), help="Project directory"),
+) -> None:
+    """Show resolved configuration with source annotations."""
+    config_manager = Config(str(path / ".devloop" / "agents.json"))
+    config_dict = config_manager.load()
+
+    providers = config_dict.get("global", {}).get("providers", {})
+    release = config_dict.get("release", {})
+
+    yaml_path = config_manager.project_yaml_path
+    agents_json_exists = config_manager.config_path.exists()
+
+    # Load yaml overrides to know which keys came from devloop.yaml
+    yaml_overrides: Dict[str, Any] = {}
+    if yaml_path is not None:
+        from devloop.core.project_config import load_project_yaml
+
+        yaml_overrides = load_project_yaml(yaml_path)
+
+    def source(key: str) -> str:
+        if yaml_path is not None and key in yaml_overrides:
+            return "devloop.yaml"
+        if agents_json_exists:
+            return "agents.json"
+        return "default"
+
+    table = Table(title="Resolved Configuration")
+    table.add_column("Key", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_column("Source", style="yellow")
+
+    registry = providers.get("registry", {})
+    ci = providers.get("ci", {})
+
+    rows = [
+        ("registry.provider", registry.get("provider", "—"), source("registry")),
+        ("ci.provider", ci.get("provider", "—"), source("ci")),
+        ("release.branch", release.get("branch", "—"), source("release")),
+        ("release.tag_prefix", release.get("tag_prefix", "—"), source("release")),
+    ]
+
+    for key, value, src in rows:
+        table.add_row(key, str(value), src)
+
+    console.print(table)
+    if yaml_path:
+        console.print(f"\n[dim]devloop.yaml: {yaml_path}[/dim]")
 
 
 @app.command()
