@@ -113,7 +113,7 @@ devloop summary session
 - `.devloop/` — Agent findings and context
 - `.git/` — Repository metadata
 - `.agents/hooks/` — Verification scripts
-- `.claude/` — Claude Code configuration (except whitelist file)
+- `.claude/` — Claude Code configuration (project-level settings, agents, commands, skills; runtime storage like `~/.claude/projects/`, `~/.claude/todos/` is allowed)
 - `AGENTS.md`, `CODING_RULES.md`, `AMP_ONBOARDING.md` — Documentation
 
 **Exit codes**:
@@ -127,7 +127,7 @@ devloop summary session
 This file is protected by DevLoop to prevent accidental modifications to:
 - Development workflow configuration (.agents/)
 - Issue tracking state (.beads/)
-- Repository metadata (.git/, .claude/)
+- Repository metadata (.git/, .claude/ config)
 - Development guidelines (AGENTS.md, CODING_RULES.md)
 
 If you need to modify this file:
