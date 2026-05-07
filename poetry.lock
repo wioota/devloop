@@ -1440,7 +1440,7 @@ version = "6.0.3"
 description = "YAML parser and emitter for Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "PyYAML-6.0.3-cp38-cp38-macosx_10_13_x86_64.whl", hash = "sha256:c2514fceb77bc5e7a2f7adfaa1feb2fb311607c9cb518dbc378688ec73d8292f"},
     {file = "PyYAML-6.0.3-cp38-cp38-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:9c57bb8c96f6d1808c030b1687b9b5fb476abaa47f0db9c0101f5e9f394e97f4"},
@@ -1952,4 +1952,4 @@ snyk = []
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "15c85e47ed6f88a4ca5ad111f43fb66a86c0fa651ddc51e2f3cd7c399bf6aabf"
+content-hash = "926920ef6b6eb50a02969fadd0c44954d80747b39f063f4fa9fb13caeffb6c8a"
