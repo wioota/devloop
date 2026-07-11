@@ -294,7 +294,8 @@ These are always protected (unless whitelisted):
 .devloop/        — DevLoop agent findings
 .git/            — Git repository metadata
 .agents/hooks/   — Verification hooks
-.claude/         — Claude Code configuration
+.claude/         — Claude Code project configuration (settings, agents, commands, skills)
+                   Note: Runtime storage (~/.claude/projects/, todos/, shell-snapshots/, statsig/) is allowed
 AGENTS.md        — Development guidelines
 CODING_RULES.md  — Coding standards
 AMP_ONBOARDING.md — Onboarding documentation

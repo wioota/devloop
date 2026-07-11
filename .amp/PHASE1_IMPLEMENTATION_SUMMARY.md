@@ -23,12 +23,13 @@
 - Non-blocking JSON handling with graceful fallback
 - Tested: ✅ Works correctly
 
-**`.agents/hooks/claude-file-protection`** (73 lines)
-- Blocks writes to protected files (.beads/, .devloop/, .git/, .agents/hooks/, .claude/, AGENTS.md, CODING_RULES.md, AMP_ONBOARDING.md)
+**`.agents/hooks/claude-file-protection`** (80 lines)
+- Blocks writes to protected files (.beads/, .devloop/, .git/, .agents/hooks/, .claude/ config, AGENTS.md, CODING_RULES.md, AMP_ONBOARDING.md)
+- Allowlists Claude runtime storage (~/.claude/projects/, todos/, shell-snapshots/, statsig/)
 - Provides helpful error messages with alternatives
 - Uses Python for reliable JSON parsing (doesn't require jq)
 - Exit code 2 for blocking errors, 0 for safe files
-- Tested: ✅ Blocks protected files, allows others
+- Tested: ✅ Blocks protected files, allows others and runtime storage
 
 **`.agents/hooks/install-claude-hooks`** (55 lines)
 - Helper script to register hooks in ~/.claude/settings.json
